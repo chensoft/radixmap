@@ -1,0 +1,20 @@
+[package]
+name = "preway"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jian Chen <admin@chensoft.com>"]
+license = "MIT"
+description = "Rust-based Radix Tree for Fast HTTP Route Lookup"
+documentation = "https://docs.rs/preway"
+repository = "https://github.com/chensoft/preway"
+readme = "README.md"
+keywords = ["preway", "radix", "prefix", "route"]
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "benchmark"
+harness = false
