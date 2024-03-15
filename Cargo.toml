@@ -1,14 +1,14 @@
 [package]
 name = "preway"
 version = "0.1.0"
-edition = "2021"
 authors = ["Jian Chen <admin@chensoft.com>"]
-license = "MIT"
-description = "Rust-based Radix Tree for Fast HTTP Route Lookup"
+edition = "2021"
+description = "Rust-based Radix Tree for Fast Prefix Lookup"
 documentation = "https://docs.rs/preway"
-repository = "https://github.com/chensoft/preway"
 readme = "README.md"
-keywords = ["preway", "radix", "prefix", "route"]
+repository = "https://github.com/chensoft/preway"
+license = "MIT"
+keywords = ["preway", "radix", "tree", "prefix", "loopup"]
 
 [dependencies]
 
