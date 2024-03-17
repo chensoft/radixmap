@@ -3,12 +3,12 @@ name = "preway"
 version = "0.1.0"
 authors = ["Jian Chen <admin@chensoft.com>"]
 edition = "2021"
-description = "Rust-based Radix Tree for Fast Prefix Lookup"
+description = "Rust-based Radix Tree for fast prefix lookup, supporting regex and wildcard"
 documentation = "https://docs.rs/preway"
 readme = "README.md"
 repository = "https://github.com/chensoft/preway"
 license = "MIT"
-keywords = ["preway", "radix", "tree", "prefix", "loopup"]
+keywords = ["preway", "radix", "tree", "regex", "wildcard"]
 
 [dependencies]
 

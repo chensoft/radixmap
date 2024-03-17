@@ -1,14 +1,7 @@
-pub struct Preway<T> {
-    todo: T,
-}
+mod map;
+mod node;
 
-impl<T> Preway<T> {
-    // default
-    // insert
-    // search
-    // remove
-    // prefix
-    // impl Iterator and Mut
-    // impl Prefix Iterator Merge normal Iter, init with Prefix
-    // keys and values and mut, like hashmap
-}
+pub use map::*;
+pub use node::*;
+
+// todo add macros k => v, multiple, empty, support set if no v
