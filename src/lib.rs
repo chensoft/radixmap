@@ -1,5 +1,4 @@
 /// Internal Use
-pub(crate) use std::borrow::Cow;
 pub(crate) use thiserror::Error;
 pub(crate) type Result<T> = anyhow::Result<T>;
 

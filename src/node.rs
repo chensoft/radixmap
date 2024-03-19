@@ -1,14 +1,12 @@
 use crate::*;
 
+#[derive(Default)]
 pub struct RadixNode<'a, T> {
-    hold: Cow<'a, str>,
-    item: RadixItem<'a>,
-    nest: Vec<RadixNode<'a, T>>,
-    data: T,
+    pub item: RadixItem<'a>,
+    pub nest: Vec<RadixNode<'a, T>>,
+    pub data: Option<T>,
 }
 
-impl<'a, T> Default for RadixNode<'a, T> {
-    fn default() -> Self {
-        todo!()
-    }
+impl<'a, T> RadixNode<'a, T> {
+    
 }

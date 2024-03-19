@@ -1,8 +1,6 @@
 use crate::*;
 
 pub enum RadixItem<'a> {
-    None,
-
     Plain {
         pattern: &'a str,
     },
@@ -18,6 +16,6 @@ pub enum RadixItem<'a> {
 
 impl<'a> Default for RadixItem<'a> {
     fn default() -> Self {
-        Self::None
+        Self::Plain { pattern: "" }
     }
 }

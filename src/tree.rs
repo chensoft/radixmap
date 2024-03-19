@@ -1,17 +1,12 @@
 use crate::*;
 
+#[derive(Default)]
 pub struct RadixTree<'a, T> {
     root: RadixNode<'a, T>,
 }
 
-impl<'a, T> Default for RadixTree<'a, T> {
-    fn default() -> Self {
-        Default::default()
-    }
-}
-
 impl<'a, T> RadixTree<'a, T> {
-    pub fn insert(&mut self, key: impl Into<Cow<'a, str>>, val: T) -> &mut Self {
+    pub fn insert(&mut self, key: &'a str, val: T) -> &mut Self {
         self
     }
 
