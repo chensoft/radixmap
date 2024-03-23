@@ -12,16 +12,18 @@ impl<'a, T> RadixTree<'a, T> {
         self
     }
 
-    pub fn search(&mut self) {
+    pub fn search(&self, path: &'a str) -> Option<&T> {
+        match self.prefix(path).next() {
+            Some(obj) => obj.data.as_ref(),
+            None => None
+        }
+    }
+
+    pub fn remove(&mut self) -> Option<T> {
         todo!()
     }
 
-    pub fn remove(&mut self) {
-        todo!()
-    }
-
-    pub fn prefix(&mut self) {
-        // todo impl -> Iterator
-        todo!()
+    pub fn prefix(&'a self, path: &'a str) -> RadixNodeIterator<'a, T> {
+        RadixNodeIterator::new(&self.root, path)
     }
 }
