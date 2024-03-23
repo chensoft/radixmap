@@ -86,16 +86,21 @@ impl<'a, T> RadixNode<'a, T> {
 type HashMapValues<'a, T> = std::collections::hash_map::Values<'a, u8, RadixNode<'a, T>>;
 
 pub struct RadixNodeIterator<'a, T> {
-    first: Option<&'a RadixNode<'a, T>>,
+    start: Option<&'a RadixNode<'a, T>>,
     stack: Vec<HashMapValues<'a, T>>
 }
 
 impl<'a, T> RadixNodeIterator<'a, T> {
-    pub fn new(object: &'a RadixNode<'a, T>, prefix: &'a str) -> Self {
-        match object.deepest(prefix) {
-            Some(first) => Self { first: Some(first), stack: vec![] },
-            None => Self { first: None, stack: vec![] }
+    pub fn new(start: &'a RadixNode<'a, T>) -> Self {
+        Self { start: Some(start), stack: vec![] }
+    }
+
+    pub fn with_prefix(mut self, prefix: &'a str) -> Self {
+        if let Some(start) = self.start {
+            self.start = start.deepest(prefix);
         }
+
+        self
     }
 }
 
@@ -103,8 +108,8 @@ impl<'a, T> Iterator for RadixNodeIterator<'a, T> {
     type Item = &'a RadixNode<'a, T>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(top) = self.first {
-            self.first = None;
+        if let Some(top) = self.start {
+            self.start = None;
             self.stack.push(top.nest.values());
             return Some(top);
         }

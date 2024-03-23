@@ -25,7 +25,7 @@ fn main() -> anyhow::Result<()> {
     assert_eq!(tree.search("/api/v1"), Some(&"/api/v1"));
 
     // iterate the tree with a prefix path
-    for node in tree.prefix("") {
+    for node in tree.iter() {
         println!("{}", node.item.pattern);
     }
 

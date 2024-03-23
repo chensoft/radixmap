@@ -13,7 +13,7 @@ impl<'a, T> RadixTree<'a, T> {
     }
 
     pub fn search(&self, path: &'a str) -> Option<&T> {
-        match self.prefix(path).next() {
+        match self.iter().with_prefix(path).next() {
             Some(obj) => obj.data.as_ref(),
             None => None
         }
@@ -23,8 +23,7 @@ impl<'a, T> RadixTree<'a, T> {
         todo!()
     }
 
-    // todo iter().with_prefix()
-    pub fn prefix(&'a self, path: &'a str) -> RadixNodeIterator<'a, T> {
-        RadixNodeIterator::new(&self.root, path)
+    pub fn iter(&'a self) -> RadixNodeIterator<'a, T> {
+        RadixNodeIterator::new(&self.root)
     }
 }
