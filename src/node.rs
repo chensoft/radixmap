@@ -19,6 +19,7 @@ impl<'a, T> RadixNode<'a, T> {
 
     pub fn insert(&mut self, path: &'a str, data: T) {
         if path.is_empty() {
+            self.data = Some(data);
             return;
         }
 
