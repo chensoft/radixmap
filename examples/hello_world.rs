@@ -12,13 +12,13 @@ fn main() -> anyhow::Result<()> {
     //         └── 2
     //             └── /user
     //                 └── /12345
-    tree.insert("/", ());
-    tree.insert("/api", ());
-    tree.insert("/api/v1", ());
-    tree.insert("/api/v1/user", ());
-    tree.insert("/api/v2", ());
-    tree.insert("/api/v2/user", ());
-    tree.insert("/api/v2/user/12345", ());
+    tree.insert("/", "/");
+    tree.insert("/api", "/api");
+    tree.insert("/api/v1", "/api/v1");
+    tree.insert("/api/v1/user", "/api/v1/user");
+    tree.insert("/api/v2", "/api/v2");
+    tree.insert("/api/v2/user", "/api/v2/user");
+    tree.insert("/api/v2/user/12345", "/api/v2/user/12345");
 
     // search the tree and return data
     tree.search();

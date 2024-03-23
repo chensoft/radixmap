@@ -1,5 +1,7 @@
 /// Internal Use
 pub(crate) use thiserror::Error;
+pub(crate) use std::cmp::Ordering;
+pub(crate) use std::collections::HashMap;
 pub(crate) type Result<T> = anyhow::Result<T>;
 
 /// Error Codes
@@ -19,7 +21,7 @@ pub use node::*;
 pub use tree::*;
 
 /// Handy Macro
-#[macro_use]
+#[macro_export]
 macro_rules! preway {
     () => {{
         todo!()

@@ -1,23 +1,54 @@
 use crate::*;
 
 pub struct RadixNode<'a, T> {
-    pub item: RadixItem<'a>,
-    pub nest: Vec<RadixNode<'a, T>>, // todo use search table store first byte
-    pub data: Option<T>,
+    item: RadixItem<'a>,
+    nest: HashMap<u8, RadixNode<'a, T>>,
+    data: Option<T>,
 }
 
 impl<'a, T> Default for RadixNode<'a, T> {
     fn default() -> Self {
-        Self { item: RadixItem::default(), nest: vec![], data: None }
+        Self::new("", None)
     }
 }
 
 impl<'a, T> RadixNode<'a, T> {
-    pub fn new(path: &'a str, data: T) -> Self {
-        Self { item: RadixItem::new(path), nest: vec![], data: Some(data) }
+    pub fn new(path: &'a str, data: Option<T>) -> Self {
+        Self { item: RadixItem::new(path), nest: HashMap::new(), data }
     }
 
-    pub fn longest(&self, path: &'a str) -> (&'a str, &'a str) {
+    pub fn insert(&mut self, path: &'a str, data: T) {
+        if path.is_empty() {
+            return;
+        }
+
+        let edge = match self.nest.get_mut(&path.as_bytes()[0]) {
+            Some(obj) => obj,
+            None => {
+                self.nest.insert(path.as_bytes()[0], RadixNode::new(path, Some(data)));
+                return;
+            }
+        };
+
+        let share = edge.longest(path);
+
+        match edge.item.pattern.len().cmp(&share.len()) {
+            Ordering::Less => unreachable!(),
+            Ordering::Equal => {
+                match path.len().cmp(&share.len()) {
+                    Ordering::Less => unreachable!(),
+                    Ordering::Equal => edge.data = Some(data),
+                    Ordering::Greater => edge.insert(&path[share.len()..], data),
+                }
+            }
+            Ordering::Greater => {
+                edge.divide(share.len());
+                edge.insert(&path[share.len()..], data);
+            }
+        }
+    }
+
+    pub fn longest(&self, path: &'a str) -> &'a str {
         let min = std::cmp::min(self.item.pattern.len(), path.len());
         let mut len = 0;
 
@@ -25,17 +56,17 @@ impl<'a, T> RadixNode<'a, T> {
             len += 1;
         }
 
-        (&path[..len], &path[len..])
+        &path[..len]
     }
 
-    // todo change name
-    pub fn replace(&mut self, p: &'a str, c: &'a str) {
-        let mut node = RadixNode::default();
-        node.item = RadixItem::new(c);
-        node.nest = std::mem::take(&mut self.nest);
-        node.data = std::mem::take(&mut self.data);
+    pub fn divide(&mut self, len: usize) {
+        let child = RadixNode {
+            item: RadixItem::new(&self.item.pattern[len..]),
+            nest: std::mem::take(&mut self.nest),
+            data: std::mem::take(&mut self.data),
+        };
 
-        self.item = RadixItem::new(p);
-        self.nest.push(node);
+        self.item = RadixItem::new(&self.item.pattern[..len]);
+        self.nest.insert(self.item.pattern.as_bytes()[0], child);
     }
 }
