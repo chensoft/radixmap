@@ -32,12 +32,12 @@ TODO
 
 ## Benchmark
 
-- MacBook Air, Apple M2 24G, Sonoma 14.2.1, Rust 1.75.0
+- MacBook Air, Apple M2 24G, Sonoma 14.2.1, Rust 1.77.0
 
 | Name              |              Time               |
 |:------------------|:-------------------------------:|
 
-- AWS c5.2xlarge, 8C 16G, Ubuntu 22.04, Rust 1.75.0
+- AWS c5.2xlarge, 8C 16G, Ubuntu 22.04, Rust 1.77.0
 
 | Name              |              Time               |
 |:------------------|:-------------------------------:|

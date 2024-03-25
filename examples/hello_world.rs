@@ -1,7 +1,7 @@
 use preway::*;
 
 fn main() -> anyhow::Result<()> {
-    let mut tree = RadixTree::default();
+    let mut map = RadixMap::default();
 
     // the final radix tree looks like this
     // /
@@ -12,20 +12,20 @@ fn main() -> anyhow::Result<()> {
     //         └── 2
     //             └── /user
     //                 └── /12345
-    tree.insert("/", "/");
-    tree.insert("/api/v1", "/api/v1");
-    tree.insert("/api/v1/user", "/api/v1/user");
-    tree.insert("/api/v2", "/api/v2");
-    tree.insert("/api/v2/user", "/api/v2/user");
-    tree.insert("/api/v2/user/12345", "/api/v2/user/12345");
-    tree.insert("/api", "/api");
+    map.insert("/", "/");
+    map.insert("/api/v1", "/api/v1");
+    map.insert("/api/v1/user", "/api/v1/user");
+    map.insert("/api/v2", "/api/v2");
+    map.insert("/api/v2/user", "/api/v2/user");
+    map.insert("/api/v2/user/12345", "/api/v2/user/12345");
+    map.insert("/api", "/api");
 
     // search the tree and find the data
-    assert_eq!(tree.search("/api"), Some(&"/api"));
-    assert_eq!(tree.search("/api/v1"), Some(&"/api/v1"));
+    assert_eq!(map.search("/api"), Some(&"/api"));
+    assert_eq!(map.search("/api/v1"), Some(&"/api/v1"));
 
     // iterate the tree with a prefix path
-    for node in tree.iter() {
+    for node in map.iter().with_prefix("/api") {
         println!("{}", node.item.pattern);
     }
 

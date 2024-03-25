@@ -1,12 +1,12 @@
-use crate::*;
+use super::node::*;
 
 #[derive(Default)]
-pub struct RadixTree<'a, T> {
+pub struct RadixMap<'a, T> {
     root: RadixNode<'a, T>,
 }
 
 // todo support chars-based search
-impl<'a, T> RadixTree<'a, T> {
+impl<'a, T> RadixMap<'a, T> {
     pub fn insert(&mut self, path: &'a str, data: T) -> &mut Self {
         self.root.insert(path, data);
         self
