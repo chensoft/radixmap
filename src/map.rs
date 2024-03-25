@@ -4,6 +4,7 @@ use super::node::*;
 #[derive(Default)]
 pub struct RadixMap<'a, T> {
     root: RadixNode<'a, T>,
+    size: usize,
 }
 
 // todo support chars-based search
@@ -29,11 +30,11 @@ impl<'a, T> RadixMap<'a, T> {
     }
 
     pub fn len(&self) -> usize {
-        todo!()
+        self.size
     }
 
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.root.nest.is_empty()
     }
 
     pub fn drain(&mut self) {
@@ -49,7 +50,7 @@ impl<'a, T> RadixMap<'a, T> {
     }
 
     pub fn clear(&mut self) {
-        todo!()
+        self.root.clear()
     }
 
     // todo get or insert, return Node
@@ -57,11 +58,12 @@ impl<'a, T> RadixMap<'a, T> {
         todo!()
     }
 
-    pub fn get(&self) {
-        todo!()
+    pub fn get(&self, path: &'a str) -> Option<&T> {
+        self.iter().with_prefix(path).next().and_then(|node| node.data.as_ref())
     }
 
-    pub fn get_mut(&mut self) {
+    pub fn get_mut(&mut self, path: &'a str) -> Option<&mut T> {
+        // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
         todo!()
     }
 
@@ -81,13 +83,6 @@ impl<'a, T> RadixMap<'a, T> {
 
     pub fn remove(&mut self) -> Option<T> {
         todo!()
-    }
-
-    pub fn search(&self, path: &'a str) -> Option<&T> {
-        match self.iter().with_prefix(path).next() {
-            Some(obj) => obj.data.as_ref(),
-            None => None
-        }
     }
 }
 

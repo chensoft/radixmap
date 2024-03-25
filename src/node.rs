@@ -50,6 +50,10 @@ impl<'a, T> RadixNode<'a, T> {
         }
     }
 
+    pub fn clear(&mut self) {
+        todo!()
+    }
+
     pub fn longest(&self, path: &'a str) -> &'a str {
         let min = std::cmp::min(self.item.pattern.len(), path.len());
         let mut len = 0;

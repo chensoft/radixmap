@@ -21,8 +21,8 @@ fn main() -> anyhow::Result<()> {
     map.insert("/api", "/api");
 
     // search the tree and find the data
-    assert_eq!(map.search("/api"), Some(&"/api"));
-    assert_eq!(map.search("/api/v1"), Some(&"/api/v1"));
+    assert_eq!(map.get("/api"), Some(&"/api"));
+    assert_eq!(map.get("/api/v1"), Some(&"/api/v1"));
 
     // iterate the tree with a prefix path
     for node in map.iter().with_prefix("/api") {
