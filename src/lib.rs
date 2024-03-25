@@ -1,3 +1,8 @@
+#![warn(missing_docs)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::let_underscore_future)]
+
 mod def;
 mod map;
 mod set;

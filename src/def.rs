@@ -1,6 +1,11 @@
 /// Internal Use
-pub(crate) use thiserror::Error;
+pub(crate) use std::ops::Index;
+pub(crate) use std::ops::IndexMut;
+pub(crate) use std::fmt::Debug;
+pub(crate) use std::fmt::Formatter;
 pub(crate) use std::cmp::Ordering;
+
+pub(crate) use thiserror::Error;
 pub(crate) use sparseset::SparseSet;
 pub(crate) type Result<T> = anyhow::Result<T>;
 
