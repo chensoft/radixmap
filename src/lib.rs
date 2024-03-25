@@ -1,7 +1,7 @@
 /// Internal Use
 pub(crate) use thiserror::Error;
 pub(crate) use std::cmp::Ordering;
-pub(crate) use std::collections::HashMap;
+pub(crate) use sparseset::SparseSet;
 pub(crate) type Result<T> = anyhow::Result<T>;
 
 /// Error Codes

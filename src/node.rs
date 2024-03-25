@@ -2,7 +2,7 @@ use crate::*;
 
 pub struct RadixNode<'a, T> {
     pub item: RadixItem<'a>,
-    pub nest: HashMap<u8, RadixNode<'a, T>>,
+    pub nest: SparseSet<RadixNode<'a, T>>,
     pub data: Option<T>,
 }
 
@@ -14,7 +14,7 @@ impl<'a, T> Default for RadixNode<'a, T> {
 
 impl<'a, T> RadixNode<'a, T> {
     pub fn new(path: &'a str, data: Option<T>) -> Self {
-        Self { item: RadixItem::new(path), nest: HashMap::new(), data }
+        Self { item: RadixItem::new(path), nest: SparseSet::with_capacity(256), data }
     }
 
     pub fn insert(&mut self, path: &'a str, data: T) {
@@ -23,10 +23,10 @@ impl<'a, T> RadixNode<'a, T> {
             return;
         }
 
-        let edge = match self.nest.get_mut(&path.as_bytes()[0]) {
+        let edge = match self.nest.get_mut(path.as_bytes()[0] as usize) {
             Some(obj) => obj,
             None => {
-                self.nest.insert(path.as_bytes()[0], RadixNode::new(path, Some(data)));
+                self.nest.insert(path.as_bytes()[0] as usize, RadixNode::new(path, Some(data)));
                 return;
             }
         };
@@ -65,7 +65,7 @@ impl<'a, T> RadixNode<'a, T> {
             return Some(self);
         }
 
-        match self.nest.get(&path.as_bytes()[0]) {
+        match self.nest.get(path.as_bytes()[0] as usize) {
             Some(nest) if nest.longest(path).len() == nest.item.pattern.len() => nest.deepest(&path[nest.item.pattern.len()..]),
             _ => None
         }
@@ -74,20 +74,20 @@ impl<'a, T> RadixNode<'a, T> {
     pub fn divide(&mut self, len: usize) {
         let child = RadixNode {
             item: RadixItem::new(&self.item.pattern[len..]),
-            nest: std::mem::take(&mut self.nest),
+            nest: std::mem::replace(&mut self.nest, SparseSet::with_capacity(256)),
             data: std::mem::take(&mut self.data),
         };
 
         self.item = RadixItem::new(&self.item.pattern[..len]);
-        self.nest.insert(child.item.pattern.as_bytes()[0], child);
+        self.nest.insert(child.item.pattern.as_bytes()[0] as usize, child);
     }
 }
 
-type HashMapValues<'a, T> = std::collections::hash_map::Values<'a, u8, RadixNode<'a, T>>;
+type SparseIter<'a, T> = std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, T>>>;
 
 pub struct RadixNodeIterator<'a, T> {
     start: Option<&'a RadixNode<'a, T>>,
-    stack: Vec<HashMapValues<'a, T>>
+    stack: Vec<SparseIter<'a, T>>
 }
 
 impl<'a, T> RadixNodeIterator<'a, T> {
@@ -110,15 +110,15 @@ impl<'a, T> Iterator for RadixNodeIterator<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(top) = self.start {
             self.start = None;
-            self.stack.push(top.nest.values());
+            self.stack.push(top.nest.iter());
             return Some(top);
         }
 
         match self.stack.last_mut() {
             Some(top) => match top.next() {
                 Some(obj) => {
-                    self.stack.push(obj.nest.values());
-                    Some(obj)
+                    self.stack.push(obj.value.nest.iter());
+                    Some(obj.value())
                 }
                 None => {
                     self.stack.pop();
