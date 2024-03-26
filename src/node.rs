@@ -5,42 +5,19 @@ use super::tier::*;
 pub struct RadixNode<'a, V> {
     pub item: RadixItem<'a>,
     pub data: Option<V>,
-    pub prev: Option<&'a RadixNode<'a, V>>,
     pub next: RadixTier<'a, V>,
 }
 
+// todo impl clone and etc..., item, tier
 impl<'a, V> Default for RadixNode<'a, V> {
     fn default() -> Self {
-        Self { item: RadixItem::default(), data: None, prev: None, next: RadixTier::default() }
+        Self { item: RadixItem::default(), data: None, next: RadixTier::default() }
     }
 }
 
 impl<'a, V> RadixNode<'a, V> {
-    pub fn fullpath(&self) -> String {
-        todo!()
-    }
-
-    pub fn longest(&self, path: &'a str) -> &'a str {
-        self.item.longest(path)
-    }
-
-    pub fn deepest(&self, path: &'a str) -> Option<&RadixNode<'a, V>> {
-        // if path.is_empty() {
-        //     return Some(self);
-        // }
-        // 
-        // match self.next.get(path.as_bytes()[0] as usize) {
-        //     Some(next) if next.longest(path).len() == next.item.pattern.len() => next.deepest(&path[next.item.pattern.len()..]),
-        //     _ => None
-        // }
-        todo!()
-    }
-
-    pub fn insert(&mut self, size: &mut usize, path: &'a str, data: V) -> Result<Option<V>> {
-        if path.is_empty() {
-            return Err(Error::PathEmpty.into());
-        }
-
+    pub fn insert(&mut self, size: &mut usize, mut path: &'a str, data: V) -> Result<Option<V>> {
+        // let frag = ;
         //     let edge = match self.next.get_mut(path.as_bytes()[0] as usize) {
         //         Some(obj) => obj,
         //         None => {
@@ -77,6 +54,18 @@ impl<'a, V> RadixNode<'a, V> {
         // 
         // self.item = RadixItem::new(&self.item.pattern[..len]);
         // self.next.insert(child.item.pattern.as_bytes()[0] as usize, child);
+        todo!()
+    }
+
+    pub fn deepest(&self, path: &'a str) -> Option<&RadixNode<'a, V>> {
+        // if path.is_empty() {
+        //     return Some(self);
+        // }
+        //
+        // match self.next.get(path.as_bytes()[0] as usize) {
+        //     Some(next) if next.longest(path).len() == next.item.pattern.len() => next.deepest(&path[next.item.pattern.len()..]),
+        //     _ => None
+        // }
         todo!()
     }
 }
