@@ -16,4 +16,21 @@ impl<'a, V> RadixTier<'a, V> {
     pub fn is_empty(&self) -> bool {
         self.regular.is_empty() && self.special.is_empty()
     }
+
+    pub fn insert(&mut self, size: &mut usize, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
+        // search sparse array
+        if let Some(edge) = self.regular.get_mut(frag.as_bytes()[0] as usize) {
+
+        }
+
+        // regex, param, blob
+        for node in &self.special {
+            todo!()
+        }
+
+        // add new node to self
+
+
+        todo!()
+    }
 }

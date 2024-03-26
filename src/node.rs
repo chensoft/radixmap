@@ -17,7 +17,11 @@ impl<'a, V> Default for RadixNode<'a, V> {
 
 impl<'a, V> RadixNode<'a, V> {
     pub fn insert(&mut self, size: &mut usize, mut path: &'a str, data: V) -> Result<Option<V>> {
-        // let frag = ;
+        let frag = RadixItem::segment(path)?;
+        let edge = self.next.insert(size, frag)?;
+
+        // todo if no more frags then set data
+
         //     let edge = match self.next.get_mut(path.as_bytes()[0] as usize) {
         //         Some(obj) => obj,
         //         None => {
