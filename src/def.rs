@@ -12,8 +12,8 @@ pub(crate) type Result<T> = anyhow::Result<T>;
 /// Error Codes
 #[derive(Debug, Clone, Error, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Error {
-    #[error("{0}")]
-    Empty(i32)
+    #[error("path is empty")]
+    PathEmpty
 }
 
 /// Handy Macro
