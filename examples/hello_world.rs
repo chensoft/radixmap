@@ -1,4 +1,4 @@
-use preway::*;
+use radixmap::*;
 
 fn main() -> anyhow::Result<()> {
     let mut map = RadixMap::default();

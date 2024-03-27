@@ -33,7 +33,7 @@ impl<'a> Default for RadixItem<'a> {
 
 impl<'a> RadixItem<'a> {
     /// ```
-    /// use preway::{item::RadixItem};
+    /// use radixmap::{item::RadixItem};
     ///
     /// assert!(RadixItem::new(r"{id:\d+}").is_ok());
     /// assert!(RadixItem::new(r":id").is_ok());
@@ -51,7 +51,7 @@ impl<'a> RadixItem<'a> {
     }
 
     /// ```
-    /// use preway::{item::RadixItem};
+    /// use radixmap::{item::RadixItem};
     ///
     /// assert!(RadixItem::new_plain(r"").is_ok());
     /// assert!(RadixItem::new_plain(r"id").is_ok());
@@ -61,7 +61,7 @@ impl<'a> RadixItem<'a> {
     }
 
     /// ```
-    /// use preway::{item::RadixItem};
+    /// use radixmap::{item::RadixItem};
     ///
     /// assert!(RadixItem::new_regex(r"{}").is_ok());       // useless but valid
     /// assert!(RadixItem::new_regex(r"{:}").is_ok());      // same as above
@@ -89,7 +89,7 @@ impl<'a> RadixItem<'a> {
     }
 
     /// ```
-    /// use preway::{item::RadixItem};
+    /// use radixmap::{item::RadixItem};
     ///
     /// assert!(RadixItem::new_param(r":").is_ok());   // segment placeholder
     /// assert!(RadixItem::new_param(r":id").is_ok()); // param with a name
@@ -104,7 +104,7 @@ impl<'a> RadixItem<'a> {
     }
 
     /// ```
-    /// use preway::{item::RadixItem};
+    /// use radixmap::{item::RadixItem};
     ///
     /// assert!(RadixItem::new_glob(r"*").is_ok());      // match entire string
     /// assert!(RadixItem::new_glob(r"*id").is_ok());    // match strings ending with 'id'
@@ -123,7 +123,7 @@ impl<'a> RadixItem<'a> {
     }
 
     /// ```
-    /// use preway::{item::RadixItem};
+    /// use radixmap::{item::RadixItem};
     ///
     /// assert_eq!(RadixItem::extract(r"api").unwrap(), r"api");
     /// assert_eq!(RadixItem::extract(r"api/v1").unwrap(), r"api/v1");

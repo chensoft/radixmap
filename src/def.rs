@@ -24,13 +24,13 @@ pub enum Error {
 
 /// Handy Macro
 #[macro_export]
-macro_rules! preway {
+macro_rules! radix {
     () => {{
         todo!()
     }};
 
     ($($key:expr),+) => {{
-        $crate::preway!($($key => ()),+)
+        $crate::radix!($($key => ()),+)
     }};
 
     ($($key:expr => $val:expr),+) => {{

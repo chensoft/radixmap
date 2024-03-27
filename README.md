@@ -1,4 +1,4 @@
-Preway
+RadixMap
 ==========================
 
 TODO
@@ -10,18 +10,18 @@ TODO
 [![Build Status][linux-badge]][linux-url]
 [![Build Status][windows-badge]][windows-url]
 
-[crates-badge]: https://img.shields.io/crates/v/preway.svg
-[crates-url]: https://crates.io/crates/preway
+[crates-badge]: https://img.shields.io/crates/v/radixmap.svg
+[crates-url]: https://crates.io/crates/radixmap
 [license-badge]: https://img.shields.io/badge/license-MIT-blue.svg
-[license-url]: https://github.com/chensoft/preway?tab=MIT-1-ov-file
-[document-badge]: https://docs.rs/preway/badge.svg
-[document-url]: https://docs.rs/preway
-[macos-badge]: https://github.com/chensoft/preway/actions/workflows/macos.yml/badge.svg
-[macos-url]: https://github.com/chensoft/preway/actions/workflows/macos.yml
-[linux-badge]: https://github.com/chensoft/preway/actions/workflows/linux.yml/badge.svg
-[linux-url]: https://github.com/chensoft/preway/actions/workflows/linux.yml
-[windows-badge]: https://github.com/chensoft/preway/actions/workflows/windows.yml/badge.svg
-[windows-url]: https://github.com/chensoft/preway/actions/workflows/windows.yml
+[license-url]: https://github.com/chensoft/radixmap?tab=MIT-1-ov-file
+[document-badge]: https://docs.rs/radixmap/badge.svg
+[document-url]: https://docs.rs/radixmap
+[macos-badge]: https://github.com/chensoft/radixmap/actions/workflows/macos.yml/badge.svg
+[macos-url]: https://github.com/chensoft/radixmap/actions/workflows/macos.yml
+[linux-badge]: https://github.com/chensoft/radixmap/actions/workflows/linux.yml/badge.svg
+[linux-url]: https://github.com/chensoft/radixmap/actions/workflows/linux.yml
+[windows-badge]: https://github.com/chensoft/radixmap/actions/workflows/windows.yml/badge.svg
+[windows-url]: https://github.com/chensoft/radixmap/actions/workflows/windows.yml
 
 ## Features
 
@@ -44,8 +44,8 @@ TODO
 
 ## Documentation
 
-The documentation is [available here](https://docs.rs/preway).
+The documentation is [available here](https://docs.rs/radixmap).
 
 ## License
 
-This software is released under the [MIT License](https://github.com/chensoft/preway?tab=MIT-1-ov-file).
+This software is released under the [MIT License](https://github.com/chensoft/radixmap?tab=MIT-1-ov-file).

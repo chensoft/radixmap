@@ -1,14 +1,14 @@
 [package]
-name = "preway"
+name = "radixmap"
 version = "0.1.0"
 authors = ["Jian Chen <admin@chensoft.com>"]
 edition = "2021"
 description = "Rust-based Radix Tree for fast prefix lookup, supporting regex and glob"
-documentation = "https://docs.rs/preway"
+documentation = "https://docs.rs/radixmap"
 readme = "README.md"
-repository = "https://github.com/chensoft/preway"
+repository = "https://github.com/chensoft/radixmap"
 license = "MIT"
-keywords = ["preway", "radix", "tree", "regex", "glob"]
+keywords = ["radixtree", "radixmap", "radixset", "regex", "glob"]
 
 [dependencies]
 glob = "0.3"
