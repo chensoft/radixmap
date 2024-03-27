@@ -16,9 +16,18 @@ impl<'a, V> Default for RadixNode<'a, V> {
 }
 
 impl<'a, V> RadixNode<'a, V> {
+    pub fn new(item: RadixItem<'a>, data: Option<V>) -> Self {
+        Self { item, data, next: RadixTier::default() }
+    }
+
+    pub fn incr(self, size: &mut usize) -> Self {
+        *size += 1;
+        self
+    }
+
     pub fn insert(&mut self, size: &mut usize, mut path: &'a str, data: V) -> Result<Option<V>> {
-        // let part = RadixItem::segment(path)?;
-        // let edge = self.next.insert(size, part)?;
+        let part = RadixItem::new(RadixItem::extract(path)?)?;
+        let edge = self.next.insert(size, part)?;
 
         // todo if no more parts then set data
         todo!()

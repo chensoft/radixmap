@@ -3,17 +3,18 @@ name = "preway"
 version = "0.1.0"
 authors = ["Jian Chen <admin@chensoft.com>"]
 edition = "2021"
-description = "Rust-based Radix Tree for fast prefix lookup, supporting glob and regex"
+description = "Rust-based Radix Tree for fast prefix lookup, supporting regex and glob"
 documentation = "https://docs.rs/preway"
 readme = "README.md"
 repository = "https://github.com/chensoft/preway"
 license = "MIT"
-keywords = ["preway", "radix", "tree", "glob", "regex"]
+keywords = ["preway", "radix", "tree", "regex", "glob"]
 
 [dependencies]
 glob = "0.3"
 regex = "1.10"
 anyhow = { version = "1.0", features = ["backtrace"] }
+indexmap = "2.2"
 thiserror = "1.0"
 sparseset = "1.0"
 

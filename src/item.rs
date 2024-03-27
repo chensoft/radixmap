@@ -3,18 +3,20 @@ use super::def::*;
 pub enum RadixItem<'a> {
     /// /api
     Plain {
-        plain: &'a str
+        text: &'a str
     },
 
     /// /{id:\d+}
     Regex {
-        ident: &'a str,
-        regex: regex::Regex,
+        part: &'a str,
+        name: &'a str,
+        expr: Regex,
     },
 
     /// /:id
     Param {
-        ident: &'a str
+        part: &'a str,
+        name: &'a str
     },
 
     /// /*
@@ -25,7 +27,7 @@ pub enum RadixItem<'a> {
 
 impl<'a> Default for RadixItem<'a> {
     fn default() -> Self {
-        Self::Plain { plain: "" }
+        Self::Plain { text: "" }
     }
 }
 
@@ -55,7 +57,7 @@ impl<'a> RadixItem<'a> {
     /// assert!(RadixItem::new_plain(r"id").is_ok());
     /// ```
     pub fn new_plain(part: &'a str) -> Result<Self> {
-        Ok(Self::Plain { plain: part })
+        Ok(Self::Plain { text: part })
     }
 
     /// ```
@@ -73,16 +75,16 @@ impl<'a> RadixItem<'a> {
     /// assert!(RadixItem::new_regex(r"{:(0}").is_err());   // missing )
     /// assert!(RadixItem::new_regex(r"{id:(0}").is_err()); // missing )
     /// ```
-    pub fn new_regex(mut part: &'a str) -> Result<Self> {
+    pub fn new_regex(part: &'a str) -> Result<Self> {
         if !part.starts_with('{') || !part.ends_with('}') {
             return Err(Error::PathMalformed("regex lack of curly braces".into()).into());
         }
 
-        part = &part[1..part.len() - 1];
+        let data = &part[1..part.len() - 1];
 
-        match part.find(':') {
-            Some(pos) => Ok(Self::Regex { ident: &part[..pos], regex: regex::Regex::new(&part[pos + 1..])? }),
-            None => Ok(Self::Regex { ident: "", regex: regex::Regex::new(part)? })
+        match data.find(':') {
+            Some(pos) => Ok(Self::Regex { part, name: &data[..pos], expr: Regex::new(&data[pos + 1..])? }),
+            None => Ok(Self::Regex { part, name: "", expr: Regex::new(data)? })
         }
     }
 
@@ -98,7 +100,7 @@ impl<'a> RadixItem<'a> {
             return Err(Error::PathMalformed("param lack of colon".into()).into());
         }
 
-        Ok(Self::Param { ident: &part[1..] })
+        Ok(Self::Param { part, name: &part[1..] })
     }
 
     /// ```
@@ -187,21 +189,30 @@ impl<'a> RadixItem<'a> {
         Ok(&path[..len])
     }
 
-    pub fn longest(&self, path: &'a str) -> &'a str {
-        // match self {
-        //     RadixItem::Plain { pattern } => {
-        //         let min = std::cmp::min(pattern.len(), path.len());
-        //         let mut len = 0;
-        //
-        //         while len < min && pattern.as_bytes()[len] == path.as_bytes()[len] {
-        //             len += 1;
-        //         }
-        //
-        //         &path[..len]
-        //     }
-        //     RadixItem::Glob { .. } => { todo!() }
-        //     RadixItem::Regex { .. } => { todo!() }
-        // }
-        todo!()
+    pub fn origin(&'a self) -> &'a str {
+        match self {
+            RadixItem::Plain { text } => text,
+            RadixItem::Regex { part, .. } => part,
+            RadixItem::Param { part, .. } => part,
+            RadixItem::Glob { glob } => glob.as_str(),
+        }
+    }
+
+    pub fn longest(&self, path: &'a str) -> (&'a str, Ordering) {
+        match self {
+            RadixItem::Plain { text } => {
+                let min = std::cmp::min(text.len(), path.len());
+                let mut len = 0;
+
+                while len < min && text.as_bytes()[len] == path.as_bytes()[len] {
+                    len += 1;
+                }
+
+                (&path[..len], text.len().cmp(&len))
+            }
+            RadixItem::Regex { .. } => { todo!() }
+            RadixItem::Param { .. } => { todo!() }
+            RadixItem::Glob { .. } => { todo!() }
+        }
     }
 }

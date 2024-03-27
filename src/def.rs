@@ -6,7 +6,9 @@ pub(crate) use std::fmt::Formatter;
 pub(crate) use std::borrow::Cow;
 pub(crate) use std::cmp::Ordering;
 
+pub(crate) use regex::Regex;
 pub(crate) use thiserror::Error;
+pub(crate) use indexmap::IndexMap;
 pub(crate) use sparseset::SparseSet;
 pub(crate) type Result<T> = anyhow::Result<T>;
 
