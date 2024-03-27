@@ -2,18 +2,18 @@ use super::def::*;
 use super::item::*;
 use super::node::*;
 
-pub struct RadixTier<'a, V> {
+pub struct RadixPack<'a, V> {
     pub regular: SparseSet<RadixNode<'a, V>>,
     pub special: IndexMap<&'a str, RadixNode<'a, V>>,
 }
 
-impl<'a, V> Default for RadixTier<'a, V> {
+impl<'a, V> Default for RadixPack<'a, V> {
     fn default() -> Self {
         Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
     }
 }
 
-impl<'a, V> RadixTier<'a, V> {
+impl<'a, V> RadixPack<'a, V> {
     pub fn insert(&mut self, size: &mut usize, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
         // special nodes inserted directly into map
         let item = RadixItem::new(frag)?;
@@ -50,18 +50,18 @@ impl<'a, V> RadixTier<'a, V> {
             Ordering::Equal => {
                 match frag.len().cmp(&share.len()) {
                     Ordering::Less => unreachable!(),
-                    Ordering::Equal => return Ok(found),
-                    Ordering::Greater => return found.next.insert(size, &frag[share.len()..]),
+                    Ordering::Equal => Ok(found),
+                    Ordering::Greater => found.next.insert(size, &frag[share.len()..]),
                 }
             }
             Ordering::Greater => {
                 let node = found.divide(share.len())?.incr(size);
                 let flag = node.item.origin().as_bytes()[0] as usize;
                 found.next.regular.insert(flag, node);
-                return match found.next.regular.get_mut(flag) {
+                match found.next.regular.get_mut(flag) {
                     Some(node) => Ok(node),
                     None => unreachable!()
-                };
+                }
             }
         }
     }

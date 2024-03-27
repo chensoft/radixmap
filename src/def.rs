@@ -25,18 +25,38 @@ pub enum Error {
     ItemIndivisible
 }
 
-/// Handy Macro
+/// Create RadixMap or RadixSet
+///
+/// ```
+/// #[macro_use] extern crate radixmap;
+///
+/// let map = radix!{
+///     "/" => "/",
+///     "/api" => "/api",
+///     "/api/v1" => "/api/v1",
+///     "/api/v1/user" => "/api/v1/user",
+///     "/api/v2" => "/api/v2",
+///     "/api/v2/user" => "/api/v2/user",
+///     "/api/v2/user/12345" => "/api/v2/user/12345",
+/// };
+///
+/// let set = radix!{
+///     "/",
+///     "/api",
+///     "/api/v1",
+///     "/api/v1/user",
+///     "/api/v2",
+///     "/api/v2/user",
+///     "/api/v2/user/12345",
+/// };
+///
+/// // todo assert
+/// ```
 #[macro_export]
 macro_rules! radix {
-    () => {{
-        todo!()
+    ($($key:expr => $val:expr,)*) => {{
     }};
 
-    ($($key:expr),+) => {{
-        $crate::radix!($($key => ()),+)
-    }};
-
-    ($($key:expr => $val:expr),+) => {{
-        todo!()
+    ($($key:expr,)*) => {{
     }};
 }

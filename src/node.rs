@@ -1,23 +1,23 @@
 use super::def::*;
 use super::item::*;
-use super::tier::*;
+use super::pack::*;
 
-// todo impl clone and etc..., item, tier
+// todo impl clone and etc..., item, pack
 pub struct RadixNode<'a, V> {
     pub item: RadixItem<'a>,
     pub data: Option<V>,
-    pub next: RadixTier<'a, V>,
+    pub next: RadixPack<'a, V>,
 }
 
 impl<'a, V> Default for RadixNode<'a, V> {
     fn default() -> Self {
-        Self { item: RadixItem::default(), data: None, next: RadixTier::default() }
+        Self { item: RadixItem::default(), data: None, next: RadixPack::default() }
     }
 }
 
 impl<'a, V> RadixNode<'a, V> {
     pub fn new(item: RadixItem<'a>, data: Option<V>) -> Self {
-        Self { item, data, next: RadixTier::default() }
+        Self { item, data, next: RadixPack::default() }
     }
 
     pub fn incr(self, size: &mut usize) -> Self {

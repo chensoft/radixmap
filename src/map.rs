@@ -80,9 +80,9 @@ impl<'a, V> RadixMap<'a, V> {
         self.root.insert(&mut self.size, path, data)
     }
 
-    pub fn remove(&mut self) -> Option<V> {
-        todo!()
-    }
+    // pub fn remove(&mut self) -> Option<V> {
+    //     todo!()
+    // }
 }
 
 // impl<'a, V: Debug> Debug for RadixMap<'a, V> {
