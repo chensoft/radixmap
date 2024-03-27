@@ -37,7 +37,7 @@ pub enum Error {
 ///     "/api/v1/user" => "/api/v1/user",
 ///     "/api/v2" => "/api/v2",
 ///     "/api/v2/user" => "/api/v2/user",
-///     "/api/v2/user/12345" => "/api/v2/user/12345",
+///     "/api/v2/user/12345" => "/api/v2/user/12345"
 /// };
 ///
 /// let set = radix!{
@@ -54,9 +54,9 @@ pub enum Error {
 /// ```
 #[macro_export]
 macro_rules! radix {
-    ($($key:expr => $val:expr,)*) => {{
+    ($($key:expr => $val:expr),+ $(,)?) => {{
     }};
 
-    ($($key:expr,)*) => {{
+    ($($key:expr),+ $(,)?) => {{
     }};
 }
