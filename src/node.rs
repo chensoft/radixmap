@@ -17,35 +17,10 @@ impl<'a, V> Default for RadixNode<'a, V> {
 
 impl<'a, V> RadixNode<'a, V> {
     pub fn insert(&mut self, size: &mut usize, mut path: &'a str, data: V) -> Result<Option<V>> {
-        let frag = RadixItem::segment(path)?;
-        let edge = self.next.insert(size, frag)?;
+        // let part = RadixItem::segment(path)?;
+        // let edge = self.next.insert(size, part)?;
 
-        // todo if no more frags then set data
-
-        //     let edge = match self.next.get_mut(path.as_bytes()[0] as usize) {
-        //         Some(obj) => obj,
-        //         None => {
-        //             self.next.insert(path.as_bytes()[0] as usize, RadixNode::new(path, Some(data)));
-        //             return;
-        //         }
-        //     };
-        // 
-        //     let share = edge.longest(path);
-        // 
-        //     match edge.item.pattern.len().cmp(&share.len()) {
-        //         Ordering::Less => unreachable!(),
-        //         Ordering::Equal => {
-        //             match path.len().cmp(&share.len()) {
-        //                 Ordering::Less => unreachable!(),
-        //                 Ordering::Equal => edge.data = Some(data),
-        //                 Ordering::Greater => edge.insert(&path[share.len()..], data),
-        //             }
-        //         }
-        //         Ordering::Greater => {
-        //             edge.divide(share.len());
-        //             edge.insert(&path[share.len()..], data);
-        //         }
-        //     }
+        // todo if no more parts then set data
         todo!()
     }
 

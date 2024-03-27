@@ -77,10 +77,6 @@ impl<'a, V> RadixMap<'a, V> {
     }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
-        if path.is_empty() {
-            return Err(Error::PathEmpty.into());
-        }
-
         self.root.insert(&mut self.size, path, data)
     }
 
