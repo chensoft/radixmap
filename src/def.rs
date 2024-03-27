@@ -54,9 +54,15 @@ pub enum Error {
 /// ```
 #[macro_export]
 macro_rules! radix {
-    ($($key:expr => $val:expr),+ $(,)?) => {{
+    ($($path:expr => $data:expr),+ $(,)?) => {{
+        let mut map = $crate::RadixMap::default();
+        $(map.insert($path, $data);)+
+        map
     }};
 
-    ($($key:expr),+ $(,)?) => {{
+    ($($path:expr),+ $(,)?) => {{
+        let mut set = $crate::RadixSet::default();
+        $(set.insert($path);)+
+        set
     }};
 }

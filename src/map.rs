@@ -1,9 +1,10 @@
 use super::def::*;
 use super::node::*;
 
+// todo the 'a lifetime problem, use Cow?
 #[derive(Default)]
-pub struct RadixMap<'a, V> { // todo the 'a lifetime problem, use Cow?
-root: RadixNode<'a, V>,
+pub struct RadixMap<'a, V> {
+    root: RadixNode<'a, V>,
     size: usize,
 }
 
