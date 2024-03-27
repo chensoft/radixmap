@@ -4,7 +4,7 @@ use super::node::*;
 
 pub struct RadixTier<'a, V> {
     pub regular: SparseSet<RadixNode<'a, V>>,
-    pub special: IndexMap<String, RadixNode<'a, V>>,
+    pub special: IndexMap<&'a str, RadixNode<'a, V>>,
 }
 
 impl<'a, V> Default for RadixTier<'a, V> {
@@ -14,46 +14,55 @@ impl<'a, V> Default for RadixTier<'a, V> {
 }
 
 impl<'a, V> RadixTier<'a, V> {
-    pub fn insert(&mut self, size: &mut usize, item: RadixItem<'a>) -> Result<&mut RadixNode<'a, V>> {
-        // use sparse array to find regular node
-        if let RadixItem::Plain { text } = item {
-            let bytes = text.as_bytes();
-            let first = match bytes.first() {
-                Some(val) => *val as usize,
-                None => return Err(Error::PathEmpty.into())
+    pub fn insert(&mut self, size: &mut usize, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
+        // special nodes inserted directly into map
+        let item = RadixItem::new(frag)?;
+        if !matches!(item, RadixItem::Plain { .. }) {
+            return match self.special.contains_key(frag) {
+                true => Ok(&mut self.special[frag]),
+                false => Ok(self.special.entry(frag).or_insert(RadixNode::new(item, None).incr(size)))
             };
-
-            if !self.regular.contains(first) {
-                self.regular.insert(first, RadixNode::new(item, None).incr(size));
-                return Ok(self.regular[first].value_mut());
-            }
-
-            let found = self.regular[first].value_mut();
-            let (share, order) = found.item.longest(text);
-
-            match order {
-                Ordering::Less => unreachable!(),
-                Ordering::Equal => {
-                    match text.len().cmp(&share.len()) {
-                        Ordering::Less => unreachable!(),
-                        Ordering::Equal => return Ok(found),
-                        Ordering::Greater => return found.next.insert(size, RadixItem::new_plain(&text[share.len()..])?),
-                    }
-                }
-                Ordering::Greater => {
-                    *size += 1;
-                    found.divide(share.len());
-                    return found.next.insert(size, RadixItem::new_plain(&text[share.len()..])?);
-                }
-            }
         }
 
-        // special nodes inserted directly into map
-        let origin = item.origin();
+        // use sparse array to find regular node
+        let bytes = frag.as_bytes();
+        let first = match bytes.first() {
+            Some(val) => *val as usize,
+            None => return Err(Error::PathEmpty.into())
+        };
 
-        match self.special.contains_key(origin) {
-            true => Ok(&mut self.special[origin]),
-            false => Ok(self.special.entry(origin.to_string()).or_insert(RadixNode::new(item, None).incr(size)))
+        if !self.regular.contains(first) {
+            self.regular.insert(first, RadixNode::new(item, None).incr(size));
+            return match self.regular.get_mut(first) {
+                Some(node) => Ok(node),
+                None => unreachable!()
+            };
+        }
+
+        let found = match self.regular.get_mut(first) {
+            Some(node) => node,
+            None => unreachable!()
+        };
+        let (share, order) = found.item.longest(frag);
+
+        match order {
+            Ordering::Less => unreachable!(),
+            Ordering::Equal => {
+                match frag.len().cmp(&share.len()) {
+                    Ordering::Less => unreachable!(),
+                    Ordering::Equal => return Ok(found),
+                    Ordering::Greater => return found.next.insert(size, &frag[share.len()..]),
+                }
+            }
+            Ordering::Greater => {
+                let node = found.divide(share.len())?.incr(size);
+                let flag = node.item.origin().as_bytes()[0] as usize;
+                found.next.regular.insert(flag, node);
+                return match found.next.regular.get_mut(flag) {
+                    Some(node) => Ok(node),
+                    None => unreachable!()
+                };
+            }
         }
     }
 

@@ -1,8 +1,8 @@
 /// Internal Use
-pub(crate) use std::ops::Index;
-pub(crate) use std::ops::IndexMut;
+// pub(crate) use std::ops::Index;
+// pub(crate) use std::ops::IndexMut;
 pub(crate) use std::fmt::Debug;
-pub(crate) use std::fmt::Formatter;
+// pub(crate) use std::fmt::Formatter;
 pub(crate) use std::borrow::Cow;
 pub(crate) use std::cmp::Ordering;
 
@@ -20,6 +20,9 @@ pub enum Error {
 
     #[error("{0}")]
     PathMalformed(Cow<'static, str>),
+
+    #[error("item can't be split")]
+    ItemIndivisible
 }
 
 /// Handy Macro

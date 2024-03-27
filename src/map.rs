@@ -28,53 +28,53 @@ impl<'a, V> RadixMap<'a, V> {
     //     RadixNodeIterator::new(&self.root)
     // }
 
-    pub fn len(&self) -> usize {
-        self.size
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.root.next.is_empty()
-    }
-
-    pub fn drain(&mut self) {
-        todo!()
-    }
-
-    pub fn retain(&mut self) {
-        todo!()
-    }
-
-    pub fn extract_if(&mut self) {
-        todo!()
-    }
-
-    pub fn clear(&mut self) {
-        // todo more efficient
-    }
-
-    // todo get or insert, return Node
-    pub fn entry(&mut self) {
-        todo!()
-    }
-
-    pub fn get(&self, path: &'a str) -> Option<&V> {
-        // self.iter().with_prefix(path).next().and_then(|node| node.data.as_ref())
-        todo!()
-    }
-
-    pub fn get_mut(&mut self, path: &'a str) -> Option<&mut V> {
-        // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
-        todo!()
-    }
-
-    pub fn contains_key(&self, path: &'a str) -> bool {
-        todo!()
-    }
-
-    // todo O(n)
-    pub fn contains_value(&self, data: &V) -> bool {
-        todo!()
-    }
+    // pub fn len(&self) -> usize {
+    //     self.size
+    // }
+    // 
+    // pub fn is_empty(&self) -> bool {
+    //     self.root.next.is_empty()
+    // }
+    // 
+    // pub fn drain(&mut self) {
+    //     todo!()
+    // }
+    // 
+    // pub fn retain(&mut self) {
+    //     todo!()
+    // }
+    // 
+    // pub fn extract_if(&mut self) {
+    //     todo!()
+    // }
+    // 
+    // pub fn clear(&mut self) {
+    //     // todo more efficient
+    // }
+    // 
+    // // todo get or insert, return Node
+    // pub fn entry(&mut self) {
+    //     todo!()
+    // }
+    // 
+    // pub fn get(&self, path: &'a str) -> Option<&V> {
+    //     // self.iter().with_prefix(path).next().and_then(|node| node.data.as_ref())
+    //     todo!()
+    // }
+    // 
+    // pub fn get_mut(&mut self, path: &'a str) -> Option<&mut V> {
+    //     // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
+    //     todo!()
+    // }
+    // 
+    // pub fn contains_key(&self, path: &'a str) -> bool {
+    //     todo!()
+    // }
+    // 
+    // // todo O(n)
+    // pub fn contains_value(&self, data: &V) -> bool {
+    //     todo!()
+    // }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
         self.root.insert(&mut self.size, path, data)
@@ -85,46 +85,46 @@ impl<'a, V> RadixMap<'a, V> {
     }
 }
 
-impl<'a, V: Debug> Debug for RadixMap<'a, V> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl<'a, V: Clone> Clone for RadixMap<'a, V> {
-    fn clone(&self) -> Self {
-        todo!()
-    }
-}
-
-impl<'a, V: Eq> Eq for RadixMap<'a, V> {}
-
-impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
-    fn eq(&self, other: &Self) -> bool {
-        todo!()
-    }
-}
-
-impl<'a, V> Index<&V> for RadixMap<'a, V> {
-    type Output = V;
-
-    fn index(&self, index: &V) -> &Self::Output {
-        todo!()
-    }
-}
-
-impl<'a, V> IndexMut<&V> for RadixMap<'a, V> {
-    fn index_mut(&mut self, index: &V) -> &mut Self::Output {
-        todo!()
-    }
-}
-
-impl<'a, V, const N: usize> From<[(&'a str, V); N]> for RadixMap<'a, V> {
-    fn from(value: [(&'a str, V); N]) -> Self {
-        todo!()
-    }
-}
-
+// impl<'a, V: Debug> Debug for RadixMap<'a, V> {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         todo!()
+//     }
+// }
+// 
+// impl<'a, V: Clone> Clone for RadixMap<'a, V> {
+//     fn clone(&self) -> Self {
+//         todo!()
+//     }
+// }
+// 
+// impl<'a, V: Eq> Eq for RadixMap<'a, V> {}
+// 
+// impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
+//     fn eq(&self, other: &Self) -> bool {
+//         todo!()
+//     }
+// }
+// 
+// impl<'a, V> Index<&V> for RadixMap<'a, V> {
+//     type Output = V;
+// 
+//     fn index(&self, index: &V) -> &Self::Output {
+//         todo!()
+//     }
+// }
+// 
+// impl<'a, V> IndexMut<&V> for RadixMap<'a, V> {
+//     fn index_mut(&mut self, index: &V) -> &mut Self::Output {
+//         todo!()
+//     }
+// }
+// 
+// impl<'a, V, const N: usize> From<[(&'a str, V); N]> for RadixMap<'a, V> {
+//     fn from(value: [(&'a str, V); N]) -> Self {
+//         todo!()
+//     }
+// }
+// 
 // impl<'a, V> IntoIterator for &'a RadixMap<'a, V> {
 //     type Item = ();
 //     type IntoIter = ();
