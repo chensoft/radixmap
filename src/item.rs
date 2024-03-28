@@ -1,6 +1,6 @@
 use super::def::*;
 
-// todo impl Debug, Clone, Eq, PartialEq, Hash? Ord?
+#[derive(Clone)]
 pub enum RadixItem<'a> {
     /// /api
     Plain {
@@ -233,6 +233,91 @@ impl<'a> RadixItem<'a> {
                 item
             }
             _ => Err(Error::ItemIndivisible.into())
+        }
+    }
+}
+
+/// ```
+/// use radixmap::{item::RadixItem};
+/// 
+/// assert_eq!(format!("{:?}", RadixItem::new_plain(r"/api").unwrap()), r"Plain(/api)".to_string());
+/// assert_eq!(format!("{:?}", RadixItem::new_regex(r"{id:\d+}").unwrap()), r"Regex({id:\d+})".to_string());
+/// assert_eq!(format!("{:?}", RadixItem::new_param(r":id").unwrap()), r"Param(:id)".to_string());
+/// assert_eq!(format!("{:?}", RadixItem::new_glob(r"*").unwrap()), r"Glob(*)".to_string());
+/// ```
+impl<'a> Debug for RadixItem<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RadixItem::Plain { text } => write!(f, "Plain({text})"),
+            RadixItem::Regex { orig, .. } => write!(f, "Regex({orig})"),
+            RadixItem::Param { orig, .. } => write!(f, "Param({orig})"),
+            RadixItem::Glob { glob } => write!(f, "Glob({glob})"),
+        }
+    }
+}
+
+/// ```
+/// use std::collections::HashMap;
+/// use radixmap::{item::RadixItem};
+/// 
+/// let mut map = HashMap::new();
+/// map.insert(RadixItem::new_plain(r"/api").unwrap(), r"/api");
+/// map.insert(RadixItem::new_regex(r"{id:\d+}").unwrap(), r"{id:\d+}");
+/// map.insert(RadixItem::new_param(r":id").unwrap(), r":id");
+/// map.insert(RadixItem::new_glob(r"*").unwrap(), r"*");
+///
+/// assert_eq!(map[&RadixItem::new_plain(r"/api").unwrap()], r"/api");
+/// assert_eq!(map[&RadixItem::new_regex(r"{id:\d+}").unwrap()], r"{id:\d+}");
+/// assert_eq!(map[&RadixItem::new_param(r":id").unwrap()], r":id");
+/// assert_eq!(map[&RadixItem::new_glob(r"*").unwrap()], r"*");
+/// ```
+impl<'a> Hash for RadixItem<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            RadixItem::Plain { text } => {
+                "Plain".hash(state);
+                text.hash(state);
+            },
+            RadixItem::Regex { orig, .. } => {
+                "Regex".hash(state);
+                orig.hash(state);
+            },
+            RadixItem::Param { orig, .. } => {
+                "Param".hash(state);
+                orig.hash(state);
+            },
+            RadixItem::Glob { glob } => {
+                "Glob".hash(state);
+                glob.as_str().hash(state);
+            },
+        }
+    }
+}
+
+/// 
+impl<'a> Eq for RadixItem<'a> {}
+
+/// ```
+/// use radixmap::{item::RadixItem};
+///
+/// assert_eq!(RadixItem::new_plain(r"/api").unwrap(), RadixItem::new_plain(r"/api").unwrap());
+/// assert_eq!(RadixItem::new_regex(r"{id:\d+}").unwrap(), RadixItem::new_regex(r"{id:\d+}").unwrap());
+/// assert_eq!(RadixItem::new_param(r":id").unwrap(), RadixItem::new_param(r":id").unwrap());
+/// assert_eq!(RadixItem::new_glob(r"*").unwrap(), RadixItem::new_glob(r"*").unwrap());
+///
+/// assert_ne!(RadixItem::new_plain(r"/api").unwrap(), RadixItem::new_plain(r"").unwrap());
+/// assert_ne!(RadixItem::new_regex(r"{id:\d+}").unwrap(), RadixItem::new_regex(r"{}").unwrap());
+/// assert_ne!(RadixItem::new_param(r":id").unwrap(), RadixItem::new_param(r":").unwrap());
+/// assert_ne!(RadixItem::new_glob(r"*").unwrap(), RadixItem::new_glob(r"**").unwrap());
+/// ```
+impl<'a> PartialEq for RadixItem<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (RadixItem::Plain { text: a }, RadixItem::Plain { text: b }) => a == b,
+            (RadixItem::Regex { orig: a, .. }, RadixItem::Regex { orig: b, .. }) => a == b,
+            (RadixItem::Param { orig: a, .. }, RadixItem::Param { orig: b, .. }) => a == b,
+            (RadixItem::Glob { glob: a }, RadixItem::Glob { glob: b }) => a == b,
+            _ => false
         }
     }
 }
