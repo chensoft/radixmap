@@ -124,3 +124,43 @@ impl<'a, V: Clone> Clone for RadixNode<'a, V> {
         }
     }
 }
+
+// // -----------------------------------------------------------------------------
+// 
+// pub struct Iter<'a, V> {
+//     once: Option<&'a RadixNode<'a, V>>,
+// }
+// 
+// impl<'a, V> Iter<'a, V> {
+//     pub fn new(node: &'a RadixNode<'a, V>) -> Self {
+//         Self { once: Some(node) }
+//     }
+// }
+// 
+// impl<'a, V> Iterator for Iter<'a, V> {
+//     type Item = &'a RadixNode<'a, V>;
+// 
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.once.take()
+//     }
+// }
+// 
+// // -----------------------------------------------------------------------------
+// 
+// pub struct IterMut<'a, V> {
+//     once: Option<&'a mut RadixNode<'a, V>>,
+// }
+// 
+// impl<'a, V> IterMut<'a, V> {
+//     pub fn new(node: &'a mut RadixNode<'a, V>) -> Self {
+//         Self { once: Some(node) }
+//     }
+// }
+// 
+// impl<'a, V> Iterator for IterMut<'a, V> {
+//     type Item = &'a mut RadixNode<'a, V>;
+// 
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.once.take()
+//     }
+// }

@@ -14,6 +14,10 @@ impl<'a, V> Default for RadixMap<'a, V> {
 }
 
 impl<'a, V> RadixMap<'a, V> {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     // pub fn keys(&self) -> Keys<'a, V> {
     //     todo!()
     // }
@@ -178,72 +182,5 @@ impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
 // impl<'a, V> Extend<(&'a str, V)> for RadixMap<'a, V> {
 //     fn extend<T: IntoIterator<Item=(&'a str, V)>>(&mut self, iter: V) {
 //         todo!()
-//     }
-// }
-
-// -----------------------------------------------------------------------------
-
-// pub struct Iter<'a, V> {}
-//
-// pub struct IterMut<'a, V> {}
-
-// -----------------------------------------------------------------------------
-
-// pub struct Keys<'a, V> {}
-
-// -----------------------------------------------------------------------------
-
-// pub struct Values<'a, V> {}
-//
-// pub struct ValuesMut<'a, V> {}
-
-// todo Debug, Clone for Iter, Send for Mut
-
-
-// type SparseIter<'a, T> = std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, T>>>;
-// 
-// pub struct RadixNodeIterator<'a, T> {
-//     start: Option<&'a RadixNode<'a, T>>,
-//     stack: Vec<SparseIter<'a, T>>
-// }
-// 
-// impl<'a, T> RadixNodeIterator<'a, T> {
-//     pub fn new(start: &'a RadixNode<'a, T>) -> Self {
-//         Self { start: Some(start), stack: vec![] }
-//     }
-// 
-//     // todo 3 visit method
-//     pub fn with_prefix(mut self, prefix: &'a str) -> Self {
-//         if let Some(start) = self.start {
-//             self.start = start.deepest(prefix);
-//         }
-// 
-//         self
-//     }
-// }
-// 
-// impl<'a, T> Iterator for RadixNodeIterator<'a, T> {
-//     type Item = &'a RadixNode<'a, T>;
-// 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if let Some(top) = self.start {
-//             self.start = None;
-//             self.stack.push(top.next.iter());
-//             return Some(top);
-//         }
-// 
-//         match self.stack.last_mut() {
-//             Some(top) => match top.next() {
-//                 Some(obj) => {
-//                     self.stack.push(obj.value.next.iter());
-//                     Some(obj.value())
-//                 }
-//                 None => {
-//                     self.stack.pop();
-//                     self.next()
-//                 }
-//             }
-//             None => None
-//         }
 //     }
 // }

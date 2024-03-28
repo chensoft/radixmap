@@ -12,5 +12,6 @@ pub use map::*;
 pub use set::*;
 
 pub mod item;
+pub mod iter;
 pub mod node;
 pub mod pack;

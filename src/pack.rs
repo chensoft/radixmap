@@ -90,3 +90,61 @@ impl<'a, V: Clone> Clone for RadixPack<'a, V> {
         Self { regular: map, special: self.special.clone() }
     }
 }
+
+// // -----------------------------------------------------------------------------
+// 
+// pub struct Iter<'a, V> {
+//     regular: std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>,
+//     special: indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>,
+// }
+// 
+// impl<'a, V> Iter<'a, V> {
+//     pub fn new(pack: &'a RadixPack<'a, V>) -> Self {
+//         Self { regular: pack.regular.iter(), special: pack.special.values() }
+//     }
+// }
+// 
+// impl<'a, V> Iterator for Iter<'a, V> {
+//     type Item = &'a RadixNode<'a, V>;
+// 
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if let Some(node) = self.regular.next() {
+//             return Some(node.value());
+//         }
+// 
+//         if let Some(node) = self.special.next() {
+//             return Some(node);
+//         }
+// 
+//         None
+//     }
+// }
+// 
+// // -----------------------------------------------------------------------------
+// 
+// pub struct IterMut<'a, V> {
+//     regular: std::slice::IterMut<'a, sparseset::Entry<RadixNode<'a, V>>>,
+//     special: indexmap::map::ValuesMut<'a, &'a str, RadixNode<'a, V>>,
+// }
+// 
+// impl<'a, V> IterMut<'a, V> {
+//     pub fn new(pack: &'a mut RadixPack<'a, V>) -> Self {
+//         Self { regular: pack.regular.iter_mut(), special: pack.special.values_mut() }
+//     }
+// }
+// 
+// impl<'a, V> Iterator for IterMut<'a, V> {
+//     type Item = &'a mut RadixNode<'a, V>;
+// 
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if let Some(node) = self.regular.next() {
+//             return Some(node.value_mut());
+//         }
+// 
+//         if let Some(node) = self.special.next() {
+//             return Some(node);
+//         }
+// 
+//         None
+//     }
+// }
