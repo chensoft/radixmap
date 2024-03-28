@@ -2,11 +2,13 @@ use super::def::*;
 use super::item::*;
 use super::node::*;
 
+/// A group of regular and special nodes
 pub struct RadixPack<'a, V> {
     pub regular: SparseSet<RadixNode<'a, V>>,
     pub special: IndexMap<&'a str, RadixNode<'a, V>>,
 }
 
+/// Create a empty group
 impl<'a, V> Default for RadixPack<'a, V> {
     fn default() -> Self {
         Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
@@ -66,6 +68,7 @@ impl<'a, V> RadixPack<'a, V> {
         }
     }
 
+    /// Check if the group is empty
     pub fn is_empty(&self) -> bool {
         self.regular.is_empty() && self.special.is_empty()
     }

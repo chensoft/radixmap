@@ -1,31 +1,62 @@
 use super::def::*;
 
+/// An enum representing various matching patterns
 #[derive(Clone)]
 pub enum RadixItem<'a> {
-    /// /api
+    /// Plain item that accepts arbitrary strings
+    ///
+    /// # Syntax
+    ///
+    /// - /
+    /// - /api
+    ///
     Plain {
         text: &'a str
     },
 
-    /// /{id:\d+}
+    /// Perl-like regular expressions
+    ///
+    /// # Syntax
+    ///
+    /// - {}
+    /// - {:}
+    /// - {\d+}
+    /// - {:\d+}
+    /// - {id:\d+}
+    ///
     Regex {
         orig: &'a str,
         name: &'a str,
         expr: Regex,
     },
 
-    /// /:id
+    /// Named param matches a segment of the route
+    ///
+    /// # Syntax
+    ///
+    /// - :
+    /// - :id
     Param {
         orig: &'a str,
         name: &'a str
     },
 
-    /// /*
+    /// Unix glob style matcher
+    ///
+    /// # Syntax
+    ///
+    /// - *
+    /// - *id
+    /// - ?
+    /// - ?id
+    /// - [0..9]
+    ///
     Glob {
         glob: glob::Pattern
     },
 }
 
+/// Create a plain text item
 impl<'a> Default for RadixItem<'a> {
     fn default() -> Self {
         Self::Plain { text: "" }
@@ -33,6 +64,8 @@ impl<'a> Default for RadixItem<'a> {
 }
 
 impl<'a> RadixItem<'a> {
+    /// Analyze the fragment type and create a radix item
+    /// 
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -51,6 +84,8 @@ impl<'a> RadixItem<'a> {
         }
     }
 
+    /// Create a plain text item
+    /// 
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -61,6 +96,8 @@ impl<'a> RadixItem<'a> {
         Ok(Self::Plain { text: frag })
     }
 
+    /// Create a regular expression item
+    /// 
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -89,6 +126,8 @@ impl<'a> RadixItem<'a> {
         }
     }
 
+    /// Create a named param item
+    /// 
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -104,6 +143,8 @@ impl<'a> RadixItem<'a> {
         Ok(Self::Param { orig: frag, name: &frag[1..] })
     }
 
+    /// Create a unix glob style item
+    /// 
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -121,37 +162,43 @@ impl<'a> RadixItem<'a> {
         }
     }
 
+    /// Extract the path to find the next fragment
+    /// 
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
-    /// assert_eq!(RadixItem::extract(r"api").unwrap(), r"api");
-    /// assert_eq!(RadixItem::extract(r"api/v1").unwrap(), r"api/v1");
-    /// assert_eq!(RadixItem::extract(r"/api/v1").unwrap(), r"/api/v1");
-    /// assert!(RadixItem::extract(r"").is_err());
+    /// fn main() -> anyhow::Result<()> {
+    ///     assert_eq!(RadixItem::extract(r"api")?, r"api");
+    ///     assert_eq!(RadixItem::extract(r"api/v1")?, r"api/v1");
+    ///     assert_eq!(RadixItem::extract(r"/api/v1")?, r"/api/v1");
+    ///     assert!(RadixItem::extract(r"").is_err());
     ///
-    /// assert_eq!(RadixItem::extract(r"{id:\d+}").unwrap(), r"{id:\d+}");
-    /// assert_eq!(RadixItem::extract(r"{id:\d+}/rest").unwrap(), r"{id:\d+}");
-    /// assert!(RadixItem::extract(r"{id:\d+").is_err());
-    /// assert!(RadixItem::extract(r"{id:\d+/rest").is_err());
+    ///     assert_eq!(RadixItem::extract(r"{id:\d+}")?, r"{id:\d+}");
+    ///     assert_eq!(RadixItem::extract(r"{id:\d+}/rest")?, r"{id:\d+}");
+    ///     assert!(RadixItem::extract(r"{id:\d+").is_err());
+    ///     assert!(RadixItem::extract(r"{id:\d+/rest").is_err());
     ///
-    /// assert_eq!(RadixItem::extract(r":").unwrap(), r":");
-    /// assert_eq!(RadixItem::extract(r":id").unwrap(), r":id");
-    /// assert_eq!(RadixItem::extract(r":id/rest").unwrap(), r":id");
+    ///     assert_eq!(RadixItem::extract(r":")?, r":");
+    ///     assert_eq!(RadixItem::extract(r":id")?, r":id");
+    ///     assert_eq!(RadixItem::extract(r":id/rest")?, r":id");
     ///
-    /// assert_eq!(RadixItem::extract(r"*").unwrap(), r"*");
-    /// assert_eq!(RadixItem::extract(r"*rest").unwrap(), r"*rest");
-    /// assert_eq!(RadixItem::extract(r"*/rest").unwrap(), r"*");
-    /// assert_eq!(RadixItem::extract(r"**").unwrap(), r"**");
-    /// assert_eq!(RadixItem::extract(r"**/rest").unwrap(), r"**");
+    ///     assert_eq!(RadixItem::extract(r"*")?, r"*");
+    ///     assert_eq!(RadixItem::extract(r"*rest")?, r"*rest");
+    ///     assert_eq!(RadixItem::extract(r"*/rest")?, r"*");
+    ///     assert_eq!(RadixItem::extract(r"**")?, r"**");
+    ///     assert_eq!(RadixItem::extract(r"**/rest")?, r"**");
     ///
-    /// assert_eq!(RadixItem::extract(r"?").unwrap(), r"?");
-    /// assert_eq!(RadixItem::extract(r"?rest").unwrap(), r"?rest");
-    /// assert_eq!(RadixItem::extract(r"?/rest").unwrap(), r"?");
-    /// assert_eq!(RadixItem::extract(r"??").unwrap(), r"??");
-    /// assert_eq!(RadixItem::extract(r"??/rest").unwrap(), r"??");
+    ///     assert_eq!(RadixItem::extract(r"?")?, r"?");
+    ///     assert_eq!(RadixItem::extract(r"?rest")?, r"?rest");
+    ///     assert_eq!(RadixItem::extract(r"?/rest")?, r"?");
+    ///     assert_eq!(RadixItem::extract(r"??")?, r"??");
+    ///     assert_eq!(RadixItem::extract(r"??/rest")?, r"??");
     ///
-    /// assert_eq!(RadixItem::extract(r"[0..9]").unwrap(), r"[0..9]");
-    /// assert_eq!(RadixItem::extract(r"[0..9]/rest").unwrap(), r"[0..9]");
+    ///     assert_eq!(RadixItem::extract(r"[0..9]")?, r"[0..9]");
+    ///     assert_eq!(RadixItem::extract(r"[0..9]/rest")?, r"[0..9]");
+    ///
+    ///     Ok(())
+    /// }
     /// ```
     pub fn extract(path: &'a str) -> Result<&'a str> {
         if path.is_empty() {
@@ -187,6 +234,20 @@ impl<'a> RadixItem<'a> {
         Ok(&path[..len])
     }
 
+    /// Origin fragment of the item
+    /// 
+    /// ```
+    /// use radixmap::{item::RadixItem};
+    ///
+    /// fn main() -> anyhow::Result<()> {
+    ///     assert_eq!(RadixItem::new_plain(r"/api")?.origin(), r"/api");
+    ///     assert_eq!(RadixItem::new_regex(r"{id:\d+}")?.origin(), r"{id:\d+}");
+    ///     assert_eq!(RadixItem::new_param(r":id")?.origin(), r":id");
+    ///     assert_eq!(RadixItem::new_glob(r"*")?.origin(), r"*");
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     #[inline]
     pub fn origin(&'a self) -> &'a str {
         match self {
@@ -197,15 +258,21 @@ impl<'a> RadixItem<'a> {
         }
     }
 
+    /// Match the path to find the longest shared segment
+    /// 
     /// ```
     /// use std::cmp::Ordering;
     /// use radixmap::{item::RadixItem};
     ///
-    /// assert_eq!(RadixItem::new_plain("").unwrap().longest(""), ("", Ordering::Equal));
-    /// assert_eq!(RadixItem::new_plain("").unwrap().longest("api"), ("", Ordering::Equal));
-    /// assert_eq!(RadixItem::new_plain("api").unwrap().longest("api"), ("api", Ordering::Equal));
-    /// assert_eq!(RadixItem::new_plain("api/v1").unwrap().longest("api"), ("api", Ordering::Greater));
-    /// assert_eq!(RadixItem::new_plain("api/v1").unwrap().longest("api/v2"), ("api/v", Ordering::Greater));
+    /// fn main() -> anyhow::Result<()> {
+    ///     assert_eq!(RadixItem::new_plain("")?.longest(""), ("", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_plain("")?.longest("api"), ("", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_plain("api")?.longest("api"), ("api", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_plain("api/v1")?.longest("api"), ("api", Ordering::Greater));
+    ///     assert_eq!(RadixItem::new_plain("api/v1")?.longest("api/v2"), ("api/v", Ordering::Greater));
+    ///
+    ///     Ok(())
+    /// }
     /// ```
     pub fn longest(&self, path: &'a str) -> (&'a str, Ordering) {
         match self {
@@ -225,6 +292,20 @@ impl<'a> RadixItem<'a> {
         }
     }
 
+    /// Divide the item into two parts
+    /// 
+    /// ```
+    /// use radixmap::{item::RadixItem};
+    ///
+    /// fn main() -> anyhow::Result<()> {
+    ///     assert_eq!(RadixItem::new_plain(r"/api")?.divide(1)?, RadixItem::new_plain(r"api")?);
+    ///     assert!(RadixItem::new_regex(r"{id:\d+}")?.divide(1).is_err());
+    ///     assert!(RadixItem::new_param(r":id")?.divide(1).is_err());
+    ///     assert!(RadixItem::new_glob(r"*")?.divide(1).is_err());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn divide(&mut self, len: usize) -> Result<RadixItem<'a>> {
         match self {
             RadixItem::Plain { text } if text.len() > len => {
@@ -237,13 +318,19 @@ impl<'a> RadixItem<'a> {
     }
 }
 
+/// Debug trait
+/// 
 /// ```
 /// use radixmap::{item::RadixItem};
-/// 
-/// assert_eq!(format!("{:?}", RadixItem::new_plain(r"/api").unwrap()), r"Plain(/api)".to_string());
-/// assert_eq!(format!("{:?}", RadixItem::new_regex(r"{id:\d+}").unwrap()), r"Regex({id:\d+})".to_string());
-/// assert_eq!(format!("{:?}", RadixItem::new_param(r":id").unwrap()), r"Param(:id)".to_string());
-/// assert_eq!(format!("{:?}", RadixItem::new_glob(r"*").unwrap()), r"Glob(*)".to_string());
+///
+/// fn main() -> anyhow::Result<()> {
+///     assert_eq!(format!("{:?}", RadixItem::new_plain(r"/api")?), r"Plain(/api)".to_string());
+///     assert_eq!(format!("{:?}", RadixItem::new_regex(r"{id:\d+}")?), r"Regex({id:\d+})".to_string());
+///     assert_eq!(format!("{:?}", RadixItem::new_param(r":id")?), r"Param(:id)".to_string());
+///     assert_eq!(format!("{:?}", RadixItem::new_glob(r"*")?), r"Glob(*)".to_string());
+///
+///     Ok(())
+/// }
 /// ```
 impl<'a> Debug for RadixItem<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -256,20 +343,26 @@ impl<'a> Debug for RadixItem<'a> {
     }
 }
 
+/// Hash trait
+/// 
 /// ```
 /// use std::collections::HashMap;
 /// use radixmap::{item::RadixItem};
-/// 
-/// let mut map = HashMap::new();
-/// map.insert(RadixItem::new_plain(r"/api").unwrap(), r"/api");
-/// map.insert(RadixItem::new_regex(r"{id:\d+}").unwrap(), r"{id:\d+}");
-/// map.insert(RadixItem::new_param(r":id").unwrap(), r":id");
-/// map.insert(RadixItem::new_glob(r"*").unwrap(), r"*");
 ///
-/// assert_eq!(map[&RadixItem::new_plain(r"/api").unwrap()], r"/api");
-/// assert_eq!(map[&RadixItem::new_regex(r"{id:\d+}").unwrap()], r"{id:\d+}");
-/// assert_eq!(map[&RadixItem::new_param(r":id").unwrap()], r":id");
-/// assert_eq!(map[&RadixItem::new_glob(r"*").unwrap()], r"*");
+/// fn main() -> anyhow::Result<()> {
+///     let mut map = HashMap::new();
+///     map.insert(RadixItem::new_plain(r"/api")?, r"/api");
+///     map.insert(RadixItem::new_regex(r"{id:\d+}")?, r"{id:\d+}");
+///     map.insert(RadixItem::new_param(r":id")?, r":id");
+///     map.insert(RadixItem::new_glob(r"*")?, r"*");
+///
+///     assert_eq!(map[&RadixItem::new_plain(r"/api")?], r"/api");
+///     assert_eq!(map[&RadixItem::new_regex(r"{id:\d+}")?], r"{id:\d+}");
+///     assert_eq!(map[&RadixItem::new_param(r":id")?], r":id");
+///     assert_eq!(map[&RadixItem::new_glob(r"*")?], r"*");
+///
+///     Ok(())
+/// }
 /// ```
 impl<'a> Hash for RadixItem<'a> {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -294,21 +387,27 @@ impl<'a> Hash for RadixItem<'a> {
     }
 }
 
-/// 
+/// == & !=
 impl<'a> Eq for RadixItem<'a> {}
 
+/// == & !=
+/// 
 /// ```
 /// use radixmap::{item::RadixItem};
 ///
-/// assert_eq!(RadixItem::new_plain(r"/api").unwrap(), RadixItem::new_plain(r"/api").unwrap());
-/// assert_eq!(RadixItem::new_regex(r"{id:\d+}").unwrap(), RadixItem::new_regex(r"{id:\d+}").unwrap());
-/// assert_eq!(RadixItem::new_param(r":id").unwrap(), RadixItem::new_param(r":id").unwrap());
-/// assert_eq!(RadixItem::new_glob(r"*").unwrap(), RadixItem::new_glob(r"*").unwrap());
+/// fn main() -> anyhow::Result<()> {
+///     assert_eq!(RadixItem::new_plain(r"/api")?, RadixItem::new_plain(r"/api")?);
+///     assert_eq!(RadixItem::new_regex(r"{id:\d+}")?, RadixItem::new_regex(r"{id:\d+}")?);
+///     assert_eq!(RadixItem::new_param(r":id")?, RadixItem::new_param(r":id")?);
+///     assert_eq!(RadixItem::new_glob(r"*")?, RadixItem::new_glob(r"*")?);
 ///
-/// assert_ne!(RadixItem::new_plain(r"/api").unwrap(), RadixItem::new_plain(r"").unwrap());
-/// assert_ne!(RadixItem::new_regex(r"{id:\d+}").unwrap(), RadixItem::new_regex(r"{}").unwrap());
-/// assert_ne!(RadixItem::new_param(r":id").unwrap(), RadixItem::new_param(r":").unwrap());
-/// assert_ne!(RadixItem::new_glob(r"*").unwrap(), RadixItem::new_glob(r"**").unwrap());
+///     assert_ne!(RadixItem::new_plain(r"/api")?, RadixItem::new_plain(r"")?);
+///     assert_ne!(RadixItem::new_regex(r"{id:\d+}")?, RadixItem::new_regex(r"{}")?);
+///     assert_ne!(RadixItem::new_param(r":id")?, RadixItem::new_param(r":")?);
+///     assert_ne!(RadixItem::new_glob(r"*")?, RadixItem::new_glob(r"**")?);
+///
+///     Ok(())
+/// }
 /// ```
 impl<'a> PartialEq for RadixItem<'a> {
     fn eq(&self, other: &Self) -> bool {
