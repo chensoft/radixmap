@@ -78,3 +78,15 @@ impl<'a, V> RadixPack<'a, V> {
         self.special.clear();
     }
 }
+
+impl<'a, V: Clone> Clone for RadixPack<'a, V> {
+    fn clone(&self) -> Self {
+        let mut map = SparseSet::with_capacity(256);
+
+        for obj in &self.regular {
+            map.insert(obj.key(), obj.value.clone());
+        }
+
+        Self { regular: map, special: self.special.clone() }
+    }
+}

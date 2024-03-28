@@ -2,10 +2,15 @@ use super::def::*;
 use super::node::*;
 
 // todo the 'a lifetime problem, use Cow?
-#[derive(Default)]
 pub struct RadixMap<'a, V> {
     root: RadixNode<'a, V>,
     size: usize,
+}
+
+impl<'a, V> Default for RadixMap<'a, V> {
+    fn default() -> Self {
+        Self { root: RadixNode::default(), size: 0 }
+    }
 }
 
 impl<'a, V> RadixMap<'a, V> {
@@ -29,10 +34,12 @@ impl<'a, V> RadixMap<'a, V> {
     //     RadixNodeIterator::new(&self.root)
     // }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.size
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.root.next.is_empty()
     }
@@ -92,13 +99,13 @@ impl<'a, V> RadixMap<'a, V> {
 //         todo!()
 //     }
 // }
-// 
-// impl<'a, V: Clone> Clone for RadixMap<'a, V> {
-//     fn clone(&self) -> Self {
-//         todo!()
-//     }
-// }
-// 
+
+impl<'a, V: Clone> Clone for RadixMap<'a, V> {
+    fn clone(&self) -> Self {
+        Self { root: self.root.clone(), size: self.size }
+    }
+}
+
 // impl<'a, V: Eq> Eq for RadixMap<'a, V> {}
 // 
 // impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
@@ -106,7 +113,7 @@ impl<'a, V> RadixMap<'a, V> {
 //         todo!()
 //     }
 // }
-// 
+
 // impl<'a, V> Index<&V> for RadixMap<'a, V> {
 //     type Output = V;
 // 
@@ -120,13 +127,21 @@ impl<'a, V> RadixMap<'a, V> {
 //         todo!()
 //     }
 // }
-// 
-// impl<'a, V, const N: usize> From<[(&'a str, V); N]> for RadixMap<'a, V> {
-//     fn from(value: [(&'a str, V); N]) -> Self {
-//         todo!()
-//     }
-// }
-// 
+
+impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
+    type Error = anyhow::Error;
+
+    fn try_from(value: [(&'a str, V); N]) -> std::result::Result<Self, Self::Error> {
+        let mut map = RadixMap::default();
+
+        for (path, data) in value {
+            map.insert(path, data)?;
+        }
+
+        Ok(map)
+    }
+}
+
 // impl<'a, V> IntoIterator for &'a RadixMap<'a, V> {
 //     type Item = ();
 //     type IntoIter = ();

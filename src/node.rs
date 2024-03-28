@@ -114,3 +114,13 @@ impl<'a, V> Debug for RadixNode<'a, V> {
         self.item.fmt(f)
     }
 }
+
+impl<'a, V: Clone> Clone for RadixNode<'a, V> {
+    fn clone(&self) -> Self {
+        Self {
+            item: self.item.clone(),
+            data: self.data.clone(),
+            next: self.next.clone(),
+        }
+    }
+}
