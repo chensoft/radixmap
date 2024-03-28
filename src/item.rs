@@ -41,15 +41,11 @@ pub enum RadixItem<'a> {
         name: &'a str
     },
 
-    /// Unix glob style matcher
+    /// Unix glob style matcher, note that it must be the last component of a route
     ///
     /// # Syntax
     ///
     /// - *
-    /// - *id
-    /// - ?
-    /// - ?id
-    /// - [0..9]
     ///
     Glob {
         glob: glob::Pattern
@@ -65,27 +61,25 @@ impl<'a> Default for RadixItem<'a> {
 
 impl<'a> RadixItem<'a> {
     /// Analyze the fragment type and create a radix item
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
     /// assert!(RadixItem::new(r"{id:\d+}").is_ok());
     /// assert!(RadixItem::new(r":id").is_ok());
     /// assert!(RadixItem::new(r"*id").is_ok());
-    /// assert!(RadixItem::new(r"?id").is_ok());
-    /// assert!(RadixItem::new(r"[0..9]").is_ok());
     /// assert!(RadixItem::new(r"id").is_ok());
     pub fn new(frag: &'a str) -> Result<Self> {
         match frag.as_bytes().first() {
             Some(b'{') => Self::new_regex(frag),
             Some(b':') => Self::new_param(frag),
-            Some(b'*') | Some(b'?') | Some(b'[') => Self::new_glob(frag),
+            Some(b'*') => Self::new_glob(frag),
             _ => Self::new_plain(frag)
         }
     }
 
     /// Create a plain text item
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -97,7 +91,7 @@ impl<'a> RadixItem<'a> {
     }
 
     /// Create a regular expression item
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -119,15 +113,20 @@ impl<'a> RadixItem<'a> {
         }
 
         let data = &frag[1..frag.len() - 1];
+        let find = match data.find(':') {
+            Some(pos) => (&data[..pos], &data[pos + 1..]),
+            None => ("", data)
+        };
 
-        match data.find(':') {
-            Some(pos) => Ok(Self::Regex { orig: frag, name: &data[..pos], expr: Regex::new(&data[pos + 1..])? }),
-            None => Ok(Self::Regex { orig: frag, name: "", expr: Regex::new(data)? })
+        // regex must match from the beginning, add ^ if needed
+        match find.1.as_bytes().first() {
+            Some(b'^') => Ok(Self::Regex { orig: frag, name: find.0, expr: Regex::new(find.1)? }),
+            _ => Ok(Self::Regex { orig: frag, name: find.0, expr: Regex::new(('^'.to_string() + find.1).as_str())? })
         }
     }
 
     /// Create a named param item
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -144,26 +143,23 @@ impl<'a> RadixItem<'a> {
     }
 
     /// Create a unix glob style item
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
     /// assert!(RadixItem::new_glob(r"*").is_ok());      // match entire string
     /// assert!(RadixItem::new_glob(r"*id").is_ok());    // match strings ending with 'id'
-    /// assert!(RadixItem::new_glob(r"?").is_ok());      // match single char
-    /// assert!(RadixItem::new_glob(r"?id").is_ok());    // match single char and ending with 'id'
-    /// assert!(RadixItem::new_glob(r"[0..9]").is_ok()); // match a range of chars
     /// assert!(RadixItem::new_glob(r"").is_err());      // missing meta chars
     /// assert!(RadixItem::new_glob(r"id").is_err());    // missing meta chars
     pub fn new_glob(frag: &'a str) -> Result<Self> {
         match frag.as_bytes().first() {
-            Some(b'*') | Some(b'?') | Some(b'[') => Ok(Self::Glob { glob: glob::Pattern::new(frag)? }),
+            Some(b'*') => Ok(Self::Glob { glob: glob::Pattern::new(frag)? }),
             _ => Err(Error::PathMalformed("glob lack of meta chars".into()).into())
         }
     }
 
     /// Extract the path to find the next fragment
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -184,18 +180,7 @@ impl<'a> RadixItem<'a> {
     ///
     ///     assert_eq!(RadixItem::extract(r"*")?, r"*");
     ///     assert_eq!(RadixItem::extract(r"*rest")?, r"*rest");
-    ///     assert_eq!(RadixItem::extract(r"*/rest")?, r"*");
-    ///     assert_eq!(RadixItem::extract(r"**")?, r"**");
-    ///     assert_eq!(RadixItem::extract(r"**/rest")?, r"**");
-    ///
-    ///     assert_eq!(RadixItem::extract(r"?")?, r"?");
-    ///     assert_eq!(RadixItem::extract(r"?rest")?, r"?rest");
-    ///     assert_eq!(RadixItem::extract(r"?/rest")?, r"?");
-    ///     assert_eq!(RadixItem::extract(r"??")?, r"??");
-    ///     assert_eq!(RadixItem::extract(r"??/rest")?, r"??");
-    ///
-    ///     assert_eq!(RadixItem::extract(r"[0..9]")?, r"[0..9]");
-    ///     assert_eq!(RadixItem::extract(r"[0..9]/rest")?, r"[0..9]");
+    ///     assert_eq!(RadixItem::extract(r"*/rest")?, r"*/rest");
     ///
     ///     Ok(())
     /// }
@@ -210,8 +195,6 @@ impl<'a> RadixItem<'a> {
             map[b'{' as usize] = true;
             map[b':' as usize] = true;
             map[b'*' as usize] = true;
-            map[b'?' as usize] = true;
-            map[b'[' as usize] = true;
             map
         };
 
@@ -221,10 +204,11 @@ impl<'a> RadixItem<'a> {
                 Some(pos) => pos + 1,
                 _ => return Err(Error::PathMalformed("missing closing sign '}'".into()).into())
             }
-            Some(b':') | Some(b'*') | Some(b'?') | Some(b'[') => match raw.iter().position(|c| *c == b'/') {
+            Some(b':') => match raw.iter().position(|c| *c == b'/') {
                 Some(pos) => pos,
                 _ => raw.len(),
             }
+            Some(b'*') => raw.len(),
             _ => match raw.iter().position(|c| MAP[*c as usize]) {
                 Some(pos) => pos,
                 None => raw.len(),
@@ -235,7 +219,7 @@ impl<'a> RadixItem<'a> {
     }
 
     /// Origin fragment of the item
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -259,18 +243,29 @@ impl<'a> RadixItem<'a> {
     }
 
     /// Match the path to find the longest shared segment
-    /// 
+    ///
     /// ```
     /// use std::cmp::Ordering;
     /// use radixmap::{item::RadixItem};
     ///
     /// fn main() -> anyhow::Result<()> {
-    ///     assert_eq!(RadixItem::new_plain("")?.longest(""), ("", Ordering::Equal));
-    ///     assert_eq!(RadixItem::new_plain("")?.longest("api"), ("", Ordering::Equal));
-    ///     assert_eq!(RadixItem::new_plain("api")?.longest("api"), ("api", Ordering::Equal));
-    ///     assert_eq!(RadixItem::new_plain("api/v1")?.longest("api"), ("api", Ordering::Greater));
-    ///     assert_eq!(RadixItem::new_plain("api/v1")?.longest("api/v2"), ("api/v", Ordering::Greater));
+    ///     assert_eq!(RadixItem::new_plain(r"")?.longest(""), (r"", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_plain(r"")?.longest("api"), (r"", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_plain(r"api")?.longest("api"), (r"api", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_plain(r"api/v1")?.longest("api"), (r"api", Ordering::Greater));
+    ///     assert_eq!(RadixItem::new_plain(r"api/v1")?.longest("api/v2"), (r"api/v", Ordering::Greater));
     ///
+    ///     assert_eq!(RadixItem::new_regex(r"{}")?.longest("12345/rest"), (r"", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_regex(r"{:}")?.longest("12345/rest"), (r"", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_regex(r"{\d+}")?.longest("12345/rest"), (r"12345", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_regex(r"{:\d+}")?.longest("12345/rest"), (r"12345", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_regex(r"{id:\d+}")?.longest("12345/update"), (r"12345", Ordering::Equal));
+    ///
+    ///     assert_eq!(RadixItem::new_param(r":")?.longest("12345/rest"), (r"12345", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_param(r":id")?.longest("12345/rest"), (r"12345", Ordering::Equal));
+    ///
+    ///     assert_eq!(RadixItem::new_glob(r"*")?.longest("12345/rest"), (r"12345/rest", Ordering::Equal));
+    ///     assert_eq!(RadixItem::new_glob(r"*id")?.longest("12345/rest"), (r"", Ordering::Equal));
     ///     Ok(())
     /// }
     /// ```
@@ -286,14 +281,23 @@ impl<'a> RadixItem<'a> {
 
                 (&path[..len], text.len().cmp(&len))
             }
-            RadixItem::Regex { .. } => { todo!() }
-            RadixItem::Param { .. } => { todo!() }
-            RadixItem::Glob { .. } => { todo!() }
+            RadixItem::Regex { expr, .. } => match expr.find(path) {
+                Some(m) => (&path[..m.len()], Ordering::Equal),
+                None => ("", Ordering::Equal)
+            }
+            RadixItem::Param { .. } => match path.find('/') {
+                Some(p) => (&path[..p], Ordering::Equal),
+                None => ("", Ordering::Equal)
+            }
+            RadixItem::Glob { glob } => match glob.matches(path) {
+                true => (path, Ordering::Equal),
+                false => ("", Ordering::Equal)
+            }
         }
     }
 
     /// Divide the item into two parts
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem};
     ///
@@ -319,7 +323,7 @@ impl<'a> RadixItem<'a> {
 }
 
 /// Debug trait
-/// 
+///
 /// ```
 /// use radixmap::{item::RadixItem};
 ///
@@ -344,7 +348,7 @@ impl<'a> Debug for RadixItem<'a> {
 }
 
 /// Hash trait
-/// 
+///
 /// ```
 /// use std::collections::HashMap;
 /// use radixmap::{item::RadixItem};
@@ -391,7 +395,7 @@ impl<'a> Hash for RadixItem<'a> {
 impl<'a> Eq for RadixItem<'a> {}
 
 /// == & !=
-/// 
+///
 /// ```
 /// use radixmap::{item::RadixItem};
 ///
