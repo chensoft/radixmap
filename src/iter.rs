@@ -1,6 +1,7 @@
 use super::def::*;
 use super::node::*;
 
+// todo merge Mut and IMut
 // -----------------------------------------------------------------------------
 
 pub enum State<'a, V> {
@@ -66,6 +67,7 @@ impl<'a, V> Iter<'a, V> {
     }
 
     pub fn use_prefix(mut self, prefix: &'a str) -> Self {
+        // todo
         // if let Some(start) = self.start {
         //     self.start = start.deepest(prefix);
         // }
@@ -81,37 +83,24 @@ impl<'a, V> Iter<'a, V> {
     }
 
     fn next_pre(&mut self) -> Option<&'a RadixNode<'a, V>> {
-        let top = match self.queue.back_mut() {
+        let mut back = match self.queue.pop_back() {
             Some(obj) => obj,
             None => return None,
         };
 
-        // todo
-        // if let Some(top) = self.queue.back_mut() {
-        //     match top {
-        //         State::SparseSet(top) => {
-        //             // match top.next() {
-        //             //     Some(obj) => {
-        //             //         self.stack.push(obj.value.next.iter());
-        //             //         Some(obj.value())
-        //             //     }
-        //             //     None => {
-        //             //         self.queue.pop_back();
-        //             //         self.next()
-        //             //     }
-        //             // }
-        //         }
-        //         State::IndexMap(top) => {
-        // 
-        //         }
-        //     }
-        //     // let next = match top {
-        //     //     State::SparseSet(top) => top.next().unwrap().value,
-        //     //     State::IndexMap(top) => top.next(),
-        //     // };
-        // }
+        if let Some(node) = back.next() {
+            if !node.next.special.is_empty() {
+                self.queue.push_back(State::Index(node.next.special.values()));
+            }
 
-        None
+            if !node.next.regular.is_empty() {
+                self.queue.push_back(State::Sparse(node.next.regular.iter()));
+            }
+
+            return Some(node);
+        }
+
+        self.next_pre()
     }
 
     fn next_in(&mut self) -> Option<&'a RadixNode<'a, V>> {
@@ -119,7 +108,24 @@ impl<'a, V> Iter<'a, V> {
     }
 
     fn next_post(&mut self) -> Option<&'a RadixNode<'a, V>> {
-        todo!()
+        // let (state, visit) = match self.queue.back_mut() {
+        //     Some(obj) => obj,
+        //     None => return None,
+        // };
+
+        // if let Some(node) = back.next() {
+        //     if !node.next.special.is_empty() {
+        //         self.queue.push_back(State::Index(node.next.special.values()));
+        //     }
+        // 
+        //     if !node.next.regular.is_empty() {
+        //         self.queue.push_back(State::Sparse(node.next.regular.iter()));
+        //     }
+        // 
+        //     return Some(node);
+        // }
+
+        self.next_post()
     }
 
     fn next_level(&mut self) -> Option<&'a RadixNode<'a, V>> {
