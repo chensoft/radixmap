@@ -16,6 +16,11 @@ impl<'a, V> Default for RadixPack<'a, V> {
 }
 
 impl<'a, V> RadixPack<'a, V> {
+    /// Check if the group is empty
+    pub fn is_empty(&self) -> bool {
+        self.regular.is_empty() && self.special.is_empty()
+    }
+
     pub fn insert(&mut self, size: &mut usize, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
         // special nodes inserted directly into map
         let item = RadixItem::new(frag)?;
@@ -68,8 +73,8 @@ impl<'a, V> RadixPack<'a, V> {
         }
     }
 
-    /// Check if the group is empty
-    pub fn is_empty(&self) -> bool {
-        self.regular.is_empty() && self.special.is_empty()
+    pub fn clear(&mut self) {
+        self.regular.clear();
+        self.special.clear();
     }
 }

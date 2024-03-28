@@ -64,7 +64,7 @@ impl<'a, V> RadixNode<'a, V> {
     }
 
     /// Divide the node into two parts
-    /// 
+    ///
     /// ```
     /// use radixmap::{item::RadixItem, node::RadixNode};
     ///
@@ -86,6 +86,12 @@ impl<'a, V> RadixNode<'a, V> {
             data: std::mem::take(&mut self.data),
             next: std::mem::take(&mut self.next),
         })
+    }
+
+    pub fn clear(&mut self) {
+        self.item = RadixItem::default();
+        self.data = None;
+        self.next.clear();
     }
 }
 

@@ -29,14 +29,14 @@ impl<'a, V> RadixMap<'a, V> {
     //     RadixNodeIterator::new(&self.root)
     // }
 
-    // pub fn len(&self) -> usize {
-    //     self.size
-    // }
-    // 
-    // pub fn is_empty(&self) -> bool {
-    //     self.root.next.is_empty()
-    // }
-    // 
+    pub fn len(&self) -> usize {
+        self.size
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.root.next.is_empty()
+    }
+
     // pub fn drain(&mut self) {
     //     todo!()
     // }
@@ -48,11 +48,12 @@ impl<'a, V> RadixMap<'a, V> {
     // pub fn extract_if(&mut self) {
     //     todo!()
     // }
-    // 
-    // pub fn clear(&mut self) {
-    //     // todo more efficient
-    // }
-    // 
+
+    pub fn clear(&mut self) {
+        self.root.clear();
+        self.size = 0;
+    }
+
     // // todo get or insert, return Node
     // pub fn entry(&mut self) {
     //     todo!()
@@ -81,7 +82,7 @@ impl<'a, V> RadixMap<'a, V> {
         self.root.insert(&mut self.size, path, data)
     }
 
-    // pub fn remove(&mut self) -> Option<V> {
+    // pub fn remove(&mut self, path: &'a str) -> Option<V> {
     //     todo!()
     // }
 }
