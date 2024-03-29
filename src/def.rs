@@ -1,6 +1,6 @@
 /// Internal Use
-// pub(crate) use std::ops::Index;
-// pub(crate) use std::ops::IndexMut;
+pub(crate) use std::ops::Index;
+pub(crate) use std::ops::IndexMut;
 pub(crate) use std::hash::Hash;
 pub(crate) use std::hash::Hasher;
 pub(crate) use std::fmt::Debug;
@@ -17,16 +17,19 @@ pub(crate) use sparseset::SparseSet;
 pub(crate) type Result<T> = anyhow::Result<T>;
 
 /// Error Codes
-#[derive(Debug, Clone, Error, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Error, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Error {
     #[error("path is empty")]
     PathEmpty,
+
+    #[error("path not found")]
+    PathNotFound,
 
     #[error("{0}")]
     PathMalformed(Cow<'static, str>),
 
     #[error("item can't be split")]
-    ItemIndivisible
+    ItemIndivisible,
 }
 
 /// Create RadixMap or RadixSet

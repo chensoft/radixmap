@@ -5,6 +5,7 @@ use super::pack::*;
 // -----------------------------------------------------------------------------
 
 /// Iterator adapter for nodes and packs
+#[derive(Clone)]
 pub enum State<'a, V> {
     Node(Option<&'a RadixNode<'a, V>>),
     Pack(std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>, indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>),
@@ -51,6 +52,7 @@ impl<'a, V> Iterator for State<'a, V> {
 ///
 /// 1a - 2a - 3a
 ///    └ 2b
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Order {
     /// Pre-order traversal: 1a -> 2a -> 3a -> 2b
     Pre,
@@ -63,6 +65,7 @@ pub enum Order {
 }
 
 /// The iterator for radix tree
+#[derive(Clone)]
 pub struct Iter<'a, V> {
     start: &'a RadixNode<'a, V>,
     queue: VecDeque<Peekable<State<'a, V>>>,
@@ -233,14 +236,9 @@ impl<'a, V> Iter<'a, V> {
     fn next_post(&mut self) -> Option<&'a RadixNode<'a, V>> {
         // traverse to the deepest leaf node, put all iters into the visit queue
         if let Some(mut back) = self.queue.pop_back() {
-            loop {
-                let pack = match back.peek() {
-                    Some(node) => State::from_pack(&node.next),
-                    None => break
-                };
-
+            while let Some(node) = back.peek() {
+                let pack = State::from_pack(&node.next);
                 self.visit.push(back);
-
                 back = pack;
             }
 
@@ -301,8 +299,6 @@ impl<'a, V> Iterator for Iter<'a, V> {
     }
 }
 
-// pub struct IterMut<'a, V> {}
-
 // -----------------------------------------------------------------------------
 
 // pub struct Keys<'a, V> {}
@@ -310,6 +306,7 @@ impl<'a, V> Iterator for Iter<'a, V> {
 // -----------------------------------------------------------------------------
 
 /// Traverse the tree to retrieve all data
+#[derive(Clone)]
 pub struct Values<'a, V> {
     iter: Iter<'a, V>
 }
@@ -379,7 +376,3 @@ impl<'a, V> Iterator for Values<'a, V> {
         }
     }
 }
-
-// pub struct ValuesMut<'a, V> {}
-
-// todo Debug, Clone for Iter, Send for Mut

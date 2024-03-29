@@ -73,16 +73,15 @@ impl<'a, V> RadixMap<'a, V> {
     // pub fn entry(&mut self) {
     //     todo!()
     // }
-    // 
-    // pub fn get(&self, path: &'a str) -> Option<&V> {
-    //     // self.iter().with_prefix(path).next().and_then(|node| node.data.as_ref())
-    //     todo!()
-    // }
-    // 
-    // pub fn get_mut(&mut self, path: &'a str) -> Option<&mut V> {
-    //     // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
-    //     todo!()
-    // }
+
+    pub fn get(&self, path: &'a str) -> Option<&V> {
+        self.iter().with_prefix(path).next().and_then(|node| node.data.as_ref())
+    }
+
+    pub fn get_mut(&mut self, _path: &'a str) -> Option<&mut V> {
+        // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
+        todo!()
+    }
 
     pub fn contains_key(&self, path: &'a str) -> bool {
         self.iter().with_prefix(path).next().is_some()
@@ -123,27 +122,33 @@ impl<'a, V: Clone> Clone for RadixMap<'a, V> {
     }
 }
 
-// impl<'a, V: Eq> Eq for RadixMap<'a, V> {}
-// 
-// impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
-//     fn eq(&self, other: &Self) -> bool {
-//         todo!()
-//     }
-// }
+impl<'a, V: Eq> Eq for RadixMap<'a, V> {}
 
-// impl<'a, V> Index<&V> for RadixMap<'a, V> {
-//     type Output = V;
-// 
-//     fn index(&self, index: &V) -> &Self::Output {
-//         todo!()
-//     }
-// }
-// 
-// impl<'a, V> IndexMut<&V> for RadixMap<'a, V> {
-//     fn index_mut(&mut self, index: &V) -> &mut Self::Output {
-//         todo!()
-//     }
-// }
+impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
+    fn eq(&self, _other: &Self) -> bool {
+        todo!()
+    }
+}
+
+impl<'a, V> Index<&'a str> for RadixMap<'a, V> {
+    type Output = V;
+
+    fn index(&self, path: &'a str) -> &Self::Output {
+        match self.get(path) {
+            Some(data) => data,
+            None => panic!("no entry found for path '{}'", path)
+        }
+    }
+}
+
+impl<'a, V> IndexMut<&'a str> for RadixMap<'a, V> {
+    fn index_mut(&mut self, path: &'a str) -> &mut Self::Output {
+        match self.get_mut(path) {
+            Some(data) => data,
+            None => panic!("no entry found for path '{}'", path)
+        }
+    }
+}
 
 impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
     type Error = anyhow::Error;
@@ -167,7 +172,7 @@ impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
 //         todo!()
 //     }
 // }
-//
+// 
 // impl<'a, V> IntoIterator for &'a mut RadixMap<'a, V> {
 //     type Item = ();
 //     type IntoIter = ();
