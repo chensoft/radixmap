@@ -28,8 +28,8 @@ pub enum Error {
     #[error("{0}")]
     PathMalformed(Cow<'static, str>),
 
-    #[error("item can't be split")]
-    ItemIndivisible,
+    #[error("rule can't be split")]
+    RuleIndivisible,
 }
 
 /// Create RadixMap or RadixSet

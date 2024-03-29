@@ -1,5 +1,5 @@
 use super::def::*;
-use super::item::*;
+use super::rule::*;
 use super::node::*;
 
 /// A group of regular and special nodes
@@ -23,11 +23,11 @@ impl<'a, V> RadixPack<'a, V> {
 
     pub fn insert(&mut self, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
         // special nodes inserted directly into map
-        let item = RadixItem::new(frag)?;
-        if !matches!(item, RadixItem::Plain { .. }) {
+        let rule = RadixRule::new(frag)?;
+        if !matches!(rule, RadixRule::Plain { .. }) {
             return match self.special.contains_key(frag) {
                 true => Ok(&mut self.special[frag]),
-                false => Ok(self.special.entry(frag).or_insert(RadixNode::new(item, None)))
+                false => Ok(self.special.entry(frag).or_insert(RadixNode::new(rule, None)))
             };
         }
 
@@ -39,7 +39,7 @@ impl<'a, V> RadixPack<'a, V> {
         };
 
         if !self.regular.contains(first) {
-            self.regular.insert(first, RadixNode::new(item, None));
+            self.regular.insert(first, RadixNode::new(rule, None));
             return match self.regular.get_mut(first) {
                 Some(node) => Ok(node),
                 None => unreachable!()
@@ -50,7 +50,7 @@ impl<'a, V> RadixPack<'a, V> {
             Some(node) => node,
             None => unreachable!()
         };
-        let (share, order) = found.item.longest(frag);
+        let (share, order) = found.rule.longest(frag);
 
         match order {
             Ordering::Less => unreachable!(),
@@ -63,7 +63,7 @@ impl<'a, V> RadixPack<'a, V> {
             }
             Ordering::Greater => {
                 let node = found.divide(share.len())?;
-                found.next.regular.insert(node.item.origin().as_bytes()[0] as usize, node);
+                found.next.regular.insert(node.rule.origin().as_bytes()[0] as usize, node);
                 found.next.insert(&frag[share.len()..])
             }
         }

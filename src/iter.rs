@@ -183,7 +183,7 @@ impl<'a, V> Iter<'a, V> {
     /// macro_rules! check {
     ///     ($iter:expr, $orig:literal, $data:expr) => {{
     ///         let node = $iter.next().unwrap();
-    ///         assert_eq!(node.item.origin(), $orig);
+    ///         assert_eq!(node.rule.origin(), $orig);
     ///         assert_eq!(node.data, $data);
     ///     }};
     /// }

@@ -7,10 +7,10 @@ pub mod def;
 pub mod map;
 pub mod set;
 
-pub mod item;
 pub mod iter;
 pub mod node;
 pub mod pack;
+pub mod rule;
 
 pub use map::{RadixMap};
 pub use set::{RadixSet};
