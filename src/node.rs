@@ -35,24 +35,13 @@ impl<'a, V> RadixNode<'a, V> {
         Self { item, data, next: RadixPack::default() }
     }
 
-    /// Internal use for recording how many nodes are created
-    ///
-    /// ```
-    /// use radixmap::{node::RadixNode};
-    ///
-    /// let mut size = 0;
-    /// RadixNode::<'_, ()>::default().incr(&mut size);
-    ///
-    /// assert_eq!(size, 1);
-    /// ```
-    pub fn incr(self, size: &mut usize) -> Self {
-        *size += 1;
-        self
+    pub fn is_empty(&self) -> bool {
+        self.data.is_none()
     }
 
-    pub fn insert(&mut self, size: &mut usize, path: &'a str, data: V) -> Result<Option<V>> {
+    pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
         let next = RadixItem::extract(path)?;
-        let edge = self.next.insert(size, next)?;
+        let edge = self.next.insert(next)?;
 
         if next.len() == path.len() {
             let prev = std::mem::take(&mut edge.data);
@@ -60,7 +49,7 @@ impl<'a, V> RadixNode<'a, V> {
             return Ok(prev);
         }
 
-        edge.insert(size, &path[next.len()..], data)
+        edge.insert(&path[next.len()..], data)
     }
 
     /// Divide the node into two parts
@@ -124,43 +113,3 @@ impl<'a, V: Clone> Clone for RadixNode<'a, V> {
         }
     }
 }
-
-// // -----------------------------------------------------------------------------
-// 
-// pub struct Iter<'a, V> {
-//     once: Option<&'a RadixNode<'a, V>>,
-// }
-// 
-// impl<'a, V> Iter<'a, V> {
-//     pub fn new(node: &'a RadixNode<'a, V>) -> Self {
-//         Self { once: Some(node) }
-//     }
-// }
-// 
-// impl<'a, V> Iterator for Iter<'a, V> {
-//     type Item = &'a RadixNode<'a, V>;
-// 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.once.take()
-//     }
-// }
-// 
-// // -----------------------------------------------------------------------------
-// 
-// pub struct IterMut<'a, V> {
-//     once: Option<&'a mut RadixNode<'a, V>>,
-// }
-// 
-// impl<'a, V> IterMut<'a, V> {
-//     pub fn new(node: &'a mut RadixNode<'a, V>) -> Self {
-//         Self { once: Some(node) }
-//     }
-// }
-// 
-// impl<'a, V> Iterator for IterMut<'a, V> {
-//     type Item = &'a mut RadixNode<'a, V>;
-// 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.once.take()
-//     }
-// }

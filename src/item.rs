@@ -69,6 +69,7 @@ impl<'a> RadixItem<'a> {
     /// assert!(RadixItem::new(r":id").is_ok());
     /// assert!(RadixItem::new(r"*id").is_ok());
     /// assert!(RadixItem::new(r"id").is_ok());
+    /// ```
     pub fn new(frag: &'a str) -> Result<Self> {
         match frag.as_bytes().first() {
             Some(b'{') => Self::new_regex(frag),
@@ -134,6 +135,7 @@ impl<'a> RadixItem<'a> {
     /// assert!(RadixItem::new_param(r":id").is_ok()); // param with a name
     /// assert!(RadixItem::new_param(r"").is_err());   // missing :
     /// assert!(RadixItem::new_param(r"id").is_err()); // missing :
+    /// ```
     pub fn new_param(frag: &'a str) -> Result<Self> {
         if !frag.starts_with(':') {
             return Err(Error::PathMalformed("param lack of colon".into()).into());
@@ -151,6 +153,7 @@ impl<'a> RadixItem<'a> {
     /// assert!(RadixItem::new_glob(r"*id").is_ok());    // match strings ending with 'id'
     /// assert!(RadixItem::new_glob(r"").is_err());      // missing meta chars
     /// assert!(RadixItem::new_glob(r"id").is_err());    // missing meta chars
+    /// ```
     pub fn new_glob(frag: &'a str) -> Result<Self> {
         match frag.as_bytes().first() {
             Some(b'*') => Ok(Self::Glob { glob: glob::Pattern::new(frag)? }),
@@ -216,6 +219,16 @@ impl<'a> RadixItem<'a> {
         };
 
         Ok(&path[..len])
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        match self {
+            RadixItem::Plain { text } => text.is_empty(),
+            RadixItem::Regex { orig, .. } => orig.is_empty(),
+            RadixItem::Param { orig, .. } => orig.is_empty(),
+            RadixItem::Glob { glob } => glob.as_str().is_empty(),
+        }
     }
 
     /// Origin fragment of the item

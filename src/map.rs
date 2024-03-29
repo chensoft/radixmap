@@ -1,9 +1,13 @@
 use super::def::*;
+use super::iter::*;
 use super::node::*;
 
 // todo the 'a lifetime problem, use Cow?
 pub struct RadixMap<'a, V> {
+    /// The empty root node
     root: RadixNode<'a, V>,
+
+    /// The count of leaf nodes
     size: usize,
 }
 
@@ -30,10 +34,10 @@ impl<'a, V> RadixMap<'a, V> {
     //     todo!()
     // }
 
-    // pub fn iter(&'a self) -> RadixNodeIterator<'a, V> {
-    //     RadixNodeIterator::new(&self.root)
-    // }
-    // 
+    pub fn iter(&'a self) -> Iter<'a, V> {
+        Iter::new(&self.root)
+    }
+
     // pub fn iter_mut(&'a self) -> RadixNodeIterator<'a, V> {
     //     RadixNodeIterator::new(&self.root)
     // }
@@ -90,7 +94,11 @@ impl<'a, V> RadixMap<'a, V> {
     // }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
-        self.root.insert(&mut self.size, path, data)
+        let ret = self.root.insert(path, data);
+        if let Ok(None) = &ret {
+            self.size += 1;
+        }
+        ret
     }
 
     // pub fn remove(&mut self, path: &'a str) -> Option<V> {

@@ -7,6 +7,7 @@ pub(crate) use std::fmt::Debug;
 pub(crate) use std::fmt::Formatter;
 pub(crate) use std::borrow::Cow;
 pub(crate) use std::cmp::Ordering;
+pub(crate) use std::iter::Peekable;
 pub(crate) use std::collections::VecDeque;
 
 pub(crate) use regex::Regex;

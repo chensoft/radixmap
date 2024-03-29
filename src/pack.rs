@@ -21,13 +21,13 @@ impl<'a, V> RadixPack<'a, V> {
         self.regular.is_empty() && self.special.is_empty()
     }
 
-    pub fn insert(&mut self, size: &mut usize, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
+    pub fn insert(&mut self, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
         // special nodes inserted directly into map
         let item = RadixItem::new(frag)?;
         if !matches!(item, RadixItem::Plain { .. }) {
             return match self.special.contains_key(frag) {
                 true => Ok(&mut self.special[frag]),
-                false => Ok(self.special.entry(frag).or_insert(RadixNode::new(item, None).incr(size)))
+                false => Ok(self.special.entry(frag).or_insert(RadixNode::new(item, None)))
             };
         }
 
@@ -39,7 +39,7 @@ impl<'a, V> RadixPack<'a, V> {
         };
 
         if !self.regular.contains(first) {
-            self.regular.insert(first, RadixNode::new(item, None).incr(size));
+            self.regular.insert(first, RadixNode::new(item, None));
             return match self.regular.get_mut(first) {
                 Some(node) => Ok(node),
                 None => unreachable!()
@@ -58,17 +58,13 @@ impl<'a, V> RadixPack<'a, V> {
                 match frag.len().cmp(&share.len()) {
                     Ordering::Less => unreachable!(),
                     Ordering::Equal => Ok(found),
-                    Ordering::Greater => found.next.insert(size, &frag[share.len()..]),
+                    Ordering::Greater => found.next.insert(&frag[share.len()..]),
                 }
             }
             Ordering::Greater => {
-                let node = found.divide(share.len())?.incr(size);
-                let flag = node.item.origin().as_bytes()[0] as usize;
-                found.next.regular.insert(flag, node);
-                match found.next.regular.get_mut(flag) {
-                    Some(node) => Ok(node),
-                    None => unreachable!()
-                }
+                let node = found.divide(share.len())?;
+                found.next.regular.insert(node.item.origin().as_bytes()[0] as usize, node);
+                found.next.insert(&frag[share.len()..])
             }
         }
     }
@@ -90,61 +86,3 @@ impl<'a, V: Clone> Clone for RadixPack<'a, V> {
         Self { regular: map, special: self.special.clone() }
     }
 }
-
-// // -----------------------------------------------------------------------------
-// 
-// pub struct Iter<'a, V> {
-//     regular: std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>,
-//     special: indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>,
-// }
-// 
-// impl<'a, V> Iter<'a, V> {
-//     pub fn new(pack: &'a RadixPack<'a, V>) -> Self {
-//         Self { regular: pack.regular.iter(), special: pack.special.values() }
-//     }
-// }
-// 
-// impl<'a, V> Iterator for Iter<'a, V> {
-//     type Item = &'a RadixNode<'a, V>;
-// 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if let Some(node) = self.regular.next() {
-//             return Some(node.value());
-//         }
-// 
-//         if let Some(node) = self.special.next() {
-//             return Some(node);
-//         }
-// 
-//         None
-//     }
-// }
-// 
-// // -----------------------------------------------------------------------------
-// 
-// pub struct IterMut<'a, V> {
-//     regular: std::slice::IterMut<'a, sparseset::Entry<RadixNode<'a, V>>>,
-//     special: indexmap::map::ValuesMut<'a, &'a str, RadixNode<'a, V>>,
-// }
-// 
-// impl<'a, V> IterMut<'a, V> {
-//     pub fn new(pack: &'a mut RadixPack<'a, V>) -> Self {
-//         Self { regular: pack.regular.iter_mut(), special: pack.special.values_mut() }
-//     }
-// }
-// 
-// impl<'a, V> Iterator for IterMut<'a, V> {
-//     type Item = &'a mut RadixNode<'a, V>;
-// 
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if let Some(node) = self.regular.next() {
-//             return Some(node.value_mut());
-//         }
-// 
-//         if let Some(node) = self.special.next() {
-//             return Some(node);
-//         }
-// 
-//         None
-//     }
-// }
