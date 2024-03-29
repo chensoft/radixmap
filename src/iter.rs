@@ -64,6 +64,7 @@ pub enum Order {
 
 /// The iterator for radix tree
 pub struct Iter<'a, V> {
+    start: &'a RadixNode<'a, V>,
     queue: VecDeque<Peekable<State<'a, V>>>,
     visit: Vec<Peekable<State<'a, V>>>, // used in post-order only
     order: Order,
@@ -90,7 +91,7 @@ impl<'a, V> Iter<'a, V> {
     /// }
     /// ```
     pub fn new(start: &'a RadixNode<'a, V>) -> Self {
-        Self { queue: VecDeque::from([State::from_node(start)]), visit: vec![], order: Order::Pre, empty: false }
+        Self { start, queue: VecDeque::from([State::from_node(start)]), visit: vec![], order: Order::Pre, empty: false }
     }
 
     /// Starting to iterate from the node with a specific prefix
@@ -114,7 +115,7 @@ impl<'a, V> Iter<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, _start: &'a RadixNode<'a, V>, _prefix: &'a str) -> Self {
+    pub fn with_prefix(mut self, _prefix: &'a str) -> Self {
         // todo
         // if let Some(start) = self.start {
         //     self.start = start.deepest(prefix);
@@ -308,8 +309,77 @@ impl<'a, V> Iterator for Iter<'a, V> {
 
 // -----------------------------------------------------------------------------
 
-// pub struct Values<'a, V> {}
-//
+/// Traverse the tree to retrieve all data
+pub struct Values<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> Values<'a, V> {
+    /// Construct a new iterator
+    pub fn new(start: &'a RadixNode<'a, V>) -> Self {
+        Self { iter: Iter::new(start) }
+    }
+
+    /// Construct with a order
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, iter::Order};
+    ///
+    /// fn main() -> anyhow::Result<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/api", "/api")?;
+    ///     map.insert("/api/v1", "/api/v1")?;
+    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
+    ///     map.insert("/api/v2", "/api/v2")?;
+    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///
+    ///     let mut iter = map.values(); // same as with_order(Order::Pre);
+    ///     assert_eq!(iter.next(), Some(&"/api"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v1/user1"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v2"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v2/user2"));
+    ///     assert_eq!(iter.next(), None);
+    ///
+    ///     let mut iter = map.values().with_order(Order::Post);
+    ///     assert_eq!(iter.next(), Some(&"/api/v1/user1"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v2/user2"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v2"));
+    ///     assert_eq!(iter.next(), Some(&"/api"));
+    ///     assert_eq!(iter.next(), None);
+    ///
+    ///     let mut iter = map.values().with_order(Order::Level);
+    ///     assert_eq!(iter.next(), Some(&"/api"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v2"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v1/user1"));
+    ///     assert_eq!(iter.next(), Some(&"/api/v2/user2"));
+    ///     assert_eq!(iter.next(), None);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
+}
+
+impl<'a, V> Iterator for Values<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            Some(node) => match &node.data {
+                Some(data) => Some(data),
+                None => self.next() // impossible
+            }
+            None => None
+        }
+    }
+}
+
 // pub struct ValuesMut<'a, V> {}
 
 // todo Debug, Clone for Iter, Send for Mut

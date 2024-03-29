@@ -25,11 +25,11 @@ impl<'a, V> RadixMap<'a, V> {
     // pub fn keys(&self) -> Keys<'a, V> {
     //     todo!()
     // }
-    //
-    // pub fn values(&self) -> Values<'a, V> {
-    //     todo!()
-    // }
-    //
+
+    pub fn values(&'a self) -> Values<'a, V> {
+        Values::new(&self.root)
+    }
+
     // pub fn values_mut(&mut self) -> ValuesMut<'a, V> {
     //     todo!()
     // }
@@ -83,15 +83,20 @@ impl<'a, V> RadixMap<'a, V> {
     //     // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
     //     todo!()
     // }
-    // 
-    // pub fn contains_key(&self, path: &'a str) -> bool {
-    //     todo!()
-    // }
-    // 
-    // // todo O(n)
-    // pub fn contains_value(&self, data: &V) -> bool {
-    //     todo!()
-    // }
+
+    pub fn contains_key(&self, path: &'a str) -> bool {
+        self.iter().with_prefix(path).next().is_some()
+    }
+
+    pub fn contains_value(&self, data: &V) -> bool where V: PartialEq {
+        for value in self.values() {
+            if value == data {
+                return true;
+            }
+        }
+
+        false
+    }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
         let ret = self.root.insert(path, data);
@@ -101,7 +106,7 @@ impl<'a, V> RadixMap<'a, V> {
         ret
     }
 
-    // pub fn remove(&mut self, path: &'a str) -> Option<V> {
+    // pub fn remove(&mut self, path: &'a str) -> Option<RadixNode<'a, V>> {
     //     todo!()
     // }
 }
