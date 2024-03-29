@@ -1,13 +1,25 @@
 use super::def::*;
 use super::node::*;
+use super::pack::*;
 
-// todo merge Mut and IMut
 // -----------------------------------------------------------------------------
 
 /// Iterator adapter for nodes and packs
 pub enum State<'a, V> {
     Node(Option<&'a RadixNode<'a, V>>),
     Pack(std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>, indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>),
+}
+
+impl<'a, V> State<'a, V> {
+    /// Construct from radix node
+    pub fn from_node(node: &'a RadixNode<'a, V>) -> Peekable<Self> {
+        Self::Node(Some(node)).peekable()
+    }
+
+    /// Construct from radix pack
+    pub fn from_pack(pack: &'a RadixPack<'a, V>) -> Peekable<Self> {
+        Self::Pack(pack.regular.iter(), pack.special.values()).peekable()
+    }
 }
 
 impl<'a, V> Iterator for State<'a, V> {
@@ -33,18 +45,27 @@ impl<'a, V> Iterator for State<'a, V> {
 
 // -----------------------------------------------------------------------------
 
-/// Iterate order for radix tree
+/// Iterating order for radix tree
+///
+/// # Example
+///
+/// 1a - 2a - 3a
+///    └ 2b
 pub enum Order {
+    /// Pre-order traversal: 1a -> 2a -> 3a -> 2b
     Pre,
+
+    /// Post-order traversal: 3a -> 2a -> 2b -> 1a
     Post,
+
+    /// Level-order traversal: 1a -> 2a -> 2b -> 3a
     Level
 }
 
 /// The iterator for radix tree
 pub struct Iter<'a, V> {
-    _start: &'a RadixNode<'a, V>,
     queue: VecDeque<Peekable<State<'a, V>>>,
-    visit: Vec<Peekable<State<'a, V>>>,
+    visit: Vec<Peekable<State<'a, V>>>, // used in post-order only
     order: Order,
     empty: bool,
 }
@@ -68,8 +89,8 @@ impl<'a, V> Iter<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn new(_start: &'a RadixNode<'a, V>) -> Self {
-        Self { _start, queue: VecDeque::from([State::Node(Some(_start)).peekable()]), visit: vec![], order: Order::Pre, empty: false }
+    pub fn new(start: &'a RadixNode<'a, V>) -> Self {
+        Self { queue: VecDeque::from([State::from_node(start)]), visit: vec![], order: Order::Pre, empty: false }
     }
 
     /// Starting to iterate from the node with a specific prefix
@@ -93,7 +114,7 @@ impl<'a, V> Iter<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, _prefix: &'a str) -> Self {
+    pub fn with_prefix(mut self, _start: &'a RadixNode<'a, V>, _prefix: &'a str) -> Self {
         // todo
         // if let Some(start) = self.start {
         //     self.start = start.deepest(prefix);
@@ -150,10 +171,18 @@ impl<'a, V> Iter<'a, V> {
         self
     }
 
-    /// Traverse all nodes, including the edge nodes, which do not contain data
+    /// Traverse all nodes, including the edge nodes which do not contain data
     ///
     /// ```
     /// use radixmap::{RadixMap};
+    ///
+    /// macro_rules! check {
+    ///     ($iter:expr, $orig:literal, $data:expr) => {{
+    ///         let node = $iter.next().unwrap();
+    ///         assert_eq!(node.item.origin(), $orig);
+    ///         assert_eq!(node.data, $data);
+    ///     }};
+    /// }
     ///
     /// fn main() -> anyhow::Result<()> {
     ///     let mut map = RadixMap::new();
@@ -164,13 +193,13 @@ impl<'a, V> Iter<'a, V> {
     ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
     ///
     ///     let mut iter = map.iter().with_empty();
-    ///     assert_eq!(iter.next().unwrap().item.origin(), "");       // data: None, the root node
-    ///     assert_eq!(iter.next().unwrap().item.origin(), "/api");   // data: /api
-    ///     assert_eq!(iter.next().unwrap().item.origin(), "/v");     // data: None, an edge node
-    ///     assert_eq!(iter.next().unwrap().item.origin(), "1");      // data: /api/v1
-    ///     assert_eq!(iter.next().unwrap().item.origin(), "/user1"); // data: /api/v1/user1
-    ///     assert_eq!(iter.next().unwrap().item.origin(), "2");      // data: /api/v2
-    ///     assert_eq!(iter.next().unwrap().item.origin(), "/user2"); // data: /api/v2/user2
+    ///     check!(iter, "", None);                        // the root node
+    ///     check!(iter, "/api", Some("/api"));
+    ///     check!(iter, "/v", None);                      // an edge node
+    ///     check!(iter, "1", Some("/api/v1"));
+    ///     check!(iter, "/user1", Some("/api/v1/user1"));
+    ///     check!(iter, "2", Some("/api/v2"));
+    ///     check!(iter, "/user2", Some("/api/v2/user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -183,30 +212,29 @@ impl<'a, V> Iter<'a, V> {
 
     /// Internal use only, traversing nodes in pre-order
     fn next_pre(&mut self) -> Option<&'a RadixNode<'a, V>> {
-        let back = match self.queue.back_mut() {
-            Some(obj) => obj,
-            None => return None,
-        };
+        loop {
+            let back = match self.queue.back_mut() {
+                Some(obj) => obj,
+                None => return None,
+            };
 
-        let node = match back.next() {
-            Some(obj) => obj,
-            None => {
-                self.queue.pop_back();
-                return self.next_pre(); // todo test depth
+            match back.next() {
+                Some(node) => {
+                    self.queue.push_back(State::from_pack(&node.next));
+                    return Some(node);
+                }
+                None => { self.queue.pop_back(); }
             }
-        };
-
-        self.queue.push_back(State::Pack(node.next.regular.iter(), node.next.special.values()).peekable());
-
-        Some(node)
+        }
     }
 
     /// Internal use only, traversing nodes in post-order
     fn next_post(&mut self) -> Option<&'a RadixNode<'a, V>> {
+        // traverse to the deepest leaf node, put all iters into the visit queue
         if let Some(mut back) = self.queue.pop_back() {
             loop {
                 let pack = match back.peek() {
-                    Some(node) => State::Pack(node.next.regular.iter(), node.next.special.values()).peekable(),
+                    Some(node) => State::from_pack(&node.next),
                     None => break
                 };
 
@@ -218,6 +246,7 @@ impl<'a, V> Iter<'a, V> {
             return self.next_post();
         }
 
+        // pop node from visit queue, re-push iter if the next node is not empty
         loop {
             let mut back = match self.visit.pop() {
                 Some(obj) => obj,
@@ -236,22 +265,20 @@ impl<'a, V> Iter<'a, V> {
 
     /// Internal use only, traversing nodes in level-order
     fn next_level(&mut self) -> Option<&'a RadixNode<'a, V>> {
-        let front = match self.queue.front_mut() {
-            Some(obj) => obj,
-            None => return None,
-        };
+        loop {
+            let front = match self.queue.front_mut() {
+                Some(obj) => obj,
+                None => return None,
+            };
 
-        let node = match front.next() {
-            Some(obj) => obj,
-            None => {
-                self.queue.pop_front();
-                return self.next_level();
+            match front.next() {
+                Some(node) => {
+                    self.queue.push_back(State::from_pack(&node.next));
+                    return Some(node);
+                }
+                None => { self.queue.pop_front(); }
             }
-        };
-
-        self.queue.push_back(State::Pack(node.next.regular.iter(), node.next.special.values()).peekable());
-
-        Some(node)
+        }
     }
 }
 
@@ -265,6 +292,7 @@ impl<'a, V> Iterator for Iter<'a, V> {
             Order::Level => self.next_level(),
         };
 
+        // check if user need to traverse empty node
         match node {
             Some(node) if !self.empty && node.is_empty() => self.next(),
             _ => node,

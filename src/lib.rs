@@ -3,15 +3,14 @@
 #![deny(clippy::expect_used)]
 #![deny(clippy::let_underscore_future)]
 
-mod def;
-mod map;
-mod set;
-
-pub use def::*;
-pub use map::*;
-pub use set::*;
+pub mod def;
+pub mod map;
+pub mod set;
 
 pub mod item;
 pub mod iter;
 pub mod node;
 pub mod pack;
+
+pub use map::{RadixMap};
+pub use set::{RadixSet};
