@@ -285,16 +285,18 @@ impl<'a, V> Iterator for Iter<'a, V> {
     type Item = &'a RadixNode<'a, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let node = match self.order {
-            Order::Pre => self.next_pre(),
-            Order::Post => self.next_post(),
-            Order::Level => self.next_level(),
-        };
+        loop {
+            let node = match self.order {
+                Order::Pre => self.next_pre(),
+                Order::Post => self.next_post(),
+                Order::Level => self.next_level(),
+            };
 
-        // check if user need to traverse empty node
-        match node {
-            Some(node) if !self.empty && node.is_empty() => self.next(),
-            _ => node,
+            // check if user need to traverse empty node
+            match node {
+                Some(node) if !self.empty && node.is_empty() => continue,
+                _ => return node,
+            }
         }
     }
 }
