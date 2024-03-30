@@ -2,6 +2,24 @@ use super::def::*;
 use super::node::*;
 use super::pack::*;
 
+/// Iterating order for radix tree
+///
+/// # Example
+///
+/// 1a - 2a - 3a
+///    └ 2b
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+pub enum Order {
+    /// Pre-order traversal: 1a -> 2a -> 3a -> 2b
+    Pre,
+
+    /// Post-order traversal: 3a -> 2a -> 2b -> 1a
+    Post,
+
+    /// Level-order traversal: 1a -> 2a -> 2b -> 3a
+    Level
+}
+
 // -----------------------------------------------------------------------------
 
 /// Iterator adapter for nodes and packs
@@ -45,24 +63,6 @@ impl<'a, V> Iterator for State<'a, V> {
 }
 
 // -----------------------------------------------------------------------------
-
-/// Iterating order for radix tree
-///
-/// # Example
-///
-/// 1a - 2a - 3a
-///    └ 2b
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Order {
-    /// Pre-order traversal: 1a -> 2a -> 3a -> 2b
-    Pre,
-
-    /// Post-order traversal: 3a -> 2a -> 2b -> 1a
-    Post,
-
-    /// Level-order traversal: 1a -> 2a -> 2b -> 3a
-    Level
-}
 
 /// The iterator for radix tree
 #[derive(Clone)]

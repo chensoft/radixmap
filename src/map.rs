@@ -11,12 +11,6 @@ pub struct RadixMap<'a, V> {
     size: usize,
 }
 
-impl<'a, V> Default for RadixMap<'a, V> {
-    fn default() -> Self {
-        Self { root: RadixNode::default(), size: 0 }
-    }
-}
-
 impl<'a, V> RadixMap<'a, V> {
     pub fn new() -> Self {
         Default::default()
@@ -115,6 +109,12 @@ impl<'a, V> RadixMap<'a, V> {
 //         todo!()
 //     }
 // }
+
+impl<'a, V> Default for RadixMap<'a, V> {
+    fn default() -> Self {
+        Self { root: RadixNode::default(), size: 0 }
+    }
+}
 
 impl<'a, V: Clone> Clone for RadixMap<'a, V> {
     fn clone(&self) -> Self {

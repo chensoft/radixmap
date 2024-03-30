@@ -20,23 +20,23 @@ impl<'a, V> RadixNode<'a, V> {
     }
 
     pub fn item_ref(&self) -> Option<(&'a str, &V)> {
-        self.item.as_ref().and_then(|item| Some(item.as_ref()))
+        self.item.as_ref().map(|item| item.as_ref())
     }
 
     pub fn item_mut(&mut self) -> Option<(&'a str, &mut V)> {
-        self.item.as_mut().and_then(|item| Some(item.as_mut()))
+        self.item.as_mut().map(|item| item.as_mut())
     }
 
     pub fn path_ref(&self) -> Option<&'a str> {
-        self.item.as_ref().and_then(|item| Some(item.as_ref().0))
+        self.item.as_ref().map(|item| item.as_ref().0)
     }
 
     pub fn data_ref(&self) -> Option<&V> {
-        self.item.as_ref().and_then(|item| Some(item.as_ref().1))
+        self.item.as_ref().map(|item| item.as_ref().1)
     }
 
     pub fn data_mut(&mut self) -> Option<&mut V> {
-        self.item.as_mut().and_then(|item| Some(item.as_mut().1))
+        self.item.as_mut().map(|item| item.as_mut().1)
     }
 
     pub fn next_ref(&self) -> &RadixPack<'a, V> {
@@ -67,7 +67,7 @@ impl<'a, V> RadixNode<'a, V> {
             if next.len() == frag.len() {
                 let prev = std::mem::take(&mut slot.item);
                 slot.item = Some(RadixItem::new(path, data));
-                return Ok(prev.and_then(|item| Some(item.data)));
+                return Ok(prev.map(|item| item.data));
             }
 
             frag = &frag[next.len()..];

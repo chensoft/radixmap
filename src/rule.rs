@@ -52,13 +52,6 @@ pub enum RadixRule<'a> {
     },
 }
 
-/// Create a plain text rule
-impl<'a> Default for RadixRule<'a> {
-    fn default() -> Self {
-        Self::Plain { text: "" }
-    }
-}
-
 impl<'a> RadixRule<'a> {
     /// Analyze the fragment type and create a radix rule
     ///
@@ -357,6 +350,13 @@ impl<'a> Debug for RadixRule<'a> {
             RadixRule::Param { orig, .. } => write!(f, "Param({orig})"),
             RadixRule::Glob { glob } => write!(f, "Glob({glob})"),
         }
+    }
+}
+
+/// Default trait
+impl<'a> Default for RadixRule<'a> {
+    fn default() -> Self {
+        Self::Plain { text: "" }
     }
 }
 

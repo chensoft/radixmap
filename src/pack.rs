@@ -8,13 +8,6 @@ pub struct RadixPack<'a, V> {
     pub special: IndexMap<&'a str, RadixNode<'a, V>>,
 }
 
-/// Create a empty group
-impl<'a, V> Default for RadixPack<'a, V> {
-    fn default() -> Self {
-        Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
-    }
-}
-
 impl<'a, V> RadixPack<'a, V> {
     /// Check if the group is empty
     pub fn is_empty(&self) -> bool {
@@ -72,6 +65,13 @@ impl<'a, V> RadixPack<'a, V> {
     pub fn clear(&mut self) {
         self.regular.clear();
         self.special.clear();
+    }
+}
+
+/// Create a empty group
+impl<'a, V> Default for RadixPack<'a, V> {
+    fn default() -> Self {
+        Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
     }
 }
 
