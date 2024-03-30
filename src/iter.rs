@@ -86,8 +86,8 @@ impl<'a, V> Iter<'a, V> {
     ///     map.insert("/api/v1", "/api/v1")?;
     ///
     ///     let mut iter = map.iter();
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -111,8 +111,8 @@ impl<'a, V> Iter<'a, V> {
     ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
     ///
     ///     let mut iter = map.iter().with_prefix("/api/v1");
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1/user1"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -144,27 +144,27 @@ impl<'a, V> Iter<'a, V> {
     ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
     ///
     ///     let mut iter = map.iter(); // same as with_order(Order::Pre);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2/user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = map.iter().with_order(Order::Post);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2/user2"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api"));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = map.iter().with_order(Order::Level);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2/user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -175,7 +175,7 @@ impl<'a, V> Iter<'a, V> {
         self
     }
 
-    /// Traverse all nodes, including the edge nodes which do not contain data
+    /// Traverse all nodes, including the internal nodes which do not contain data
     ///
     /// ```
     /// use radixmap::{RadixMap};
@@ -183,8 +183,8 @@ impl<'a, V> Iter<'a, V> {
     /// macro_rules! check {
     ///     ($iter:expr, $orig:literal, $data:expr) => {{
     ///         let node = $iter.next().unwrap();
-    ///         assert_eq!(node.rule.origin(), $orig);
-    ///         assert_eq!(node.data, $data);
+    ///         assert_eq!(node.rule_ref().origin(), $orig);
+    ///         assert_eq!(node.data_ref(), $data);
     ///     }};
     /// }
     ///
@@ -198,12 +198,12 @@ impl<'a, V> Iter<'a, V> {
     ///
     ///     let mut iter = map.iter().with_empty();
     ///     check!(iter, "", None);                        // the root node
-    ///     check!(iter, "/api", Some("/api"));
-    ///     check!(iter, "/v", None);                      // an edge node
-    ///     check!(iter, "1", Some("/api/v1"));
-    ///     check!(iter, "/user1", Some("/api/v1/user1"));
-    ///     check!(iter, "2", Some("/api/v2"));
-    ///     check!(iter, "/user2", Some("/api/v2/user2"));
+    ///     check!(iter, "/api", Some(&"/api"));
+    ///     check!(iter, "/v", None);                      // an internal node
+    ///     check!(iter, "1", Some(&"/api/v1"));
+    ///     check!(iter, "/user1", Some(&"/api/v1/user1"));
+    ///     check!(iter, "2", Some(&"/api/v2"));
+    ///     check!(iter, "/user2", Some(&"/api/v2/user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -224,7 +224,7 @@ impl<'a, V> Iter<'a, V> {
 
             match back.next() {
                 Some(node) => {
-                    self.queue.push_back(State::from_pack(&node.next));
+                    self.queue.push_back(State::from_pack(node.next_ref()));
                     return Some(node);
                 }
                 None => { self.queue.pop_back(); }
@@ -237,7 +237,7 @@ impl<'a, V> Iter<'a, V> {
         // traverse to the deepest leaf node, put all iters into the visit queue
         if let Some(mut back) = self.queue.pop_back() {
             while let Some(node) = back.peek() {
-                let pack = State::from_pack(&node.next);
+                let pack = State::from_pack(node.next_ref());
                 self.visit.push(back);
                 back = pack;
             }
@@ -272,7 +272,7 @@ impl<'a, V> Iter<'a, V> {
 
             match front.next() {
                 Some(node) => {
-                    self.queue.push_back(State::from_pack(&node.next));
+                    self.queue.push_back(State::from_pack(node.next_ref()));
                     return Some(node);
                 }
                 None => { self.queue.pop_front(); }
@@ -366,13 +366,8 @@ impl<'a, V> Values<'a, V> {
 impl<'a, V> Iterator for Values<'a, V> {
     type Item = &'a V;
 
+    // todo add test for internal nodes without data
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            Some(node) => match &node.data {
-                Some(data) => Some(data),
-                None => self.next() // impossible
-            }
-            None => None
-        }
+        self.iter.next().and_then(|node| node.data_ref())
     }
 }

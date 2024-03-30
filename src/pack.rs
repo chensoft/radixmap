@@ -27,7 +27,7 @@ impl<'a, V> RadixPack<'a, V> {
         if !matches!(rule, RadixRule::Plain { .. }) {
             return match self.special.contains_key(frag) {
                 true => Ok(&mut self.special[frag]),
-                false => Ok(self.special.entry(frag).or_insert(RadixNode::new(rule, None)))
+                false => Ok(self.special.entry(frag).or_insert(RadixNode::from(rule)))
             };
         }
 
@@ -39,7 +39,7 @@ impl<'a, V> RadixPack<'a, V> {
         };
 
         if !self.regular.contains(first) {
-            self.regular.insert(first, RadixNode::new(rule, None));
+            self.regular.insert(first, RadixNode::from(rule));
             return match self.regular.get_mut(first) {
                 Some(node) => Ok(node),
                 None => unreachable!()
@@ -50,7 +50,7 @@ impl<'a, V> RadixPack<'a, V> {
             Some(node) => node,
             None => unreachable!()
         };
-        let (share, order) = found.rule.longest(frag);
+        let (share, order) = found.rule_ref().longest(frag);
 
         match order {
             Ordering::Less => unreachable!(),
@@ -58,13 +58,13 @@ impl<'a, V> RadixPack<'a, V> {
                 match frag.len().cmp(&share.len()) {
                     Ordering::Less => unreachable!(),
                     Ordering::Equal => Ok(found),
-                    Ordering::Greater => found.next.insert(&frag[share.len()..]),
+                    Ordering::Greater => found.next_mut().insert(&frag[share.len()..]),
                 }
             }
             Ordering::Greater => {
                 let node = found.divide(share.len())?;
-                found.next.regular.insert(node.rule.origin().as_bytes()[0] as usize, node);
-                found.next.insert(&frag[share.len()..])
+                found.next_mut().regular.insert(node.rule_ref().origin().as_bytes()[0] as usize, node);
+                found.next_mut().insert(&frag[share.len()..])
             }
         }
     }

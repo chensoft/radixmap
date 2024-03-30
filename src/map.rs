@@ -49,7 +49,7 @@ impl<'a, V> RadixMap<'a, V> {
 
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.root.next.is_empty()
+        self.root.is_leaf()
     }
 
     // pub fn drain(&mut self) {
@@ -75,7 +75,7 @@ impl<'a, V> RadixMap<'a, V> {
     // }
 
     pub fn get(&self, path: &'a str) -> Option<&V> {
-        self.iter().with_prefix(path).next().and_then(|node| node.data.as_ref())
+        self.iter().with_prefix(path).next().and_then(|node| node.data_ref())
     }
 
     pub fn get_mut(&mut self, _path: &'a str) -> Option<&mut V> {

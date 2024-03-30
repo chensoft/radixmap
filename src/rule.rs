@@ -437,3 +437,14 @@ impl<'a> PartialEq for RadixRule<'a> {
         }
     }
 }
+
+impl<'a> PartialEq<str> for RadixRule<'a> {
+    fn eq(&self, other: &str) -> bool {
+        match (self, other) {
+            (RadixRule::Plain { text: a }, b) => *a == b,
+            (RadixRule::Regex { orig: a, .. }, b) => *a == b,
+            (RadixRule::Param { orig: a, .. }, b) => *a == b,
+            (RadixRule::Glob { glob: a }, b) => a.as_str() == b,
+        }
+    }
+}
