@@ -61,10 +61,12 @@ impl<'a, V> RadixNode<'a, V> {
     }
 
     pub fn deepest(&'a self, path: &'a str) -> Option<&'a RadixNode<'a, V>> {
-        match self.iter().with_prefix(path) {
-            Ok(mut iter) => iter.next(),
-            Err(_) => None
-        }
+        // match self.iter().with_prefix(path) {
+        //     Ok(mut iter) => iter.next(),
+        //     Err(_) => None
+        // }
+        // todo
+        None
     }
 
     pub fn deepest_mut(&mut self, path: &str) -> Option<&'a mut RadixNode<'a, V>> {

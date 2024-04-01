@@ -4,20 +4,6 @@ use sparseset::SparseSet;
 use std::collections::HashMap;
 use std::collections::BTreeMap;
 
-fn btreemap(c: &mut Criterion) {
-    let mut obj = BTreeMap::new();
-
-    for i in 0..256usize {
-        obj.insert(i, i);
-    }
-
-    c.bench_function("btreemap", |b| b.iter(|| {
-        for i in 0..256 {
-            assert_eq!(obj.get(&i), Some(&i));
-        }
-    }));
-}
-
 fn hashmap(c: &mut Criterion) {
     let mut obj = HashMap::new();
 
@@ -26,6 +12,20 @@ fn hashmap(c: &mut Criterion) {
     }
 
     c.bench_function("hashmap", |b| b.iter(|| {
+        for i in 0..256 {
+            assert_eq!(obj.get(&i), Some(&i));
+        }
+    }));
+}
+
+fn btreemap(c: &mut Criterion) {
+    let mut obj = BTreeMap::new();
+
+    for i in 0..256usize {
+        obj.insert(i, i);
+    }
+
+    c.bench_function("btreemap", |b| b.iter(|| {
         for i in 0..256 {
             assert_eq!(obj.get(&i), Some(&i));
         }
@@ -76,8 +76,8 @@ fn array(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    btreemap,
     hashmap,
+    btreemap,
     indexmap,
     sparse,
     array,

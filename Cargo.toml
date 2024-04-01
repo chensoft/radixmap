@@ -22,5 +22,9 @@ sparseset = "1.0"
 criterion = "0.5"
 
 [[bench]]
-name = "cmp_map_sparse"
+name = "benchmark"
+harness = false
+
+[[bench]]
+name = "sparsemap"
 harness = false
