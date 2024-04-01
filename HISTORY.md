@@ -3,5 +3,5 @@
 - string instead of &'a str
 - item sep customizable
 - node prev with fullpath, unsafe pointer?
-- serde support
+- serde serde_expr support
 - Arc<str>

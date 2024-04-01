@@ -9,6 +9,14 @@ pub struct RadixPack<'a, V> {
 }
 
 impl<'a, V> RadixPack<'a, V> {
+    pub fn iter(&self) -> impl Iterator<Item = &RadixNode<'a, V>> {
+        self.regular.iter().map(|e| e.value()).chain(self.special.values())
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut RadixNode<'a, V>> {
+        self.regular.iter_mut().map(|e| e.value_mut()).chain(self.special.values_mut())
+    }
+
     /// Check if the group is empty
     pub fn is_empty(&self) -> bool {
         self.regular.is_empty() && self.special.is_empty()

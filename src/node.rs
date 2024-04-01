@@ -1,5 +1,6 @@
 use super::def::*;
 use super::item::*;
+use super::iter::*;
 use super::rule::*;
 use super::pack::*;
 
@@ -54,6 +55,14 @@ impl<'a, V> RadixNode<'a, V> {
     pub fn is_empty(&self) -> bool {
         self.item.is_none()
     }
+
+    // pub fn iter(&self) -> Base<impl Iterator<Item = &RadixNode<'a, V>>, &RadixNode<'a, V>> {
+    //     Base::new(self)
+    // }
+
+    // pub fn iter_mut(&mut self) -> Base<&mut RadixNode<'a, V>, impl Iterator<Item = &mut RadixNode<'a, V>>> {
+    //     Base::new(self)
+    // }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
         let mut frag = path;

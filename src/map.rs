@@ -20,17 +20,17 @@ impl<'a, V> RadixMap<'a, V> {
     //     todo!()
     // }
 
-    pub fn values(&'a self) -> Values<'a, V> {
-        Values::new(&self.root)
-    }
+    // pub fn values(&'a self) -> Values<'a, V> {
+    //     Values::new(&self.root)
+    // }
 
     // pub fn values_mut(&mut self) -> ValuesMut<'a, V> {
     //     todo!()
     // }
 
-    pub fn iter(&'a self) -> Iter<'a, V> {
-        Iter::new(&self.root)
-    }
+    // pub fn iter(&'a self) -> Iter<'a, V> {
+    //     Iter::new(&self.root)
+    // }
 
     // pub fn iter_mut(&'a self) -> RadixNodeIterator<'a, V> {
     //     RadixNodeIterator::new(&self.root)
@@ -68,28 +68,28 @@ impl<'a, V> RadixMap<'a, V> {
     //     todo!()
     // }
 
-    pub fn get(&self, path: &'a str) -> Option<&V> {
-        self.iter().with_prefix(path).next().and_then(|node| node.data_ref())
-    }
+    // pub fn get(&self, path: &'a str) -> Option<&V> {
+    //     self.iter().with_prefix(path).next().and_then(|node| node.data_ref())
+    // }
 
     pub fn get_mut(&mut self, _path: &'a str) -> Option<&mut V> {
         // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
         todo!()
     }
 
-    pub fn contains_key(&self, path: &'a str) -> bool {
-        self.iter().with_prefix(path).next().is_some()
-    }
+    // pub fn contains_key(&self, path: &'a str) -> bool {
+    //     self.iter().with_prefix(path).next().is_some()
+    // }
 
-    pub fn contains_value(&self, data: &V) -> bool where V: PartialEq {
-        for value in self.values() {
-            if value == data {
-                return true;
-            }
-        }
-
-        false
-    }
+    // pub fn contains_value(&self, data: &V) -> bool where V: PartialEq {
+    //     for value in self.values() {
+    //         if value == data {
+    //             return true;
+    //         }
+    //     }
+    // 
+    //     false
+    // }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
         let ret = self.root.insert(path, data);
@@ -104,11 +104,27 @@ impl<'a, V> RadixMap<'a, V> {
     // }
 }
 
-// impl<'a, V: Debug> Debug for RadixMap<'a, V> {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         todo!()
-//     }
-// }
+// -----------------------------------------------------------------------------
+
+impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
+    type Error = anyhow::Error;
+
+    fn try_from(value: [(&'a str, V); N]) -> std::result::Result<Self, Self::Error> {
+        let mut map = RadixMap::default();
+
+        for (path, data) in value {
+            map.insert(path, data)?;
+        }
+
+        Ok(map)
+    }
+}
+
+impl<'a, V: Debug> Debug for RadixMap<'a, V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
 
 impl<'a, V> Default for RadixMap<'a, V> {
     fn default() -> Self {
@@ -134,10 +150,11 @@ impl<'a, V> Index<&'a str> for RadixMap<'a, V> {
     type Output = V;
 
     fn index(&self, path: &'a str) -> &Self::Output {
-        match self.get(path) {
-            Some(data) => data,
-            None => panic!("no entry found for path '{}'", path)
-        }
+        // match self.get(path) {
+        //     Some(data) => data,
+        //     None => panic!("no entry found for path '{}'", path)
+        // }
+        todo!()
     }
 }
 
@@ -150,19 +167,13 @@ impl<'a, V> IndexMut<&'a str> for RadixMap<'a, V> {
     }
 }
 
-impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
-    type Error = anyhow::Error;
+// -----------------------------------------------------------------------------
 
-    fn try_from(value: [(&'a str, V); N]) -> std::result::Result<Self, Self::Error> {
-        let mut map = RadixMap::default();
+// pub struct Iter<'a, V> {
+//     base: Base<&'a RadixNode<'a, V>, >
+// }
 
-        for (path, data) in value {
-            map.insert(path, data)?;
-        }
-
-        Ok(map)
-    }
-}
+// -----------------------------------------------------------------------------
 
 // impl<'a, V> IntoIterator for &'a RadixMap<'a, V> {
 //     type Item = ();
