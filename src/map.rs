@@ -2,7 +2,6 @@ use super::def::*;
 use super::iter::*;
 use super::node::*;
 
-// todo the 'a lifetime problem, use Cow?
 pub struct RadixMap<'a, V> {
     /// The empty root node
     root: RadixNode<'a, V>,
@@ -16,25 +15,17 @@ impl<'a, V> RadixMap<'a, V> {
         Default::default()
     }
 
-    // pub fn keys(&self) -> Keys<'a, V> {
-    //     todo!()
-    // }
+    pub fn keys(&'a self) -> Keys<'a, V> {
+        Keys::from(&self.root)
+    }
 
-    // pub fn values(&'a self) -> Values<'a, V> {
-    //     Values::new(&self.root)
-    // }
+    pub fn values(&'a self) -> Values<V> {
+        Values::from(&self.root)
+    }
 
-    // pub fn values_mut(&mut self) -> ValuesMut<'a, V> {
-    //     todo!()
-    // }
-
-    // pub fn iter(&'a self) -> Iter<'a, V> {
-    //     Iter::new(&self.root)
-    // }
-
-    // pub fn iter_mut(&'a self) -> RadixNodeIterator<'a, V> {
-    //     RadixNodeIterator::new(&self.root)
-    // }
+    pub fn iter(&'a self) -> Iter<'a, V> {
+        self.root.iter()
+    }
 
     #[inline]
     pub fn len(&self) -> usize {
@@ -46,50 +37,35 @@ impl<'a, V> RadixMap<'a, V> {
         self.root.is_leaf()
     }
 
-    // pub fn drain(&mut self) {
-    //     todo!()
-    // }
-    // 
-    // pub fn retain(&mut self) {
-    //     todo!()
-    // }
-    // 
-    // pub fn extract_if(&mut self) {
-    //     todo!()
-    // }
-
     pub fn clear(&mut self) {
         self.root.clear();
         self.size = 0;
     }
 
-    // // todo get or insert, return Node
-    // pub fn entry(&mut self) {
-    //     todo!()
-    // }
-
-    // pub fn get(&self, path: &'a str) -> Option<&V> {
-    //     self.iter().with_prefix(path).next().and_then(|node| node.data_ref())
-    // }
-
-    pub fn get_mut(&mut self, _path: &'a str) -> Option<&mut V> {
-        // self.iter_mut().with_prefix(path).next().and_then(|node| node.data.as_mut())
-        todo!()
+    pub fn get(&self, path: &'a str) -> Option<&V> {
+        self.root.deepest(path).filter(|node| node.path_ref() == Some(path)).map(|node| node.data_ref()).flatten()
     }
 
-    // pub fn contains_key(&self, path: &'a str) -> bool {
-    //     self.iter().with_prefix(path).next().is_some()
-    // }
+    pub fn get_mut(&'a mut self, path: &'a str) -> Option<&mut V> {
+        self.root.deepest_mut(path).filter(|node| node.path_ref() == Some(path)).map(|node| node.data_mut()).flatten()
+    }
 
-    // pub fn contains_value(&self, data: &V) -> bool where V: PartialEq {
-    //     for value in self.values() {
-    //         if value == data {
-    //             return true;
-    //         }
-    //     }
-    // 
-    //     false
-    // }
+    pub fn contains_key(&self, path: &'a str) -> bool {
+        match self.root.deepest(path) {
+            Some(node) => node.path_ref() == Some(path),
+            None => false
+        }
+    }
+
+    pub fn contains_value(&self, data: &V) -> bool where V: PartialEq {
+        for value in self.values() {
+            if value == data {
+                return true;
+            }
+        }
+
+        false
+    }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
         let ret = self.root.insert(path, data);
@@ -99,9 +75,13 @@ impl<'a, V> RadixMap<'a, V> {
         ret
     }
 
-    // pub fn remove(&mut self, path: &'a str) -> Option<RadixNode<'a, V>> {
-    //     todo!()
-    // }
+    pub fn remove(&mut self, path: &'a str) -> Option<RadixNode<'a, V>> {
+        todo!()
+    }
+
+    pub fn erase(&mut self, path: &'a str) -> Option<V> {
+        todo!()
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -150,66 +130,9 @@ impl<'a, V> Index<&'a str> for RadixMap<'a, V> {
     type Output = V;
 
     fn index(&self, path: &'a str) -> &Self::Output {
-        // match self.get(path) {
-        //     Some(data) => data,
-        //     None => panic!("no entry found for path '{}'", path)
-        // }
-        todo!()
-    }
-}
-
-impl<'a, V> IndexMut<&'a str> for RadixMap<'a, V> {
-    fn index_mut(&mut self, path: &'a str) -> &mut Self::Output {
-        match self.get_mut(path) {
+        match self.get(path) {
             Some(data) => data,
             None => panic!("no entry found for path '{}'", path)
         }
     }
 }
-
-// -----------------------------------------------------------------------------
-
-// pub struct Iter<'a, V> {
-//     base: Base<&'a RadixNode<'a, V>, >
-// }
-
-// -----------------------------------------------------------------------------
-
-// impl<'a, V> IntoIterator for &'a RadixMap<'a, V> {
-//     type Item = ();
-//     type IntoIter = ();
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         todo!()
-//     }
-// }
-// 
-// impl<'a, V> IntoIterator for &'a mut RadixMap<'a, V> {
-//     type Item = ();
-//     type IntoIter = ();
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         todo!()
-//     }
-// }
-//
-// impl<'a, V> IntoIterator for RadixMap<'a, V> {
-//     type Item = ();
-//     type IntoIter = ();
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         todo!()
-//     }
-// }
-
-// impl<'a, V> FromIterator<(&'a str, V)> for RadixMap<'a, V> {
-//     fn from_iter<T: IntoIterator<Item=(&'a str, V)>>(iter: V) -> Self {
-//         todo!()
-//     }
-// }
-
-// impl<'a, V> Extend<(&'a str, V)> for RadixMap<'a, V> {
-//     fn extend<T: IntoIterator<Item=(&'a str, V)>>(&mut self, iter: V) {
-//         todo!()
-//     }
-// }

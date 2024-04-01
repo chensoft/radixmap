@@ -56,13 +56,20 @@ impl<'a, V> RadixNode<'a, V> {
         self.item.is_none()
     }
 
-    // pub fn iter(&self) -> Base<impl Iterator<Item = &RadixNode<'a, V>>, &RadixNode<'a, V>> {
-    //     Base::new(self)
-    // }
+    pub fn iter(&'a self) -> Iter<'a, V> {
+        Iter::from(self)
+    }
 
-    // pub fn iter_mut(&mut self) -> Base<&mut RadixNode<'a, V>, impl Iterator<Item = &mut RadixNode<'a, V>>> {
-    //     Base::new(self)
-    // }
+    pub fn deepest(&'a self, path: &'a str) -> Option<&'a RadixNode<'a, V>> {
+        match self.iter().with_prefix(path) {
+            Ok(mut iter) => iter.next(),
+            Err(_) => None
+        }
+    }
+
+    pub fn deepest_mut(&mut self, path: &str) -> Option<&'a mut RadixNode<'a, V>> {
+        todo!()
+    }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
         let mut frag = path;
@@ -75,7 +82,7 @@ impl<'a, V> RadixNode<'a, V> {
             // encountering a leaf node indicates completion of insertion
             if next.len() == frag.len() {
                 let prev = std::mem::take(&mut slot.item);
-                slot.item = Some(RadixItem::new(path, data));
+                slot.item = Some(RadixItem::from((path, data)));
                 return Ok(prev.map(|item| item.data));
             }
 
@@ -129,7 +136,7 @@ impl<'a, V> TryFrom<(&'a str, V)> for RadixNode<'a, V> {
     type Error = anyhow::Error;
 
     fn try_from((path, data): (&'a str, V)) -> Result<Self> {
-        Ok(Self { rule: RadixRule::new(path)?, item: Some(RadixItem::new(path, data)), next: Default::default() })
+        Ok(Self { rule: RadixRule::new(path)?, item: Some(RadixItem::from((path, data))), next: Default::default() })
     }
 }
 
@@ -167,5 +174,45 @@ impl<'a, V: Clone> Clone for RadixNode<'a, V> {
             item: self.item.clone(),
             next: self.next.clone(),
         }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+pub struct Keys<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> From<NodeRef<'a, V>> for Keys<'a, V> {
+    fn from(value: NodeRef<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Keys<'a, V> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|node| node.path_ref()).flatten()
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+pub struct Values<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> From<NodeRef<'a, V>> for Values<'a, V> {
+    fn from(value: NodeRef<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Values<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|node| node.data_ref()).flatten()
     }
 }

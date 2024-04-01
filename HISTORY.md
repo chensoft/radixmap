@@ -1,7 +1,7 @@
 ## Todo
 
+- arc<str>, cow, rc
 - string instead of &'a str
 - item sep customizable
-- node prev with fullpath, unsafe pointer?
 - serde serde_expr support
-- Arc<str>
+- erase data but not remove node

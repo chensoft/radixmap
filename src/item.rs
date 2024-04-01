@@ -4,16 +4,18 @@ pub struct RadixItem<'a, V> {
 }
 
 impl<'a, V> RadixItem<'a, V> {
-    pub fn new(path: &'a str, data: V) -> Self {
-        Self { path, data }
-    }
-
     pub fn as_ref(&self) -> (&'a str, &V) {
         (self.path, &self.data)
     }
 
     pub fn as_mut(&mut self) -> (&'a str, &mut V) {
         (self.path, &mut self.data)
+    }
+}
+
+impl<'a, V> From<(&'a str, V)> for RadixItem<'a, V> {
+    fn from((path, data): (&'a str, V)) -> Self {
+        Self { path, data }
     }
 }
 

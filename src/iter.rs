@@ -55,17 +55,7 @@ impl<'a, V> Iterator for Entity<'a, V> {
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Entity::Node(node) => node.take(),
-            Entity::Pack(regular, special) => {
-                if let Some(node) = regular.next() {
-                    return Some(node.value());
-                }
-
-                if let Some(node) = special.next() {
-                    return Some(node);
-                }
-
-                None
-            }
+            Entity::Pack(regular, special) => regular.next().map(|node| node.value()).or(special.next())
         }
     }
 }
@@ -83,28 +73,6 @@ pub struct Iter<'a, V> {
 }
 
 impl<'a, V> Iter<'a, V> {
-    /// Creating a new iterator that visits nodes in pre-order by default
-    ///
-    /// ```
-    /// use radixmap::{RadixMap};
-    ///
-    /// fn main() -> anyhow::Result<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///
-    ///     let mut iter = map.iter();
-    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api"));
-    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
-    ///     assert!(iter.next().is_none());
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    pub fn new(start: NodeRef<'a, V>) -> Self {
-        Self { start, queue: VecDeque::from([Entity::from(start).peekable()]), visit: vec![], order: Order::Pre, empty: false }
-    }
-
     /// Starting to iterate from the node with a specific prefix
     ///
     /// ```
@@ -123,19 +91,28 @@ impl<'a, V> Iter<'a, V> {
     ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1/user1"));
     ///     assert!(iter.next().is_none());
     ///
+    ///     let mut iter = map.iter().with_prefix("/api/v");
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v2/user2"));
+    ///     assert!(iter.next().is_none());
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, _prefix: &'a str) -> Self {
-        // todo
-        // if let Some(start) = self.start {
-        //     self.start = start.deepest(prefix);
-        // }
+    pub fn with_prefix(mut self, prefix: &'a str) -> Result<Self> {
+        let start = match self.start.deepest(prefix) {
+            Some(node) => node,
+            None => return Err(Error::PathNotFound.into()),
+        };
 
+        self.start = start;
         self.queue.clear();
-        // self.queue.push_back(Entity::Single(Some(start)));
+        self.queue.push_back(Entity::from(self.start).peekable());
         self.visit.clear();
-        self
+
+        Ok(self)
     }
 
     /// Change the iterating order
@@ -286,6 +263,30 @@ impl<'a, V> Iter<'a, V> {
                 None => { self.queue.pop_front(); }
             }
         }
+    }
+}
+
+impl<'a, V> From<NodeRef<'a, V>> for Iter<'a, V> {
+    /// Creating a new iterator that visits nodes in pre-order by default
+    ///
+    /// ```
+    /// use radixmap::{RadixMap};
+    ///
+    /// fn main() -> anyhow::Result<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/api", "/api")?;
+    ///     map.insert("/api/v1", "/api/v1")?;
+    ///
+    ///     let mut iter = map.iter();
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api"));
+    ///     assert_eq!(iter.next().unwrap().data_ref(), Some(&"/api/v1"));
+    ///     assert!(iter.next().is_none());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn from(start: NodeRef<'a, V>) -> Self {
+        Self { start, queue: VecDeque::from([Entity::from(start).peekable()]), visit: vec![], order: Order::Pre, empty: false }
     }
 }
 
