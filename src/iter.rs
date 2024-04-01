@@ -22,70 +22,51 @@ pub enum Order {
 
 // -----------------------------------------------------------------------------
 
+pub type NodeRef<'a, V> = &'a RadixNode<'a, V>;
+pub type PackRef<'a, V> = &'a RadixPack<'a, V>;
+
+pub type RegularIter<'a, V> = std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>;
+pub type SpecialIter<'a, V> = indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>;
+
 /// Iterator adapter for nodes and packs
 #[derive(Clone)]
-pub struct State<N, P: Iterator<Item = N>> {
-    peek: Option<N>,
-    node: Option<N>,
-    pack: P,
+pub enum Entity<'a, V> {
+    Node(Option<NodeRef<'a, V>>),
+    Pack(RegularIter<'a, V>, SpecialIter<'a, V>),
 }
 
-impl<N, P: Iterator<Item = N> + Default> State<N, P> {
+impl<'a, V> From<NodeRef<'a, V>> for Entity<'a, V> {
     /// Construct from the radix node
-    pub fn from_node(node: N) -> Self {
-        Self { peek: None, node: Some(node), pack: P::default() }
+    fn from(node: NodeRef<'a, V>) -> Self {
+        Self::Node(Some(node))
     }
 }
 
-impl<N, P: Iterator<Item = N>> State<N, P> {
+impl<'a, V> From<PackRef<'a, V>> for Entity<'a, V> {
     /// Construct from the radix pack
-    pub fn from_pack(pack: P) -> Self {
-        Self { peek: None, node: None, pack }
+    fn from(pack: PackRef<'a, V>) -> Self {
+        Self::Pack(pack.regular.iter(), pack.special.values())
     }
 }
 
-impl<N: Clone, P: Iterator<Item = N>> State<N, P> {
-    /// Peek the next item and retain it
-    pub fn peek(&mut self) -> Option<N> {
-        if self.peek.is_none() {
-            self.peek = self.next();
-        }
-
-        self.peek.clone()
-    }
-}
-
-impl<N, P: Iterator<Item = N>> Iterator for State<N, P> {
-    type Item = N;
+impl<'a, V> Iterator for Entity<'a, V> {
+    type Item = NodeRef<'a, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(node) = self.peek.take() {
-            return Some(node);
+        match self {
+            Entity::Node(node) => node.take(),
+            Entity::Pack(regular, special) => {
+                if let Some(node) = regular.next() {
+                    return Some(node.value());
+                }
+
+                if let Some(node) = special.next() {
+                    return Some(node);
+                }
+
+                None
+            }
         }
-
-        if let Some(node) = self.node.take() {
-            return Some(node);
-        }
-
-        self.pack.next()
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-pub trait Bridge<N> {
-    fn children(node: N) -> impl Iterator<Item = N>;
-}
-
-impl<'a, V> Bridge<&'a RadixNode<'a, V>> for &'a RadixNode<'a, V> {
-    fn children(node: &'a RadixNode<'a, V>) -> impl Iterator<Item = &'a RadixNode<'a, V>> {
-        node.next_ref().iter()
-    }
-}
-
-impl<'a, V> Bridge<&'a mut RadixNode<'a, V>> for &'a mut RadixNode<'a, V> {
-    fn children(node: &'a mut RadixNode<'a, V>) -> impl Iterator<Item = &'a mut RadixNode<'a, V>> {
-        node.next_mut().iter_mut()
     }
 }
 
@@ -93,15 +74,15 @@ impl<'a, V> Bridge<&'a mut RadixNode<'a, V>> for &'a mut RadixNode<'a, V> {
 
 /// The iterator for radix tree
 #[derive(Clone)]
-pub struct Base<N, P: Iterator<Item = N>> {
-    start: N,
-    queue: VecDeque<P>,
-    visit: Vec<P>, // used in post-order only
+pub struct Iter<'a, V> {
+    start: NodeRef<'a, V>,
+    queue: VecDeque<Peekable<Entity<'a, V>>>,
+    visit: Vec<Peekable<Entity<'a, V>>>, // used in post-order only
     order: Order,
     empty: bool,
 }
 
-impl<'a, N: Clone, P: Iterator<Item = N> + Default> Base<N, State<N, P>> {
+impl<'a, V> Iter<'a, V> {
     /// Creating a new iterator that visits nodes in pre-order by default
     ///
     /// ```
@@ -120,12 +101,10 @@ impl<'a, N: Clone, P: Iterator<Item = N> + Default> Base<N, State<N, P>> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn new(start: N) -> Self {
-        Self { start: start.clone(), queue: VecDeque::from([State::from_node(start)]), visit: vec![], order: Order::Pre, empty: false }
+    pub fn new(start: NodeRef<'a, V>) -> Self {
+        Self { start, queue: VecDeque::from([Entity::from(start).peekable()]), visit: vec![], order: Order::Pre, empty: false }
     }
-}
 
-impl<'a, N, P: Iterator<Item = N> + Default> Base<N, State<N, P>> {
     /// Starting to iterate from the node with a specific prefix
     ///
     /// ```
@@ -154,7 +133,7 @@ impl<'a, N, P: Iterator<Item = N> + Default> Base<N, State<N, P>> {
         // }
 
         self.queue.clear();
-        // self.queue.push_back(State::Single(Some(start)));
+        // self.queue.push_back(Entity::Single(Some(start)));
         self.visit.clear();
         self
     }
@@ -244,168 +223,88 @@ impl<'a, N, P: Iterator<Item = N> + Default> Base<N, State<N, P>> {
     }
 
     /// Internal use only, traversing nodes in pre-order
-    fn next_pre(&mut self) -> Option<N> {
-        // loop {
-        //     let back = match self.queue.back_mut() {
-        //         Some(obj) => obj,
-        //         None => return None,
-        //     };
-        // 
-        //     match back.next() {
-        //         Some(node) => {
-        //             self.queue.push_back(State::from_pack(node.next_ref()));
-        //             return Some(node);
-        //         }
-        //         None => { self.queue.pop_back(); }
-        //     }
-        // }
-        todo!()
+    fn next_pre(&mut self) -> Option<NodeRef<'a, V>> {
+        loop {
+            let back = match self.queue.back_mut() {
+                Some(obj) => obj,
+                None => return None,
+            };
+
+            match back.next() {
+                Some(node) => {
+                    self.queue.push_back(Entity::from(node.next_ref()).peekable());
+                    return Some(node);
+                }
+                None => { self.queue.pop_back(); }
+            }
+        }
     }
 
     /// Internal use only, traversing nodes in post-order
-    fn next_post(&mut self) -> Option<N> {
-        // // traverse to the deepest leaf node, put all iters into the visit queue
-        // if let Some(mut back) = self.queue.pop_back() {
-        //     while let Some(node) = back.peek() {
-        //         let pack = State::from_pack(node.next_ref());
-        //         self.visit.push(back);
-        //         back = pack;
-        //     }
-        // 
-        //     return self.next_post();
-        // }
-        // 
-        // // pop node from visit queue, re-push iter if the next node is not empty
-        // loop {
-        //     let mut back = match self.visit.pop() {
-        //         Some(obj) => obj,
-        //         None => return None,
-        //     };
-        // 
-        //     if let Some(node) = back.next() {
-        //         if back.peek().is_some() {
-        //             self.queue.push_back(back);
-        //         }
-        // 
-        //         return Some(node);
-        //     }
-        // }
-        todo!()
+    fn next_post(&mut self) -> Option<NodeRef<'a, V>> {
+        // traverse to the deepest leaf node, put all iters into the visit queue
+        if let Some(mut back) = self.queue.pop_back() {
+            while let Some(node) = back.peek() {
+                let pack = Entity::from(node.next_ref()).peekable();
+                self.visit.push(back);
+                back = pack;
+            }
+
+            return self.next_post();
+        }
+
+        // pop node from visit queue, re-push iter if the next node is not empty
+        loop {
+            let mut back = match self.visit.pop() {
+                Some(obj) => obj,
+                None => return None,
+            };
+
+            if let Some(node) = back.next() {
+                if back.peek().is_some() {
+                    self.queue.push_back(back);
+                }
+
+                return Some(node);
+            }
+        }
     }
 
     /// Internal use only, traversing nodes in level-order
-    fn next_level(&mut self) -> Option<N> {
-        // loop {
-        //     let front = match self.queue.front_mut() {
-        //         Some(obj) => obj,
-        //         None => return None,
-        //     };
-        // 
-        //     match front.next() {
-        //         Some(node) => {
-        //             self.queue.push_back(State::from_pack(node.next_ref()));
-        //             return Some(node);
-        //         }
-        //         None => { self.queue.pop_front(); }
-        //     }
-        // }
-        todo!()
+    fn next_level(&mut self) -> Option<NodeRef<'a, V>> {
+        loop {
+            let front = match self.queue.front_mut() {
+                Some(obj) => obj,
+                None => return None,
+            };
+
+            match front.next() {
+                Some(node) => {
+                    self.queue.push_back(Entity::from(node.next_ref()).peekable());
+                    return Some(node);
+                }
+                None => { self.queue.pop_front(); }
+            }
+        }
     }
 }
 
-impl<N, P: Iterator<Item = N> + Default> Iterator for Base<N, State<N, P>> {
-    type Item = N;
+impl<'a, V> Iterator for Iter<'a, V> {
+    type Item = NodeRef<'a, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // loop {
-        //     let node = match self.order {
-        //         Order::Pre => self.next_pre(),
-        //         Order::Post => self.next_post(),
-        //         Order::Level => self.next_level(),
-        //     };
-        // 
-        //     // check if user need to traverse empty node
-        //     match node {
-        //         Some(node) if !self.empty && node.is_empty() => continue,
-        //         _ => return node,
-        //     }
-        // }
-        todo!()
+        loop {
+            let node = match self.order {
+                Order::Pre => self.next_pre(),
+                Order::Post => self.next_post(),
+                Order::Level => self.next_level(),
+            };
+
+            // check if user need to traverse empty node
+            match node {
+                Some(node) if !self.empty && node.is_empty() => continue,
+                _ => return node,
+            }
+        }
     }
 }
-
-// -----------------------------------------------------------------------------
-
-// -----------------------------------------------------------------------------
-
-// pub struct Keys<'a, V> {}
-
-// -----------------------------------------------------------------------------
-
-// todo change name to Data, Path, impl Keys, Values in map
-// /// Traverse the tree to retrieve all data
-// #[derive(Clone)]
-// pub struct Values<'a, V> {
-//     iter: Iter<'a, V>
-// }
-// 
-// impl<'a, V> Values<'a, V> {
-//     /// Construct a new iterator
-//     pub fn new(start: &'a RadixNode<'a, V>) -> Self {
-//         Self { iter: Iter::new(start) }
-//     }
-// 
-//     /// Construct with a order
-//     ///
-//     /// ```
-//     /// use radixmap::{RadixMap, iter::Order};
-//     ///
-//     /// fn main() -> anyhow::Result<()> {
-//     ///     let mut map = RadixMap::new();
-//     ///     map.insert("/api", "/api")?;
-//     ///     map.insert("/api/v1", "/api/v1")?;
-//     ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
-//     ///     map.insert("/api/v2", "/api/v2")?;
-//     ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
-//     ///
-//     ///     let mut iter = map.values(); // same as with_order(Order::Pre);
-//     ///     assert_eq!(iter.next(), Some(&"/api"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v1"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v1/user1"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v2"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v2/user2"));
-//     ///     assert_eq!(iter.next(), None);
-//     ///
-//     ///     let mut iter = map.values().with_order(Order::Post);
-//     ///     assert_eq!(iter.next(), Some(&"/api/v1/user1"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v1"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v2/user2"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v2"));
-//     ///     assert_eq!(iter.next(), Some(&"/api"));
-//     ///     assert_eq!(iter.next(), None);
-//     ///
-//     ///     let mut iter = map.values().with_order(Order::Level);
-//     ///     assert_eq!(iter.next(), Some(&"/api"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v1"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v2"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v1/user1"));
-//     ///     assert_eq!(iter.next(), Some(&"/api/v2/user2"));
-//     ///     assert_eq!(iter.next(), None);
-//     ///
-//     ///     Ok(())
-//     /// }
-//     /// ```
-//     pub fn with_order(mut self, order: Order) -> Self {
-//         self.iter = self.iter.with_order(order);
-//         self
-//     }
-// }
-// 
-// impl<'a, V> Iterator for Values<'a, V> {
-//     type Item = &'a V;
-// 
-//     // todo add test for internal nodes without data
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.iter.next().and_then(|node| node.data_ref())
-//     }
-// }
