@@ -16,7 +16,7 @@ impl<'a, V> RadixPack<'a, V> {
 
     pub fn insert(&mut self, frag: &'a str) -> RadixResult<&mut RadixNode<'a, V>> {
         // special nodes inserted directly into map
-        let rule = RadixRule::new(frag)?;
+        let rule = RadixRule::try_from(frag)?;
         if !matches!(rule, RadixRule::Plain { .. }) {
             return match self.special.contains_key(frag) {
                 true => Ok(&mut self.special[frag]),

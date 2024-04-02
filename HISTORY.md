@@ -1,7 +1,7 @@
 ## Todo
 
-- arc<str>, cow, rc
-- string instead of &'a str
+- owned version
+- plain only mode
 - item sep customizable
 - serde serde_expr support
 - erase data but not remove node

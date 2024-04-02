@@ -108,20 +108,20 @@ impl<'a, V> TryFrom<(&'a str, V)> for RadixNode<'a, V> {
     type Error = RadixError;
 
     fn try_from((path, data): (&'a str, V)) -> RadixResult<Self> {
-        Ok(Self { path, data: Some(data), rule: RadixRule::new(path)?, next: Default::default() })
+        Ok(Self { path, data: Some(data), rule: RadixRule::try_from(path)?, next: Default::default() })
     }
 }
 
 /// Debug trait
 ///
 /// ```
-/// use radixmap::{rule::RadixRule, node::RadixNode};
+/// use radixmap::{rule::RadixRule, node::RadixNode, RadixResult};
 ///
 /// fn main() -> RadixResult<()> {
-///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::new_plain(r"/api")?)), r"Plain(/api)".to_string());
-///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::new_regex(r"{id:\d+}")?)), r"Regex({id:\d+})".to_string());
-///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::new_param(r":id")?)), r"Param(:id)".to_string());
-///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::new_glob(r"*")?)), r"Glob(*)".to_string());
+///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_plain(r"/api")?)), r"Plain(/api)".to_string());
+///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_regex(r"{id:\d+}")?)), r"Regex({id:\d+})".to_string());
+///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_param(r":id")?)), r"Param(:id)".to_string());
+///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_glob(r"*")?)), r"Glob(*)".to_string());
 ///
 ///     Ok(())
 /// }
