@@ -1,6 +1,6 @@
 use radixmap::*;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> RadixResult<()> {
     let mut map = RadixMap::default();
 
     // the final radix tree looks like this

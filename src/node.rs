@@ -73,7 +73,7 @@ impl<'a, V> RadixNode<'a, V> {
         todo!()
     }
 
-    pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
+    pub fn insert(&mut self, path: &'a str, data: V) -> RadixResult<Option<V>> {
         let mut frag = path;
 
         loop {
@@ -97,7 +97,7 @@ impl<'a, V> RadixNode<'a, V> {
     /// ```
     /// use radixmap::{rule::RadixRule, node::RadixNode};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::try_from(("/api", 12345))?;
     ///
     ///     assert_eq!(node.rule_ref(), "/api");
@@ -113,7 +113,7 @@ impl<'a, V> RadixNode<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn divide(&mut self, len: usize) -> Result<RadixNode<'a, V>> {
+    pub fn divide(&mut self, len: usize) -> RadixResult<RadixNode<'a, V>> {
         Ok(RadixNode {
             rule: self.rule.divide(len)?,
             item: std::mem::take(&mut self.item),
@@ -135,9 +135,9 @@ impl<'a, V> From<RadixRule<'a>> for RadixNode<'a, V> {
 }
 
 impl<'a, V> TryFrom<(&'a str, V)> for RadixNode<'a, V> {
-    type Error = anyhow::Error;
+    type Error = RadixError;
 
-    fn try_from((path, data): (&'a str, V)) -> Result<Self> {
+    fn try_from((path, data): (&'a str, V)) -> RadixResult<Self> {
         Ok(Self { rule: RadixRule::new(path)?, item: Some(RadixItem::from((path, data))), next: Default::default() })
     }
 }
@@ -147,7 +147,7 @@ impl<'a, V> TryFrom<(&'a str, V)> for RadixNode<'a, V> {
 /// ```
 /// use radixmap::{rule::RadixRule, node::RadixNode};
 ///
-/// fn main() -> anyhow::Result<()> {
+/// fn main() -> RadixResult<()> {
 ///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::new_plain(r"/api")?)), r"Plain(/api)".to_string());
 ///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::new_regex(r"{id:\d+}")?)), r"Regex({id:\d+})".to_string());
 ///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::new_param(r":id")?)), r"Param(:id)".to_string());

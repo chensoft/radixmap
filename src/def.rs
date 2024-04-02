@@ -11,14 +11,12 @@ pub(crate) use std::iter::Peekable;
 pub(crate) use std::collections::VecDeque;
 
 pub(crate) use regex::Regex;
-pub(crate) use thiserror::Error;
 pub(crate) use indexmap::IndexMap;
 pub(crate) use sparseset::SparseSet;
-pub(crate) type Result<T> = anyhow::Result<T>;
 
-/// Error Codes
-#[derive(Debug, Clone, Error, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Error {
+/// Error and Result
+#[derive(Debug, Error)]
+pub enum RadixError {
     #[error("path is empty")]
     PathEmpty,
 
@@ -30,7 +28,15 @@ pub enum Error {
 
     #[error("rule can't be split")]
     RuleIndivisible,
+
+    #[error("{0}")]
+    RegexInvalid(#[from] regex::Error),
+
+    #[error("{0}")]
+    GlobInvalid(#[from] glob::PatternError),
 }
+
+pub type RadixResult<T> = Result<T, RadixError>;
 
 /// Create RadixMap or RadixSet
 ///

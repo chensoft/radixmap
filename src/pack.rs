@@ -14,7 +14,7 @@ impl<'a, V> RadixPack<'a, V> {
         self.regular.is_empty() && self.special.is_empty()
     }
 
-    pub fn insert(&mut self, frag: &'a str) -> Result<&mut RadixNode<'a, V>> {
+    pub fn insert(&mut self, frag: &'a str) -> RadixResult<&mut RadixNode<'a, V>> {
         // special nodes inserted directly into map
         let rule = RadixRule::new(frag)?;
         if !matches!(rule, RadixRule::Plain { .. }) {
@@ -28,7 +28,7 @@ impl<'a, V> RadixPack<'a, V> {
         let bytes = frag.as_bytes();
         let first = match bytes.first() {
             Some(val) => *val as usize,
-            None => return Err(Error::PathEmpty.into())
+            None => return Err(RadixError::PathEmpty.into())
         };
 
         if !self.regular.contains(first) {

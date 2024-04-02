@@ -67,12 +67,13 @@ impl<'a, V> RadixMap<'a, V> {
         false
     }
 
-    pub fn insert(&mut self, path: &'a str, data: V) -> Result<Option<V>> {
-        let ret = self.root.insert(path, data);
-        if let Ok(None) = &ret {
-            self.size += 1;
-        }
-        ret
+    pub fn insert(&mut self, path: &'a str, data: V) -> RadixResult<Option<V>> {
+        // let ret = self.root.insert(path, data);
+        // if let Ok(None) = &ret {
+        //     self.size += 1;
+        // }
+        // ret
+        Err(RadixError::PathEmpty)
     }
 
     pub fn remove(&mut self, path: &'a str) -> Option<RadixNode<'a, V>> {
@@ -87,7 +88,7 @@ impl<'a, V> RadixMap<'a, V> {
 // -----------------------------------------------------------------------------
 
 impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
-    type Error = anyhow::Error;
+    type Error = RadixError;
 
     fn try_from(value: [(&'a str, V); N]) -> std::result::Result<Self, Self::Error> {
         let mut map = RadixMap::default();

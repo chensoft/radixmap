@@ -63,7 +63,7 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::new(r"*id").is_ok());
     /// assert!(RadixRule::new(r"id").is_ok());
     /// ```
-    pub fn new(frag: &'a str) -> Result<Self> {
+    pub fn new(frag: &'a str) -> RadixResult<Self> {
         match frag.as_bytes().first() {
             Some(b'{') => Self::new_regex(frag),
             Some(b':') => Self::new_param(frag),
@@ -80,7 +80,7 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::new_plain(r"").is_ok());
     /// assert!(RadixRule::new_plain(r"id").is_ok());
     /// ```
-    pub fn new_plain(frag: &'a str) -> Result<Self> {
+    pub fn new_plain(frag: &'a str) -> RadixResult<Self> {
         Ok(Self::Plain { text: frag })
     }
 
@@ -101,9 +101,9 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::new_regex(r"{:(0}").is_err());   // missing )
     /// assert!(RadixRule::new_regex(r"{id:(0}").is_err()); // missing )
     /// ```
-    pub fn new_regex(frag: &'a str) -> Result<Self> {
+    pub fn new_regex(frag: &'a str) -> RadixResult<Self> {
         if !frag.starts_with('{') || !frag.ends_with('}') {
-            return Err(Error::PathMalformed("regex lack of curly braces".into()).into());
+            return Err(RadixError::PathMalformed("regex lack of curly braces".into()).into());
         }
 
         let data = &frag[1..frag.len() - 1];
@@ -129,9 +129,9 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::new_param(r"").is_err());   // missing :
     /// assert!(RadixRule::new_param(r"id").is_err()); // missing :
     /// ```
-    pub fn new_param(frag: &'a str) -> Result<Self> {
+    pub fn new_param(frag: &'a str) -> RadixResult<Self> {
         if !frag.starts_with(':') {
-            return Err(Error::PathMalformed("param lack of colon".into()).into());
+            return Err(RadixError::PathMalformed("param lack of colon".into()).into());
         }
 
         Ok(Self::Param { orig: frag, name: &frag[1..] })
@@ -147,10 +147,10 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::new_glob(r"").is_err());      // missing rule chars
     /// assert!(RadixRule::new_glob(r"id").is_err());    // missing rule chars
     /// ```
-    pub fn new_glob(frag: &'a str) -> Result<Self> {
+    pub fn new_glob(frag: &'a str) -> RadixResult<Self> {
         match frag.as_bytes().first() {
             Some(b'*') => Ok(Self::Glob { glob: glob::Pattern::new(frag)? }),
-            _ => Err(Error::PathMalformed("glob lack of rule chars".into()).into())
+            _ => Err(RadixError::PathMalformed("glob lack of rule chars".into()).into())
         }
     }
 
@@ -159,7 +159,7 @@ impl<'a> RadixRule<'a> {
     /// ```
     /// use radixmap::{rule::RadixRule};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     assert_eq!(RadixRule::extract(r"api")?, r"api");
     ///     assert_eq!(RadixRule::extract(r"api/v1")?, r"api/v1");
     ///     assert_eq!(RadixRule::extract(r"/api/v1")?, r"/api/v1");
@@ -181,9 +181,9 @@ impl<'a> RadixRule<'a> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn extract(path: &'a str) -> Result<&'a str> {
+    pub fn extract(path: &'a str) -> RadixResult<&'a str> {
         if path.is_empty() {
-            return Err(Error::PathEmpty.into());
+            return Err(RadixError::PathEmpty.into());
         }
 
         const MAP: [bool; 256] = {
@@ -198,7 +198,7 @@ impl<'a> RadixRule<'a> {
         let len = match raw.first() {
             Some(b'{') => match raw.iter().position(|c| *c == b'}') {
                 Some(pos) => pos + 1,
-                _ => return Err(Error::PathMalformed("missing closing sign '}'".into()).into())
+                _ => return Err(RadixError::PathMalformed("missing closing sign '}'".into()).into())
             }
             Some(b':') => match raw.iter().position(|c| *c == b'/') {
                 Some(pos) => pos,
@@ -229,7 +229,7 @@ impl<'a> RadixRule<'a> {
     /// ```
     /// use radixmap::{rule::RadixRule};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     assert_eq!(RadixRule::new_plain(r"/api")?.origin(), r"/api");
     ///     assert_eq!(RadixRule::new_regex(r"{id:\d+}")?.origin(), r"{id:\d+}");
     ///     assert_eq!(RadixRule::new_param(r":id")?.origin(), r":id");
@@ -254,7 +254,7 @@ impl<'a> RadixRule<'a> {
     /// use std::cmp::Ordering;
     /// use radixmap::{rule::RadixRule};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     assert_eq!(RadixRule::new_plain(r"")?.longest(""), (r"", Ordering::Equal));
     ///     assert_eq!(RadixRule::new_plain(r"")?.longest("api"), (r"", Ordering::Equal));
     ///     assert_eq!(RadixRule::new_plain(r"api")?.longest("api"), (r"api", Ordering::Equal));
@@ -307,7 +307,7 @@ impl<'a> RadixRule<'a> {
     /// ```
     /// use radixmap::{rule::RadixRule};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     assert_eq!(RadixRule::new_plain(r"/api")?.divide(1)?, RadixRule::new_plain(r"api")?);
     ///     assert!(RadixRule::new_regex(r"{id:\d+}")?.divide(1).is_err());
     ///     assert!(RadixRule::new_param(r":id")?.divide(1).is_err());
@@ -316,14 +316,14 @@ impl<'a> RadixRule<'a> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn divide(&mut self, len: usize) -> Result<RadixRule<'a>> {
+    pub fn divide(&mut self, len: usize) -> RadixResult<RadixRule<'a>> {
         match self {
             RadixRule::Plain { text } if text.len() > len => {
                 let rule = RadixRule::new_plain(&text[len..]);
                 *text = &text[..len];
                 rule
             }
-            _ => Err(Error::RuleIndivisible.into())
+            _ => Err(RadixError::RuleIndivisible.into())
         }
     }
 }
@@ -333,7 +333,7 @@ impl<'a> RadixRule<'a> {
 /// ```
 /// use radixmap::{rule::RadixRule};
 ///
-/// fn main() -> anyhow::Result<()> {
+/// fn main() -> RadixResult<()> {
 ///     assert_eq!(format!("{:?}", RadixRule::new_plain(r"/api")?), r"Plain(/api)".to_string());
 ///     assert_eq!(format!("{:?}", RadixRule::new_regex(r"{id:\d+}")?), r"Regex({id:\d+})".to_string());
 ///     assert_eq!(format!("{:?}", RadixRule::new_param(r":id")?), r"Param(:id)".to_string());
@@ -366,7 +366,7 @@ impl<'a> Default for RadixRule<'a> {
 /// use std::collections::HashMap;
 /// use radixmap::{rule::RadixRule};
 ///
-/// fn main() -> anyhow::Result<()> {
+/// fn main() -> RadixResult<()> {
 ///     let mut map = HashMap::new();
 ///     map.insert(RadixRule::new_plain(r"/api")?, r"/api");
 ///     map.insert(RadixRule::new_regex(r"{id:\d+}")?, r"{id:\d+}");
@@ -412,7 +412,7 @@ impl<'a> Eq for RadixRule<'a> {}
 /// ```
 /// use radixmap::{rule::RadixRule};
 ///
-/// fn main() -> anyhow::Result<()> {
+/// fn main() -> RadixResult<()> {
 ///     assert_eq!(RadixRule::new_plain(r"/api")?, RadixRule::new_plain(r"/api")?);
 ///     assert_eq!(RadixRule::new_regex(r"{id:\d+}")?, RadixRule::new_regex(r"{id:\d+}")?);
 ///     assert_eq!(RadixRule::new_param(r":id")?, RadixRule::new_param(r":id")?);

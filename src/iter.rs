@@ -78,7 +78,7 @@ impl<'a, V> Iter<'a, V> {
     /// ```
     /// use radixmap::{RadixMap};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api", "/api")?;
     ///     map.insert("/api/v1", "/api/v1")?;
@@ -101,10 +101,10 @@ impl<'a, V> Iter<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, prefix: &'a str) -> Result<Self> {
+    pub fn with_prefix(mut self, prefix: &'a str) -> RadixResult<Self> {
         let start = match self.start.deepest(prefix) {
             Some(node) => node,
-            None => return Err(Error::PathNotFound.into()),
+            None => return Err(RadixError::PathNotFound.into()),
         };
 
         self.start = start;
@@ -120,7 +120,7 @@ impl<'a, V> Iter<'a, V> {
     /// ```
     /// use radixmap::{RadixMap, iter::Order};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api", "/api")?;
     ///     map.insert("/api/v1", "/api/v1")?;
@@ -173,7 +173,7 @@ impl<'a, V> Iter<'a, V> {
     ///     }};
     /// }
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api", "/api")?;
     ///     map.insert("/api/v1", "/api/v1")?;
@@ -272,7 +272,7 @@ impl<'a, V> From<NodeRef<'a, V>> for Iter<'a, V> {
     /// ```
     /// use radixmap::{RadixMap};
     ///
-    /// fn main() -> anyhow::Result<()> {
+    /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api", "/api")?;
     ///     map.insert("/api/v1", "/api/v1")?;

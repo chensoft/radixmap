@@ -7,7 +7,7 @@ pub struct RadixSet<'a> {
 }
 
 impl<'a> RadixSet<'a> {
-    pub fn insert(&mut self, path: &'a str) -> Result<bool> {
+    pub fn insert(&mut self, path: &'a str) -> RadixResult<bool> {
         self.base.insert(path, ()).map(|d| d.is_some())
     }
 }
