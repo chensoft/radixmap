@@ -64,7 +64,7 @@ impl<'a, V> Iterator for Entity<'a, V> {
 
 /// The iterator for radix tree
 #[derive(Clone)]
-pub struct Iter<'a, V> {
+pub struct Base<'a, V> {
     start: NodeRef<'a, V>,
     queue: VecDeque<Peekable<Entity<'a, V>>>,
     visit: Vec<Peekable<Entity<'a, V>>>, // used in post-order only
@@ -72,7 +72,7 @@ pub struct Iter<'a, V> {
     empty: bool,
 }
 
-impl<'a, V> Iter<'a, V> {
+impl<'a, V> Base<'a, V> {
     /// Starting to iterate from the node with a specific prefix
     ///
     /// ```
@@ -209,7 +209,7 @@ impl<'a, V> Iter<'a, V> {
 
             match back.next() {
                 Some(node) => {
-                    self.queue.push_back(Entity::from(node.next_ref()).peekable());
+                    self.queue.push_back(Entity::from(&node.next).peekable());
                     return Some(node);
                 }
                 None => { self.queue.pop_back(); }
@@ -222,7 +222,7 @@ impl<'a, V> Iter<'a, V> {
         // traverse to the deepest leaf node, put all iters into the visit queue
         if let Some(mut back) = self.queue.pop_back() {
             while let Some(node) = back.peek() {
-                let pack = Entity::from(node.next_ref()).peekable();
+                let pack = Entity::from(&node.next).peekable();
                 self.visit.push(back);
                 back = pack;
             }
@@ -257,7 +257,7 @@ impl<'a, V> Iter<'a, V> {
 
             match front.next() {
                 Some(node) => {
-                    self.queue.push_back(Entity::from(node.next_ref()).peekable());
+                    self.queue.push_back(Entity::from(&node.next).peekable());
                     return Some(node);
                 }
                 None => { self.queue.pop_front(); }
@@ -266,7 +266,7 @@ impl<'a, V> Iter<'a, V> {
     }
 }
 
-impl<'a, V> From<NodeRef<'a, V>> for Iter<'a, V> {
+impl<'a, V> From<NodeRef<'a, V>> for Base<'a, V> {
     /// Creating a new iterator that visits nodes in pre-order by default
     ///
     /// ```
@@ -290,7 +290,7 @@ impl<'a, V> From<NodeRef<'a, V>> for Iter<'a, V> {
     }
 }
 
-impl<'a, V> Iterator for Iter<'a, V> {
+impl<'a, V> Iterator for Base<'a, V> {
     type Item = NodeRef<'a, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -309,3 +309,5 @@ impl<'a, V> Iterator for Iter<'a, V> {
         }
     }
 }
+
+pub type Iter<'a, V> = Base<'a, V>;

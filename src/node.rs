@@ -1,59 +1,24 @@
 use super::def::*;
-use super::item::*;
 use super::iter::*;
 use super::rule::*;
 use super::pack::*;
 
 /// The basic element inside a tree
 pub struct RadixNode<'a, V> {
-    rule: RadixRule<'a>,
-    item: Option<RadixItem<'a, V>>,
-    next: RadixPack<'a, V>,
+    pub path: &'a str,
+    pub data: Option<V>,
+
+    pub rule: RadixRule<'a>,
+    pub next: RadixPack<'a, V>,
 }
 
 impl<'a, V> RadixNode<'a, V> {
-    pub fn rule_ref(&self) -> &RadixRule<'a> {
-        &self.rule
-    }
-
-    pub fn rule_mut(&mut self) -> &mut RadixRule<'a> {
-        &mut self.rule
-    }
-
-    pub fn item_ref(&self) -> Option<(&'a str, &V)> {
-        self.item.as_ref().map(|item| item.as_ref())
-    }
-
-    pub fn item_mut(&mut self) -> Option<(&'a str, &mut V)> {
-        self.item.as_mut().map(|item| item.as_mut())
-    }
-
-    pub fn path_ref(&self) -> Option<&'a str> {
-        self.item.as_ref().map(|item| item.as_ref().0)
-    }
-
-    pub fn data_ref(&self) -> Option<&V> {
-        self.item.as_ref().map(|item| item.as_ref().1)
-    }
-
-    pub fn data_mut(&mut self) -> Option<&mut V> {
-        self.item.as_mut().map(|item| item.as_mut().1)
-    }
-
-    pub fn next_ref(&self) -> &RadixPack<'a, V> {
-        &self.next
-    }
-
-    pub fn next_mut(&mut self) -> &mut RadixPack<'a, V> {
-        &mut self.next
-    }
-
     pub fn is_leaf(&self) -> bool {
         self.next.is_empty()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.item.is_none()
+        self.data.is_none()
     }
 
     pub fn iter(&'a self) -> Iter<'a, V> {
@@ -83,9 +48,11 @@ impl<'a, V> RadixNode<'a, V> {
 
             // encountering a leaf node indicates completion of insertion
             if next.len() == frag.len() {
-                let prev = std::mem::take(&mut slot.item);
-                slot.item = Some(RadixItem::from((path, data)));
-                return Ok(prev.map(|item| item.data));
+                let prev = slot.data.take();
+                slot.path = path;
+                slot.data = Some(data);
+
+                return Ok(prev);
             }
 
             frag = &frag[next.len()..];
@@ -115,22 +82,25 @@ impl<'a, V> RadixNode<'a, V> {
     /// ```
     pub fn divide(&mut self, len: usize) -> RadixResult<RadixNode<'a, V>> {
         Ok(RadixNode {
+            path: std::mem::take(&mut self.path),
+            data: self.data.take(),
+
             rule: self.rule.divide(len)?,
-            item: std::mem::take(&mut self.item),
             next: std::mem::take(&mut self.next),
         })
     }
 
     pub fn clear(&mut self) {
+        self.path = "";
+        self.data = None;
         self.rule = RadixRule::default();
-        self.item = None;
         self.next.clear();
     }
 }
 
 impl<'a, V> From<RadixRule<'a>> for RadixNode<'a, V> {
     fn from(rule: RadixRule<'a>) -> Self {
-        Self { rule, item: None, next: Default::default() }
+        Self { path: "", data: None, rule, next: Default::default() }
     }
 }
 
@@ -138,7 +108,7 @@ impl<'a, V> TryFrom<(&'a str, V)> for RadixNode<'a, V> {
     type Error = RadixError;
 
     fn try_from((path, data): (&'a str, V)) -> RadixResult<Self> {
-        Ok(Self { rule: RadixRule::new(path)?, item: Some(RadixItem::from((path, data))), next: Default::default() })
+        Ok(Self { path, data: Some(data), rule: RadixRule::new(path)?, next: Default::default() })
     }
 }
 
@@ -165,15 +135,16 @@ impl<'a, V> Debug for RadixNode<'a, V> {
 /// Create an empty node
 impl<'a, V> Default for RadixNode<'a, V> {
     fn default() -> Self {
-        Self { rule: RadixRule::default(), item: None, next: RadixPack::default() }
+        Self { path: "", data: None, rule: RadixRule::default(), next: RadixPack::default() }
     }
 }
 
 impl<'a, V: Clone> Clone for RadixNode<'a, V> {
     fn clone(&self) -> Self {
         Self {
+            path: self.path.clone(),
+            data: self.data.clone(),
             rule: self.rule.clone(),
-            item: self.item.clone(),
             next: self.next.clone(),
         }
     }
@@ -195,7 +166,7 @@ impl<'a, V> Iterator for Keys<'a, V> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().and_then(|node| node.path_ref())
+        self.iter.next().and_then(|node| Some(node.path))
     }
 }
 
@@ -215,6 +186,6 @@ impl<'a, V> Iterator for Values<'a, V> {
     type Item = &'a V;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().and_then(|node| node.data_ref())
+        self.iter.next().and_then(|node| node.data.as_ref())
     }
 }

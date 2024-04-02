@@ -43,16 +43,16 @@ impl<'a, V> RadixMap<'a, V> {
     }
 
     pub fn get(&self, path: &'a str) -> Option<&V> {
-        self.root.deepest(path).filter(|node| node.path_ref() == Some(path)).and_then(|node| node.data_ref())
+        self.root.deepest(path).filter(|node| node.path == path).and_then(|node| node.data.as_ref())
     }
 
     pub fn get_mut(&'a mut self, path: &'a str) -> Option<&mut V> {
-        self.root.deepest_mut(path).filter(|node| node.path_ref() == Some(path)).and_then(|node| node.data_mut())
+        self.root.deepest_mut(path).filter(|node| node.path == path).and_then(|node| node.data.as_mut())
     }
 
     pub fn contains_key(&self, path: &'a str) -> bool {
         match self.root.deepest(path) {
-            Some(node) => node.path_ref() == Some(path),
+            Some(node) => node.path == path,
             None => false
         }
     }
@@ -68,12 +68,11 @@ impl<'a, V> RadixMap<'a, V> {
     }
 
     pub fn insert(&mut self, path: &'a str, data: V) -> RadixResult<Option<V>> {
-        // let ret = self.root.insert(path, data);
-        // if let Ok(None) = &ret {
-        //     self.size += 1;
-        // }
-        // ret
-        Err(RadixError::PathEmpty)
+        let ret = self.root.insert(path, data);
+        if let Ok(None) = &ret {
+            self.size += 1;
+        }
+        ret
     }
 
     pub fn remove(&mut self, path: &'a str) -> Option<RadixNode<'a, V>> {
