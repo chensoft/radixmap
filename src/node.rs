@@ -195,7 +195,7 @@ impl<'a, V> Iterator for Keys<'a, V> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|node| node.path_ref()).flatten()
+        self.iter.next().and_then(|node| node.path_ref())
     }
 }
 
@@ -215,6 +215,6 @@ impl<'a, V> Iterator for Values<'a, V> {
     type Item = &'a V;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|node| node.data_ref()).flatten()
+        self.iter.next().and_then(|node| node.data_ref())
     }
 }

@@ -43,11 +43,11 @@ impl<'a, V> RadixMap<'a, V> {
     }
 
     pub fn get(&self, path: &'a str) -> Option<&V> {
-        self.root.deepest(path).filter(|node| node.path_ref() == Some(path)).map(|node| node.data_ref()).flatten()
+        self.root.deepest(path).filter(|node| node.path_ref() == Some(path)).and_then(|node| node.data_ref())
     }
 
     pub fn get_mut(&'a mut self, path: &'a str) -> Option<&mut V> {
-        self.root.deepest_mut(path).filter(|node| node.path_ref() == Some(path)).map(|node| node.data_mut()).flatten()
+        self.root.deepest_mut(path).filter(|node| node.path_ref() == Some(path)).and_then(|node| node.data_mut())
     }
 
     pub fn contains_key(&self, path: &'a str) -> bool {

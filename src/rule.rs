@@ -103,7 +103,7 @@ impl<'a> RadixRule<'a> {
     /// ```
     pub fn new_regex(frag: &'a str) -> RadixResult<Self> {
         if !frag.starts_with('{') || !frag.ends_with('}') {
-            return Err(RadixError::PathMalformed("regex lack of curly braces".into()).into());
+            return Err(RadixError::PathMalformed("regex lack of curly braces".into()));
         }
 
         let data = &frag[1..frag.len() - 1];
@@ -131,7 +131,7 @@ impl<'a> RadixRule<'a> {
     /// ```
     pub fn new_param(frag: &'a str) -> RadixResult<Self> {
         if !frag.starts_with(':') {
-            return Err(RadixError::PathMalformed("param lack of colon".into()).into());
+            return Err(RadixError::PathMalformed("param lack of colon".into()));
         }
 
         Ok(Self::Param { orig: frag, name: &frag[1..] })
@@ -150,7 +150,7 @@ impl<'a> RadixRule<'a> {
     pub fn new_glob(frag: &'a str) -> RadixResult<Self> {
         match frag.as_bytes().first() {
             Some(b'*') => Ok(Self::Glob { glob: glob::Pattern::new(frag)? }),
-            _ => Err(RadixError::PathMalformed("glob lack of rule chars".into()).into())
+            _ => Err(RadixError::PathMalformed("glob lack of rule chars".into()))
         }
     }
 
@@ -183,7 +183,7 @@ impl<'a> RadixRule<'a> {
     /// ```
     pub fn extract(path: &'a str) -> RadixResult<&'a str> {
         if path.is_empty() {
-            return Err(RadixError::PathEmpty.into());
+            return Err(RadixError::PathEmpty);
         }
 
         const MAP: [bool; 256] = {
@@ -198,7 +198,7 @@ impl<'a> RadixRule<'a> {
         let len = match raw.first() {
             Some(b'{') => match raw.iter().position(|c| *c == b'}') {
                 Some(pos) => pos + 1,
-                _ => return Err(RadixError::PathMalformed("missing closing sign '}'".into()).into())
+                _ => return Err(RadixError::PathMalformed("missing closing sign '}'".into()))
             }
             Some(b':') => match raw.iter().position(|c| *c == b'/') {
                 Some(pos) => pos,
@@ -323,7 +323,7 @@ impl<'a> RadixRule<'a> {
                 *text = &text[..len];
                 rule
             }
-            _ => Err(RadixError::RuleIndivisible.into())
+            _ => Err(RadixError::RuleIndivisible)
         }
     }
 }

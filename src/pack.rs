@@ -28,7 +28,7 @@ impl<'a, V> RadixPack<'a, V> {
         let bytes = frag.as_bytes();
         let first = match bytes.first() {
             Some(val) => *val as usize,
-            None => return Err(RadixError::PathEmpty.into())
+            None => return Err(RadixError::PathEmpty)
         };
 
         if !self.regular.contains(first) {

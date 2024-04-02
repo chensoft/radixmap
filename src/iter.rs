@@ -104,7 +104,7 @@ impl<'a, V> Iter<'a, V> {
     pub fn with_prefix(mut self, prefix: &'a str) -> RadixResult<Self> {
         let start = match self.start.deepest(prefix) {
             Some(node) => node,
-            None => return Err(RadixError::PathNotFound.into()),
+            None => return Err(RadixError::PathNotFound),
         };
 
         self.start = start;
