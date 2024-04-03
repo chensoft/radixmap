@@ -43,11 +43,12 @@ impl<'a, V> RadixNode<'a, V> {
 
         loop {
             // extract the next path fragment and insert it via pack
-            let next = RadixRule::extract(frag)?;
+            let next = RadixRule::try_from(frag)?;
+            let used = next.origin();
             let slot = self.next.insert(next)?;
 
             // encountering a leaf node indicates completion of insertion
-            if next.len() == frag.len() {
+            if used.len() == frag.len() {
                 let prev = slot.data.take();
                 slot.path = path;
                 slot.data = Some(data);
@@ -55,27 +56,27 @@ impl<'a, V> RadixNode<'a, V> {
                 return Ok(prev);
             }
 
-            frag = &frag[next.len()..];
+            frag = &frag[used.len()..];
         }
     }
 
     /// Divide the node into two parts
     ///
     /// ```
-    /// use radixmap::{rule::RadixRule, node::RadixNode};
+    /// use radixmap::{rule::RadixRule, node::RadixNode, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::try_from(("/api", 12345))?;
     ///
-    ///     assert_eq!(node.rule_ref(), "/api");
-    ///     assert_eq!(node.data_ref(), Some(&12345));
+    ///     assert_eq!(node.rule, "/api");
+    ///     assert_eq!(node.data, Some(12345));
     ///
     ///     let leaf = node.divide(1)?;
     ///
-    ///     assert_eq!(node.rule_ref(), "/");
-    ///     assert_eq!(node.data_ref(), None);
-    ///     assert_eq!(leaf.rule_ref(), "api");
-    ///     assert_eq!(leaf.data_ref(), Some(&12345));
+    ///     assert_eq!(node.rule, "/");
+    ///     assert_eq!(node.data, None);
+    ///     assert_eq!(leaf.rule, "api");
+    ///     assert_eq!(leaf.data, Some(12345));
     ///
     ///     Ok(())
     /// }

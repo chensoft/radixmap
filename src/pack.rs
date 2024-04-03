@@ -14,9 +14,9 @@ impl<'a, V> RadixPack<'a, V> {
         self.regular.is_empty() && self.special.is_empty()
     }
 
-    pub fn insert(&mut self, frag: &'a str) -> RadixResult<&mut RadixNode<'a, V>> {
+    pub fn insert(&mut self, rule: RadixRule<'a>) -> RadixResult<&mut RadixNode<'a, V>> {
         // special nodes inserted directly into map
-        let rule = RadixRule::try_from(frag)?;
+        let frag = rule.origin();
         if !matches!(rule, RadixRule::Plain { .. }) {
             return match self.special.contains_key(frag) {
                 true => Ok(&mut self.special[frag]),
@@ -51,13 +51,13 @@ impl<'a, V> RadixPack<'a, V> {
                 match frag.len().cmp(&share.len()) {
                     Ordering::Less => unreachable!(),
                     Ordering::Equal => Ok(found),
-                    Ordering::Greater => found.next.insert(&frag[share.len()..]),
+                    Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
                 }
             }
             Ordering::Greater => {
                 let node = found.divide(share.len())?;
                 found.next.regular.insert(node.rule.origin().as_bytes()[0] as usize, node);
-                found.next.insert(&frag[share.len()..])
+                found.next.insert(RadixRule::try_from(&frag[share.len()..])?)
             }
         }
     }
