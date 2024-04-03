@@ -14,7 +14,7 @@ pub(crate) use regex::Regex;
 pub(crate) use indexmap::IndexMap;
 pub(crate) use sparseset::SparseSet;
 
-/// Error and Result
+/// Error Codes
 #[derive(Debug, Error)]
 pub enum RadixError {
     #[error("path is empty")]
@@ -36,6 +36,7 @@ pub enum RadixError {
     GlobInvalid(#[from] glob::PatternError),
 }
 
+/// Custom Result
 pub type RadixResult<T> = Result<T, RadixError>;
 
 /// Create RadixMap or RadixSet
@@ -52,6 +53,14 @@ pub type RadixResult<T> = Result<T, RadixError>;
 ///     "/api/v2/user" => "/api/v2/user",
 ///     "/api/v2/user/12345" => "/api/v2/user/12345"
 /// };
+///
+/// assert_eq!(map.get("/"), Some(&"/"));
+/// assert_eq!(map.get("/api"), Some(&"/api"));
+/// assert_eq!(map.get("/api/v1"), Some(&"/api/v1"));
+/// assert_eq!(map.get("/api/v1/user"), Some(&"/api/v1/user"));
+/// assert_eq!(map.get("/api/v2"), Some(&"/api/v2"));
+/// assert_eq!(map.get("/api/v2/user"), Some(&"/api/v2/user"));
+/// assert_eq!(map.get("/api/v2/user/12345"), Some(&"/api/v2/user/12345"));
 ///
 /// let set = radix!{
 ///     "/",

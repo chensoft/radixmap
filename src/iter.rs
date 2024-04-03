@@ -102,7 +102,7 @@ impl<'a, V> Base<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, prefix: &'a str) -> RadixResult<Self> {
+    pub fn with_prefix(self, _prefix: &str) -> RadixResult<Self> {
         // todo iterate self and then rewind
         // let start = match self.start.deepest(prefix) {
         //     Some(node) => node,
@@ -332,7 +332,7 @@ impl<'a, V> Iterator for Keys<'a, V> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().and_then(|node| Some(node.path))
+        self.iter.next().map(|node| node.path)
     }
 }
 

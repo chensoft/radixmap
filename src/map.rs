@@ -7,12 +7,12 @@ pub struct RadixMap<'a, V> {
     /// The root node, always empty
     root: RadixNode<'a, V>,
 
-    /// The count of leaf nodes
+    /// The number of leaf nodes
     size: usize,
 }
 
 impl<'a, V> RadixMap<'a, V> {
-    /// For consistency with the standard library, we provide this to create an empty map
+    /// For consistency with the standard library, we provide this fn to create an empty map
     pub fn new() -> Self {
         Default::default()
     }
@@ -78,7 +78,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn get(&self, path: &'a str) -> Option<&V> {
+    pub fn get(&self, _path: &str) -> Option<&V> {
         // self.root.deepest(path).filter(|node| node.path == path).and_then(|node| node.data.as_ref())
         todo!()
     }
@@ -109,7 +109,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn get_mut(&'a mut self, path: &'a str) -> Option<&mut V> {
+    pub fn get_mut(&mut self, _path: &str) -> Option<&mut V> {
         // self.root.deepest_mut(path).filter(|node| node.path == path).and_then(|node| node.data.as_mut())
         todo!()
     }
@@ -134,15 +134,11 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn contains_key(&self, path: &'a str) -> bool {
-        // match self.root.deepest(path) {
-        //     Some(node) => node.path == path,
-        //     None => false
-        // }
+    pub fn contains_key(&self, _path: &str) -> bool {
         todo!()
     }
 
-    /// Check if the tree contains specific key
+    /// Check if the tree contains specific value
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -197,7 +193,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn iter(&'a self) -> Iter<'a, V> {
+    pub fn iter(&self) -> Iter<'a, V> {
         todo!()
     }
 
@@ -224,7 +220,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn iter_mut(&'a self) -> Iter<'a, V> {
+    pub fn iter_mut(&self) -> Iter<'a, V> {
         todo!()
     }
 
@@ -284,7 +280,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn values(&'a self) -> Values<V> {
+    pub fn values(&self) -> Values<V> {
         Values::from(&self.root)
     }
 
@@ -311,7 +307,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn values_mut(&'a mut self) -> Values<V> {
+    pub fn values_mut(&mut self) -> Values<V> {
         todo!()
     }
 
@@ -357,7 +353,7 @@ impl<'a, V> RadixMap<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn remove(&mut self, path: &'a str) -> Option<RadixNode<'a, V>> {
+    pub fn remove(&mut self, _path: &str) -> Option<RadixNode<'a, V>> {
         todo!()
     }
 
@@ -389,6 +385,21 @@ impl<'a, V> RadixMap<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Construct from an array of tuples
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
+///
+///     assert_eq!(map.len(), 2);
+///     assert_eq!(map.get("/api/v1"), Some(&1));
+///     assert_eq!(map.get("/api/v2"), Some(&2));
+///
+///     Ok(())
+/// }
+/// ```
 impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
     type Error = RadixError;
 
@@ -403,36 +414,71 @@ impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
     }
 }
 
+/// Default trait
 impl<'a, V> Default for RadixMap<'a, V> {
     fn default() -> Self {
         Self { root: RadixNode::default(), size: 0 }
     }
 }
 
+/// Debug trait
 impl<'a, V: Debug> Debug for RadixMap<'a, V> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
 
+/// Clone trait
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let map_a = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
+///     let map_b = map_a.clone();
+///
+///     assert_eq!(map_a, map_b);
+///
+///     Ok(())
+/// }
+/// ```
 impl<'a, V: Clone> Clone for RadixMap<'a, V> {
     fn clone(&self) -> Self {
         Self { root: self.root.clone(), size: self.size }
     }
 }
 
+/// == & !=
 impl<'a, V: Eq> Eq for RadixMap<'a, V> {}
 
+/// == & !=
 impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
-    fn eq(&self, _other: &Self) -> bool {
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
         todo!()
     }
 }
 
-impl<'a, V> Index<&'a str> for RadixMap<'a, V> {
+/// []
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
+///
+///     assert_eq!(map["/api/v1"], &1);
+///
+///     Ok(())
+/// }
+/// ```
+impl<'a, V> Index<&str> for RadixMap<'a, V> {
     type Output = V;
 
-    fn index(&self, path: &'a str) -> &Self::Output {
+    fn index(&self, path: &str) -> &Self::Output {
         match self.get(path) {
             Some(data) => data,
             None => panic!("no entry found for path '{}'", path)
@@ -440,8 +486,25 @@ impl<'a, V> Index<&'a str> for RadixMap<'a, V> {
     }
 }
 
-impl<'a, V> IndexMut<&'a str> for RadixMap<'a, V> {
-    fn index_mut(&mut self, path: &'a str) -> &mut Self::Output {
+/// Mutable []
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
+///
+///     assert_eq!(map["/api/v1"], &1);
+///
+///     map["/api/v1"] = 2;
+///
+///     assert_eq!(map["/api/v1"], &2);
+///
+///     Ok(())
+/// }
+/// ```
+impl<'a, V> IndexMut<&str> for RadixMap<'a, V> {
+    fn index_mut(&mut self, _path: &str) -> &mut Self::Output {
         todo!()
     }
 }
