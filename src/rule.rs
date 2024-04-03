@@ -235,6 +235,7 @@ impl<'a> RadixRule<'a> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn origin(&self) -> &'a str {
         match self {
             RadixRule::Plain { frag } => frag,
@@ -310,6 +311,19 @@ impl<'a> TryFrom<&'a str> for RadixRule<'a> {
     }
 }
 
+/// Default trait
+///
+/// ```
+/// use radixmap::{rule::RadixRule};
+///
+/// assert_eq!(RadixRule::default().origin(), "");
+/// ```
+impl<'a> Default for RadixRule<'a> {
+    fn default() -> Self {
+        Self::Plain { frag: "" }
+    }
+}
+
 /// Debug trait
 ///
 /// ```
@@ -332,19 +346,6 @@ impl<'a> Debug for RadixRule<'a> {
             RadixRule::Regex { frag, .. } => write!(f, "Regex({frag})"),
             RadixRule::Glob { frag, .. } => write!(f, "Glob({frag})"),
         }
-    }
-}
-
-/// Default trait
-///
-/// ```
-/// use radixmap::{rule::RadixRule};
-///
-/// assert_eq!(RadixRule::default().origin(), "");
-/// ```
-impl<'a> Default for RadixRule<'a> {
-    fn default() -> Self {
-        Self::Plain { frag: "" }
     }
 }
 

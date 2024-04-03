@@ -15,18 +15,6 @@ impl<'a, V> RadixMap<'a, V> {
         Default::default()
     }
 
-    pub fn keys(&'a self) -> Keys<'a, V> {
-        Keys::from(&self.root)
-    }
-
-    pub fn values(&'a self) -> Values<V> {
-        Values::from(&self.root)
-    }
-
-    pub fn iter(&'a self) -> Iter<'a, V> {
-        self.root.iter()
-    }
-
     #[inline]
     pub fn len(&self) -> usize {
         self.size
@@ -37,24 +25,48 @@ impl<'a, V> RadixMap<'a, V> {
         self.root.is_leaf()
     }
 
+    // todo (&str, V)
+    pub fn iter(&'a self) -> Iter<'a, V> {
+        todo!()
+    }
+
+    pub fn iter_mut(&'a self) -> Iter<'a, V> {
+        todo!()
+    }
+
+    pub fn keys(&'a self) -> Keys<'a, V> {
+        Keys::from(&self.root)
+    }
+
+    pub fn values(&'a self) -> Values<V> {
+        Values::from(&self.root)
+    }
+
+    pub fn values_mut(&'a mut self) -> Values<V> {
+        todo!()
+    }
+
     pub fn clear(&mut self) {
         self.root.clear();
         self.size = 0;
     }
 
     pub fn get(&self, path: &'a str) -> Option<&V> {
-        self.root.deepest(path).filter(|node| node.path == path).and_then(|node| node.data.as_ref())
+        // self.root.deepest(path).filter(|node| node.path == path).and_then(|node| node.data.as_ref())
+        todo!()
     }
 
     pub fn get_mut(&'a mut self, path: &'a str) -> Option<&mut V> {
-        self.root.deepest_mut(path).filter(|node| node.path == path).and_then(|node| node.data.as_mut())
+        // self.root.deepest_mut(path).filter(|node| node.path == path).and_then(|node| node.data.as_mut())
+        todo!()
     }
 
     pub fn contains_key(&self, path: &'a str) -> bool {
-        match self.root.deepest(path) {
-            Some(node) => node.path == path,
-            None => false
-        }
+        // match self.root.deepest(path) {
+        //     Some(node) => node.path == path,
+        //     None => false
+        // }
+        todo!()
     }
 
     pub fn contains_value(&self, data: &V) -> bool where V: PartialEq {
@@ -89,7 +101,7 @@ impl<'a, V> RadixMap<'a, V> {
 impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
     type Error = RadixError;
 
-    fn try_from(value: [(&'a str, V); N]) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: [(&'a str, V); N]) -> Result<Self, Self::Error> {
         let mut map = RadixMap::default();
 
         for (path, data) in value {
@@ -100,15 +112,15 @@ impl<'a, V, const N: usize> TryFrom<[(&'a str, V); N]> for RadixMap<'a, V> {
     }
 }
 
-impl<'a, V: Debug> Debug for RadixMap<'a, V> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
 impl<'a, V> Default for RadixMap<'a, V> {
     fn default() -> Self {
         Self { root: RadixNode::default(), size: 0 }
+    }
+}
+
+impl<'a, V: Debug> Debug for RadixMap<'a, V> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
     }
 }
 

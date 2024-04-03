@@ -7,11 +7,13 @@ use std::collections::BTreeMap;
 fn hashmap(c: &mut Criterion) {
     let mut obj = HashMap::new();
 
-    for i in 0..256usize {
-        obj.insert(i, i);
-    }
+    c.bench_function("hashmap-insert", |b| b.iter(|| {
+        for i in 0..256usize {
+            black_box(obj.insert(i, i));
+        }
+    }));
 
-    c.bench_function("hashmap", |b| b.iter(|| {
+    c.bench_function("hashmap-search", |b| b.iter(|| {
         for i in 0..256 {
             assert_eq!(obj.get(&i), Some(&i));
         }
@@ -21,11 +23,13 @@ fn hashmap(c: &mut Criterion) {
 fn btreemap(c: &mut Criterion) {
     let mut obj = BTreeMap::new();
 
-    for i in 0..256usize {
-        obj.insert(i, i);
-    }
+    c.bench_function("btreemap-insert", |b| b.iter(|| {
+        for i in 0..256usize {
+            black_box(obj.insert(i, i));
+        }
+    }));
 
-    c.bench_function("btreemap", |b| b.iter(|| {
+    c.bench_function("btreemap-search", |b| b.iter(|| {
         for i in 0..256 {
             assert_eq!(obj.get(&i), Some(&i));
         }
@@ -35,11 +39,13 @@ fn btreemap(c: &mut Criterion) {
 fn indexmap(c: &mut Criterion) {
     let mut obj = IndexMap::new();
 
-    for i in 0..256usize {
-        obj.insert(i, i);
-    }
+    c.bench_function("indexmap-insert", |b| b.iter(|| {
+        for i in 0..256usize {
+            black_box(obj.insert(i, i));
+        }
+    }));
 
-    c.bench_function("indexmap", |b| b.iter(|| {
+    c.bench_function("indexmap-search", |b| b.iter(|| {
         for i in 0..256 {
             assert_eq!(obj.get(&i), Some(&i));
         }
@@ -49,11 +55,13 @@ fn indexmap(c: &mut Criterion) {
 fn sparse(c: &mut Criterion) {
     let mut obj = SparseSet::with_capacity(256);
 
-    for i in 0..256usize {
-        obj.insert(i, i);
-    }
+    c.bench_function("sparse-insert", |b| b.iter(|| {
+        for i in 0..256usize {
+            black_box(obj.insert(i, i));
+        }
+    }));
 
-    c.bench_function("sparse", |b| b.iter(|| {
+    c.bench_function("sparse-search", |b| b.iter(|| {
         for i in 0..256usize {
             assert_eq!(obj.get(i), Some(&i));
         }
@@ -63,11 +71,13 @@ fn sparse(c: &mut Criterion) {
 fn array(c: &mut Criterion) {
     let mut obj = [None; 256];
 
-    for i in 0..256 {
-        obj[i] = Some(i);
-    }
+    c.bench_function("array-insert", |b| b.iter(|| {
+        for i in 0..256 {
+            obj[i] = Some(i);
+        }
+    }));
 
-    c.bench_function("array", |b| b.iter(|| {
+    c.bench_function("array-search", |b| b.iter(|| {
         for i in 0..256 {
             assert_eq!(obj[i].as_ref(), Some(&i));
         }

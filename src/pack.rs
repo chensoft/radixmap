@@ -19,6 +19,7 @@ impl<'a, V> RadixPack<'a, V> {
     ///
     /// assert!(RadixPack::<'_, ()>::default().is_empty());
     /// ```
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.regular.is_empty() && self.special.is_empty()
     }
@@ -100,7 +101,7 @@ impl<'a, V> RadixPack<'a, V> {
         }
     }
 
-    /// Clear the group
+    /// Clear the nodes and preserve its capacity
     ///
     /// ```
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};

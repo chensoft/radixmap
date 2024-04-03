@@ -103,15 +103,16 @@ impl<'a, V> Base<'a, V> {
     /// }
     /// ```
     pub fn with_prefix(mut self, prefix: &'a str) -> RadixResult<Self> {
-        let start = match self.start.deepest(prefix) {
-            Some(node) => node,
-            None => return Err(RadixError::PathNotFound),
-        };
-
-        self.start = start;
-        self.queue.clear();
-        self.queue.push_back(Entity::from(self.start).peekable());
-        self.visit.clear();
+        // todo iterate self and then rewind
+        // let start = match self.start.deepest(prefix) {
+        //     Some(node) => node,
+        //     None => return Err(RadixError::PathNotFound),
+        // };
+        // 
+        // self.start = start;
+        // self.queue.clear();
+        // self.queue.push_back(Entity::from(self.start).peekable());
+        // self.visit.clear();
 
         Ok(self)
     }
@@ -267,25 +268,25 @@ impl<'a, V> Base<'a, V> {
     }
 }
 
+/// Creating a new iterator that visits nodes in pre-order by default
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let mut map = RadixMap::new();
+///     map.insert("/api", "/api")?;
+///     map.insert("/api/v1", "/api/v1")?;
+///
+///     let mut iter = map.iter();
+///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+///     assert!(iter.next().is_none());
+///
+///     Ok(())
+/// }
+/// ```
 impl<'a, V> From<NodeRef<'a, V>> for Base<'a, V> {
-    /// Creating a new iterator that visits nodes in pre-order by default
-    ///
-    /// ```
-    /// use radixmap::{RadixMap, RadixResult};
-    ///
-    /// fn main() -> RadixResult<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///
-    ///     let mut iter = map.iter();
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert!(iter.next().is_none());
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
     fn from(start: NodeRef<'a, V>) -> Self {
         Self { start, queue: VecDeque::from([Entity::from(start).peekable()]), visit: vec![], order: Order::Pre, empty: false }
     }
@@ -311,4 +312,46 @@ impl<'a, V> Iterator for Base<'a, V> {
     }
 }
 
+// -----------------------------------------------------------------------------
+
 pub type Iter<'a, V> = Base<'a, V>;
+
+// -----------------------------------------------------------------------------
+
+pub struct Keys<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> From<NodeRef<'a, V>> for Keys<'a, V> {
+    fn from(value: NodeRef<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Keys<'a, V> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().and_then(|node| Some(node.path))
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+pub struct Values<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> From<NodeRef<'a, V>> for Values<'a, V> {
+    fn from(value: NodeRef<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Values<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().and_then(|node| node.data.as_ref())
+    }
+}
