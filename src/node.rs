@@ -120,8 +120,8 @@ impl<'a, V> TryFrom<(&'a str, V)> for RadixNode<'a, V> {
 ///
 /// fn main() -> RadixResult<()> {
 ///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_plain(r"/api")?)), r"Plain(/api)".to_string());
-///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_regex(r"{id:\d+}")?)), r"Regex({id:\d+})".to_string());
 ///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_param(r":id")?)), r"Param(:id)".to_string());
+///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_regex(r"{id:\d+}")?)), r"Regex({id:\d+})".to_string());
 ///     assert_eq!(format!("{:?}", RadixNode::<'_, ()>::from(RadixRule::from_glob(r"*")?)), r"Glob(*)".to_string());
 ///
 ///     Ok(())
