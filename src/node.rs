@@ -152,7 +152,7 @@ impl<'a, V> RadixNode<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn values_mut(&'a mut self) -> Values<'_, V> {
+    pub fn values_mut(&mut self) -> Values<'_, V> {
         todo!()
     }
 
@@ -202,7 +202,6 @@ impl<'a, V> RadixNode<'a, V> {
     /// }
     /// ```
     pub fn divide(&mut self, len: usize) -> RadixResult<RadixNode<'a, V>> {
-        // todo redesign
         Ok(RadixNode {
             path: std::mem::take(&mut self.path),
             data: self.data.take(),
@@ -212,7 +211,7 @@ impl<'a, V> RadixNode<'a, V> {
         })
     }
 
-    /// Clear the nodes and preserve its capacity
+    /// Clear the nodes but preserve its capacity
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};
@@ -320,7 +319,7 @@ impl<'a, V> Debug for RadixNode<'a, V> {
 /// use radixmap::{node::RadixNode, RadixResult};
 ///
 /// fn main() -> RadixResult<()> {
-///     let mut node_a = RadixNode::try_from(("/api", true))?;
+///     let mut node_a = RadixNode::try_from(("/api", 123))?;
 ///     let mut node_b = node_a.clone();
 ///
 ///     assert_eq!(node_a.path, node_b.path);
