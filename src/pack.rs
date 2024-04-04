@@ -24,6 +24,14 @@ impl<'a, V> RadixPack<'a, V> {
         self.regular.is_empty() && self.special.is_empty()
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = &RadixNode<'a, V>> {
+        self.regular.iter().map(|e| e.value()).chain(self.special.values())
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut RadixNode<'a, V>> {
+        self.regular.iter_mut().map(|e| e.value_mut()).chain(self.special.values_mut())
+    }
+
     /// Insert new node
     ///
     /// ```

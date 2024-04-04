@@ -22,11 +22,11 @@ pub enum Order {
 
 // -----------------------------------------------------------------------------
 
-pub type NodeRef<'a, V> = &'a RadixNode<'a, V>;
-pub type PackRef<'a, V> = &'a RadixPack<'a, V>;
+type NodeRef<'a, V> = &'a RadixNode<'a, V>;
+type PackRef<'a, V> = &'a RadixPack<'a, V>;
 
-pub type RegularIter<'a, V> = std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>;
-pub type SpecialIter<'a, V> = indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>;
+type RegularIter<'a, V> = std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>;
+type SpecialIter<'a, V> = indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>;
 
 /// Iterator adapter for nodes and packs
 #[derive(Clone)]
