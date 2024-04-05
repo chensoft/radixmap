@@ -1,6 +1,6 @@
 use super::def::*;
-use super::node::*;
 use super::rule::*;
+use super::node::RadixNode;
 
 /// A group of regular and special nodes
 pub struct RadixPack<'a, V> {
@@ -24,12 +24,48 @@ impl<'a, V> RadixPack<'a, V> {
         self.regular.is_empty() && self.special.is_empty()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &RadixNode<'a, V>> {
-        self.regular.iter().map(|e| e.value()).chain(self.special.values())
+    /// Iterate regular and special
+    ///
+    /// ```
+    /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut pack = RadixPack::default();
+    ///     pack.insert(RadixRule::try_from("/api")?)?;
+    ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
+    ///
+    ///     let mut iter = pack.iter();
+    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_plain("/api"));
+    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_regex("{[0-9]+}"));
+    ///     assert_eq!(iter.next(), None);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn iter(&'a self) -> Iter<'a, V> {
+        Iter::from(self)
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut RadixNode<'a, V>> {
-        self.regular.iter_mut().map(|e| e.value_mut()).chain(self.special.values_mut())
+    /// Iterate regular and special
+    ///
+    /// ```
+    /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut pack = RadixPack::default();
+    ///     pack.insert(RadixRule::try_from("/api")?)?;
+    ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
+    ///
+    ///     let mut iter = pack.iter_mut();
+    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_plain("/api"));
+    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_regex("{[0-9]+}"));
+    ///     assert_eq!(iter.next(), None);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn iter_mut(&'a mut self) -> IterMut<'a, V> {
+        IterMut::from(self)
     }
 
     /// Insert new node
@@ -159,3 +195,47 @@ impl<'a, V: Clone> Clone for RadixPack<'a, V> {
 }
 
 // todo Eq, PartialEq
+
+// -----------------------------------------------------------------------------
+
+/// Iterate regular and special
+pub struct Iter<'a, V> {
+    regular: std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>,
+    special: indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>,
+}
+
+impl<'a, V> From<&'a RadixPack<'a, V>> for Iter<'a, V> {
+    fn from(value: &'a RadixPack<'a, V>) -> Self {
+        Self { regular: value.regular.iter(), special: value.special.values() }
+    }
+}
+
+impl<'a, V> Iterator for Iter<'a, V> {
+    type Item = &'a RadixNode<'a, V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.regular.next().map(|node| node.value()).or(self.special.next())
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+/// Iterate regular and special
+pub struct IterMut<'a, V> {
+    regular: std::slice::IterMut<'a, sparseset::Entry<RadixNode<'a, V>>>,
+    special: indexmap::map::ValuesMut<'a, &'a str, RadixNode<'a, V>>,
+}
+
+impl<'a, V> From<&'a mut RadixPack<'a, V>> for IterMut<'a, V> {
+    fn from(value: &'a mut RadixPack<'a, V>) -> Self {
+        Self { regular: value.regular.iter_mut(), special: value.special.values_mut() }
+    }
+}
+
+impl<'a, V> Iterator for IterMut<'a, V> {
+    type Item = &'a mut RadixNode<'a, V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.regular.next().map(|node| node.value_mut()).or(self.special.next())
+    }
+}

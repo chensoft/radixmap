@@ -1,5 +1,4 @@
 use super::def::*;
-use super::iter::*;
 use super::node::*;
 
 /// The radix map where the key is &'a str and the value is arbitrary data

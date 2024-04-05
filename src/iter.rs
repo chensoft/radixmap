@@ -22,11 +22,12 @@ pub enum Order {
 
 // -----------------------------------------------------------------------------
 
-type NodeRef<'a, V> = &'a RadixNode<'a, V>;
-type PackRef<'a, V> = &'a RadixPack<'a, V>;
+// todo delete
+pub(crate) type NodeRef<'a, V> = &'a RadixNode<'a, V>;
+pub(crate) type PackRef<'a, V> = &'a RadixPack<'a, V>;
 
-type RegularIter<'a, V> = std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>;
-type SpecialIter<'a, V> = indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>;
+pub(crate) type RegularIter<'a, V> = std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>;
+pub(crate) type SpecialIter<'a, V> = indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>;
 
 /// Iterator adapter for nodes and packs
 #[derive(Clone)]
@@ -309,49 +310,5 @@ impl<'a, V> Iterator for Base<'a, V> {
                 _ => return node,
             }
         }
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-pub type Iter<'a, V> = Base<'a, V>;
-
-// -----------------------------------------------------------------------------
-
-pub struct Keys<'a, V> {
-    iter: Iter<'a, V>
-}
-
-impl<'a, V> From<NodeRef<'a, V>> for Keys<'a, V> {
-    fn from(value: NodeRef<'a, V>) -> Self {
-        Self { iter: Iter::from(value) }
-    }
-}
-
-impl<'a, V> Iterator for Keys<'a, V> {
-    type Item = &'a str;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|node| node.path)
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-pub struct Values<'a, V> {
-    iter: Iter<'a, V>
-}
-
-impl<'a, V> From<NodeRef<'a, V>> for Values<'a, V> {
-    fn from(value: NodeRef<'a, V>) -> Self {
-        Self { iter: Iter::from(value) }
-    }
-}
-
-impl<'a, V> Iterator for Values<'a, V> {
-    type Item = &'a V;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().and_then(|node| node.data.as_ref())
     }
 }

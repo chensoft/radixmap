@@ -1,7 +1,7 @@
 use super::def::*;
 use super::iter::*;
-use super::pack::*;
 use super::rule::*;
+use super::pack::RadixPack;
 
 /// The basic element inside a tree
 pub struct RadixNode<'a, V> {
@@ -337,5 +337,49 @@ impl<'a, V: Clone> Clone for RadixNode<'a, V> {
             rule: self.rule.clone(),
             next: self.next.clone(),
         }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+pub type Iter<'a, V> = Base<'a, V>;
+
+// -----------------------------------------------------------------------------
+
+pub struct Keys<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> From<&'a RadixNode<'a, V>> for Keys<'a, V> {
+    fn from(value: &'a RadixNode<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Keys<'a, V> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|node| node.path)
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+pub struct Values<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> From<&'a RadixNode<'a, V>> for Values<'a, V> {
+    fn from(value: &'a RadixNode<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Values<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().and_then(|node| node.data.as_ref())
     }
 }
