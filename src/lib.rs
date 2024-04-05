@@ -9,7 +9,6 @@ pub mod def;
 pub mod map;
 pub mod set;
 
-pub mod iter;
 pub mod node;
 pub mod pack;
 pub mod rule;

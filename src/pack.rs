@@ -199,6 +199,7 @@ impl<'a, V: Clone> Clone for RadixPack<'a, V> {
 // -----------------------------------------------------------------------------
 
 /// Iterate regular and special
+#[derive(Clone)]
 pub struct Iter<'a, V> {
     regular: std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>,
     special: indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>,
