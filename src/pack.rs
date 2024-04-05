@@ -199,15 +199,22 @@ impl<'a, V: Clone> Clone for RadixPack<'a, V> {
 // -----------------------------------------------------------------------------
 
 /// Iterate regular and special
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Iter<'a, V> {
+    onetime: Option<&'a RadixNode<'a, V>>,
     regular: std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>,
     special: indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>,
 }
 
+impl<'a, V> From<&'a RadixNode<'a, V>> for Iter<'a, V> {
+    fn from(value: &'a RadixNode<'a, V>) -> Self {
+        Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
+    }
+}
+
 impl<'a, V> From<&'a RadixPack<'a, V>> for Iter<'a, V> {
     fn from(value: &'a RadixPack<'a, V>) -> Self {
-        Self { regular: value.regular.iter(), special: value.special.values() }
+        Self { onetime: None, regular: value.regular.iter(), special: value.special.values() }
     }
 }
 
@@ -215,21 +222,29 @@ impl<'a, V> Iterator for Iter<'a, V> {
     type Item = &'a RadixNode<'a, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.regular.next().map(|node| node.value()).or(self.special.next())
+        self.onetime.take().or(self.regular.next().map(|node| node.value())).or(self.special.next())
     }
 }
 
 // -----------------------------------------------------------------------------
 
 /// Iterate regular and special
+#[derive(Default)]
 pub struct IterMut<'a, V> {
+    onetime: Option<&'a mut RadixNode<'a, V>>,
     regular: std::slice::IterMut<'a, sparseset::Entry<RadixNode<'a, V>>>,
     special: indexmap::map::ValuesMut<'a, &'a str, RadixNode<'a, V>>,
 }
 
+impl<'a, V> From<&'a mut RadixNode<'a, V>> for IterMut<'a, V> {
+    fn from(value: &'a mut RadixNode<'a, V>) -> Self {
+        Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
+    }
+}
+
 impl<'a, V> From<&'a mut RadixPack<'a, V>> for IterMut<'a, V> {
     fn from(value: &'a mut RadixPack<'a, V>) -> Self {
-        Self { regular: value.regular.iter_mut(), special: value.special.values_mut() }
+        Self { onetime: None, regular: value.regular.iter_mut(), special: value.special.values_mut() }
     }
 }
 
@@ -237,6 +252,6 @@ impl<'a, V> Iterator for IterMut<'a, V> {
     type Item = &'a mut RadixNode<'a, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.regular.next().map(|node| node.value_mut()).or(self.special.next())
+        self.onetime.take().or(self.regular.next().map(|node| node.value_mut())).or(self.special.next())
     }
 }

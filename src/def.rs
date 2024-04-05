@@ -1,6 +1,4 @@
 /// Internal Use
-pub(crate) use std::ops::Index;
-pub(crate) use std::ops::IndexMut;
 pub(crate) use std::hash::Hash;
 pub(crate) use std::hash::Hasher;
 pub(crate) use std::fmt::Debug;

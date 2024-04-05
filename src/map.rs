@@ -1,5 +1,6 @@
 use super::def::*;
-use super::node::*;
+use super::node;
+use super::node::RadixNode;
 
 /// The radix map where the key is &'a str and the value is arbitrary data
 pub struct RadixMap<'a, V> {
@@ -77,9 +78,11 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn get(&self, _path: &str) -> Option<&V> {
-        // self.root.deepest(path).filter(|node| node.path == path).and_then(|node| node.data.as_ref())
-        todo!()
+    pub fn get(&self, path: &str) -> Option<&V> {
+        match self.root.values().with_prefix(path) {
+            Ok(mut iter) => iter.next(),
+            Err(_) => None
+        }
     }
 
     /// Retrieve the corresponding mutable data
@@ -108,9 +111,11 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn get_mut(&mut self, _path: &str) -> Option<&mut V> {
-        // self.root.deepest_mut(path).filter(|node| node.path == path).and_then(|node| node.data.as_mut())
-        todo!()
+    pub fn get_mut(&'a mut self, path: &str) -> Option<&mut V> {
+        match self.root.values_mut().with_prefix(path) {
+            Ok(mut iter) => iter.next(),
+            Err(_) => None
+        }
     }
 
     /// Check if the tree contains specific key
@@ -133,8 +138,8 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn contains_key(&self, _path: &str) -> bool {
-        todo!()
+    pub fn contains_key(&self, path: &str) -> bool {
+        self.root.values().with_prefix(path).is_ok()
     }
 
     /// Check if the tree contains specific value
@@ -192,8 +197,8 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn iter(&self) -> Iter<'a, V> {
-        todo!()
+    pub fn iter(&'a self) -> Iter<'a, V> {
+        Iter::from(self)
     }
 
     /// Iterate over the tree to retrieve nodes' key and mutable value
@@ -219,8 +224,8 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn iter_mut(&self) -> Iter<'a, V> {
-        todo!()
+    pub fn iter_mut(&'a mut self) -> IterMut<'a, V> {
+        IterMut::from(self)
     }
 
     /// Iterate over the tree to get nodes' key only
@@ -250,7 +255,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// ```
     #[inline]
     pub fn keys(&'a self) -> Keys<'a, V> {
-        Keys::from(&self.root)
+        Keys::from(self)
     }
 
     /// Iterate over the tree to get nodes' value only
@@ -280,7 +285,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// ```
     #[inline]
     pub fn values(&self) -> Values<V> {
-        Values::from(&self.root)
+        Values::from(self)
     }
 
     /// Iterate over the tree to get nodes' mutable value
@@ -306,8 +311,8 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn values_mut(&mut self) -> Values<V> {
-        todo!()
+    pub fn values_mut(&'a mut self) -> ValuesMut<V> {
+        ValuesMut::from(self)
     }
 
     /// Insert into a pair of new data and return old if exist
@@ -461,49 +466,192 @@ impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
     }
 }
 
-/// []
-///
-/// ```
-/// use radixmap::{RadixMap, RadixResult};
-///
-/// fn main() -> RadixResult<()> {
-///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
-///
-///     assert_eq!(map["/api/v1"], &1);
-///
-///     Ok(())
-/// }
-/// ```
-impl<'a, V> Index<&str> for RadixMap<'a, V> {
-    type Output = V;
+// -----------------------------------------------------------------------------
 
-    fn index(&self, path: &str) -> &Self::Output {
-        match self.get(path) {
-            Some(data) => data,
-            None => panic!("no entry found for path '{}'", path)
-        }
+pub type Order = node::Order;
+
+// -----------------------------------------------------------------------------
+
+#[derive(Default, Clone)]
+pub struct Iter<'a, V> {
+    iter: node::Iter<'a, V>
+}
+
+impl<'a, V> Iter<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
     }
 }
 
-/// Mutable []
-///
-/// ```
-/// use radixmap::{RadixMap, RadixResult};
-///
-/// fn main() -> RadixResult<()> {
-///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
-///
-///     assert_eq!(map["/api/v1"], &1);
-///
-///     map["/api/v1"] = 2;
-///
-///     assert_eq!(map["/api/v1"], &2);
-///
-///     Ok(())
-/// }
-/// ```
-impl<'a, V> IndexMut<&str> for RadixMap<'a, V> {
-    fn index_mut(&mut self, _path: &str) -> &mut Self::Output {
-        todo!()
+impl<'a, V> From<&'a RadixMap<'a, V>> for Iter<'a, V> {
+    fn from(value: &'a RadixMap<'a, V>) -> Self {
+        Self { iter: node::Iter::from(&value.root) }
+    }
+}
+
+impl<'a, V> Iterator for Iter<'a, V> {
+    type Item = (&'a str, &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for node in self.iter.by_ref() {
+            if let Some(data) = node.data.as_ref() {
+                return Some((node.path, data));
+            }
+        }
+        
+        None
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+#[derive(Default)]
+pub struct IterMut<'a, V> {
+    iter: node::IterMut<'a, V>
+}
+
+impl<'a, V> IterMut<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
+}
+
+impl<'a, V> From<&'a mut RadixMap<'a, V>> for IterMut<'a, V> {
+    fn from(value: &'a mut RadixMap<'a, V>) -> Self {
+        Self { iter: node::IterMut::from(&mut value.root) }
+    }
+}
+
+impl<'a, V> Iterator for IterMut<'a, V> {
+    type Item = (&'a str, &'a mut V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for node in self.iter.by_ref() {
+            if let Some(data) = node.data.as_mut() {
+                return Some((node.path, data));
+            }
+        }
+
+        None
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+#[derive(Clone)]
+pub struct Keys<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> Keys<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
+}
+
+impl<'a, V> From<&'a RadixMap<'a, V>> for Keys<'a, V> {
+    fn from(value: &'a RadixMap<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Keys<'a, V> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|item| item.0)
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+#[derive(Clone)]
+pub struct Values<'a, V> {
+    iter: Iter<'a, V>
+}
+
+impl<'a, V> Values<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
+}
+
+impl<'a, V> From<&'a RadixMap<'a, V>> for Values<'a, V> {
+    fn from(value: &'a RadixMap<'a, V>) -> Self {
+        Self { iter: Iter::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for Values<'a, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|item| item.1)
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+pub struct ValuesMut<'a, V> {
+    iter: IterMut<'a, V>
+}
+
+impl<'a, V> ValuesMut<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
+}
+
+impl<'a, V> From<&'a mut RadixMap<'a, V>> for ValuesMut<'a, V> {
+    fn from(value: &'a mut RadixMap<'a, V>) -> Self {
+        Self { iter: IterMut::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for ValuesMut<'a, V> {
+    type Item = &'a mut V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|item| item.1)
     }
 }

@@ -76,8 +76,8 @@ impl<'a, V> RadixNode<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn iter_mut(&self) -> Iter<'_, V> {
-        todo!()
+    pub fn iter_mut(&'a mut self) -> IterMut<'_, V> {
+        IterMut::from(self)
     }
 
     /// Iterator adapter for path
@@ -151,8 +151,8 @@ impl<'a, V> RadixNode<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn values_mut(&mut self) -> Values<'_, V> {
-        todo!()
+    pub fn values_mut(&'a mut self) -> ValuesMut<'_, V> {
+        ValuesMut::from(self)
     }
 
     /// Inserts a path and data into this node, which serves as the root node for the insertion.
@@ -359,53 +359,19 @@ pub enum Order {
     Level
 }
 
-// -----------------------------------------------------------------------------
-
-/// Iterator adapter for nodes and packs
-#[derive(Clone)]
-pub enum EntityRef<'a, V> {
-    Node(Option<&'a RadixNode<'a, V>>),
-    Pack(pack::Iter<'a, V>),
-}
-
-impl<'a, V> Iterator for EntityRef<'a, V> {
-    type Item = &'a RadixNode<'a, V>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            EntityRef::Node(node) => node.take(),
-            EntityRef::Pack(pack) => pack.next(),
-        }
-    }
-}
-
-// -----------------------------------------------------------------------------
-
-/// Iterator adapter for nodes and packs
-pub enum EntityMut<'a, V> {
-    Node(Option<&'a mut RadixNode<'a, V>>),
-    Pack(pack::IterMut<'a, V>),
-}
-
-impl<'a, V> Iterator for EntityMut<'a, V> {
-    type Item = &'a mut RadixNode<'a, V>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self {
-            EntityMut::Node(node) => node.take(),
-            EntityMut::Pack(pack) => pack.next(),
-        }
+impl Default for Order {
+    fn default() -> Self {
+        Self::Pre
     }
 }
 
 // -----------------------------------------------------------------------------
 
 /// The iterator for radix tree
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Iter<'a, V> {
-    start: &'a RadixNode<'a, V>,
-    queue: VecDeque<Peekable<EntityRef<'a, V>>>,
-    visit: Vec<Peekable<EntityRef<'a, V>>>, // used in post-order only
+    queue: VecDeque<Peekable<pack::Iter<'a, V>>>,
+    visit: Vec<Peekable<pack::Iter<'a, V>>>, // used in post-order only
     order: Order,
     empty: bool,
 }
@@ -457,7 +423,7 @@ impl<'a, V> Iter<'a, V> {
     /// Change the iterating order
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult, iter::Order};
+    /// use radixmap::{RadixMap, RadixResult, node::Order};
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
@@ -548,7 +514,7 @@ impl<'a, V> Iter<'a, V> {
 
             match back.next() {
                 Some(node) => {
-                    self.queue.push_back(EntityRef::Pack(node.next.iter()).peekable());
+                    self.queue.push_back(node.next.iter().peekable());
                     return Some(node);
                 }
                 None => { self.queue.pop_back(); }
@@ -561,7 +527,7 @@ impl<'a, V> Iter<'a, V> {
         // traverse to the deepest leaf node, put all iters into the visit queue
         if let Some(mut back) = self.queue.pop_back() {
             while let Some(node) = back.peek() {
-                let pack = EntityRef::Pack(node.next.iter()).peekable();
+                let pack = node.next.iter().peekable();
                 self.visit.push(back);
                 back = pack;
             }
@@ -596,7 +562,7 @@ impl<'a, V> Iter<'a, V> {
 
             match front.next() {
                 Some(node) => {
-                    self.queue.push_back(EntityRef::Pack(node.next.iter()).peekable());
+                    self.queue.push_back(node.next.iter().peekable());
                     return Some(node);
                 }
                 None => { self.queue.pop_front(); }
@@ -625,7 +591,7 @@ impl<'a, V> Iter<'a, V> {
 /// ```
 impl<'a, V> From<&'a RadixNode<'a, V>> for Iter<'a, V> {
     fn from(start: &'a RadixNode<'a, V>) -> Self {
-        Self { start, queue: VecDeque::from([EntityRef::Node(Some(start)).peekable()]), visit: vec![], order: Order::Pre, empty: false }
+        Self { queue: VecDeque::from([pack::Iter::from(start).peekable()]), visit: vec![], order: Order::Pre, empty: false }
     }
 }
 
@@ -651,8 +617,252 @@ impl<'a, V> Iterator for Iter<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// The iterator for radix tree
+#[derive(Default)]
+pub struct IterMut<'a, V> {
+    queue: VecDeque<Peekable<pack::IterMut<'a, V>>>,
+    order: Order,
+    empty: bool,
+}
+
+impl<'a, V> IterMut<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/api", "/api")?;
+    ///     map.insert("/api/v1", "/api/v1")?;
+    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
+    ///     map.insert("/api/v2", "/api/v2")?;
+    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///
+    ///     let mut iter = map.iter_mut().with_prefix("/api/v1")?;
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     assert_eq!(iter.next(), None);
+    ///
+    ///     let mut iter = map.iter_mut().with_prefix("/api/v")?;
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     assert_eq!(iter.next(), None);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn with_prefix(self, _prefix: &str) -> RadixResult<Self> {
+        // todo iterate self and then rewind
+        // let start = match self.start.deepest(prefix) {
+        //     Some(node) => node,
+        //     None => return Err(RadixError::PathNotFound),
+        // };
+        // 
+        // self.start = start;
+        // self.queue.clear();
+        // self.queue.push_back(EntityMut::from(self.start).peekable());
+        // self.visit.clear();
+
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, RadixResult, node::Order};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/api", "/api")?;
+    ///     map.insert("/api/v1", "/api/v1")?;
+    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
+    ///     map.insert("/api/v2", "/api/v2")?;
+    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///
+    ///     let mut iter = map.iter_mut(); // same as with_order(Order::Pre);
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     assert!(iter.next().is_none());
+    ///
+    ///     let mut iter = map.iter_mut().with_order(Order::Post);
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+    ///     assert!(iter.next().is_none());
+    ///
+    ///     let mut iter = map.iter_mut().with_order(Order::Level);
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     assert!(iter.next().is_none());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.order = order;
+        self
+    }
+
+    /// Traverse all nodes, including the internal nodes which do not contain data
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, RadixResult};
+    ///
+    /// macro_rules! check {
+    ///     ($iter:expr, $orig:literal, $data:expr) => {{
+    ///         let node = $iter.next().unwrap();
+    ///         assert_eq!(node.rule.origin(), $orig);
+    ///         assert_eq!(node.data, $data);
+    ///     }};
+    /// }
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/api", "/api")?;
+    ///     map.insert("/api/v1", "/api/v1")?;
+    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
+    ///     map.insert("/api/v2", "/api/v2")?;
+    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///
+    ///     let mut iter = map.iter_mut().with_empty();
+    ///     check!(iter, "", None);                        // the root node
+    ///     check!(iter, "/api", Some("/api"));
+    ///     check!(iter, "/v", None);                      // an internal node
+    ///     check!(iter, "1", Some("/api/v1"));
+    ///     check!(iter, "/user1", Some("/api/v1/user1"));
+    ///     check!(iter, "2", Some("/api/v2"));
+    ///     check!(iter, "/user2", Some("/api/v2/user2"));
+    ///     assert!(iter.next().is_none());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn with_empty(mut self) -> Self {
+        self.empty = true;
+        self
+    }
+
+    /// Internal use only, traversing nodes in pre-order
+    ///
+    /// # Safety
+    ///
+    /// DO NOT MODIFY THE RETURNED NODE'S `next` FIELD
+    fn next_pre(&mut self) -> Option<&'a mut RadixNode<'a, V>> {
+        loop {
+            let back = match self.queue.back_mut() {
+                Some(obj) => obj,
+                None => return None,
+            };
+
+            match back.next() {
+                Some(node) => {
+                    let ptr = node as *mut RadixNode<'a, V>;
+                    self.queue.push_back(node.next.iter_mut().peekable());
+                    unsafe { return Some(&mut *ptr); }
+                }
+                None => { self.queue.pop_back(); }
+            }
+        }
+    }
+
+    /// Internal use only, traversing nodes in level-order
+    ///
+    /// # Safety
+    ///
+    /// DO NOT MODIFY THE RETURNED NODE'S `next` FIELD
+    fn next_level(&mut self) -> Option<&'a mut RadixNode<'a, V>> {
+        loop {
+            let front = match self.queue.front_mut() {
+                Some(obj) => obj,
+                None => return None,
+            };
+
+            match front.next() {
+                Some(node) => {
+                    let ptr = node as *mut RadixNode<'a, V>;
+                    self.queue.push_back(node.next.iter_mut().peekable());
+                    unsafe { return Some(&mut *ptr); }
+                }
+                None => { self.queue.pop_front(); }
+            }
+        }
+    }
+}
+
+/// Creating a new iterator that visits nodes in pre-order by default
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let mut map = RadixMap::new();
+///     map.insert("/api", "/api")?;
+///     map.insert("/api/v1", "/api/v1")?;
+///
+///     let mut iter = map.iter_mut();
+///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
+///     assert!(iter.next().is_none());
+///
+///     Ok(())
+/// }
+/// ```
+impl<'a, V> From<&'a mut RadixNode<'a, V>> for IterMut<'a, V> {
+    fn from(start: &'a mut RadixNode<'a, V>) -> Self {
+        Self { queue: VecDeque::from([pack::IterMut::from(start).peekable()]), order: Order::Pre, empty: false }
+    }
+}
+
+impl<'a, V> Iterator for IterMut<'a, V> {
+    type Item = &'a mut RadixNode<'a, V>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let node = match self.order {
+                Order::Pre => self.next_pre(),
+                Order::Level => self.next_level(),
+                _ => unimplemented!()
+            };
+
+            // check if user need to traverse empty node
+            match node {
+                Some(node) if !self.empty && node.is_empty() => continue,
+                _ => return node,
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+#[derive(Clone)]
 pub struct Keys<'a, V> {
     iter: Iter<'a, V>
+}
+
+impl<'a, V> Keys<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
 }
 
 impl<'a, V> From<&'a RadixNode<'a, V>> for Keys<'a, V> {
@@ -671,8 +881,23 @@ impl<'a, V> Iterator for Keys<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+#[derive(Clone)]
 pub struct Values<'a, V> {
     iter: Iter<'a, V>
+}
+
+impl<'a, V> Values<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
 }
 
 impl<'a, V> From<&'a RadixNode<'a, V>> for Values<'a, V> {
@@ -686,5 +911,39 @@ impl<'a, V> Iterator for Values<'a, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().and_then(|node| node.data.as_ref())
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+pub struct ValuesMut<'a, V> {
+    iter: IterMut<'a, V>
+}
+
+impl<'a, V> ValuesMut<'a, V> {
+    /// Starting to iterate from the node with a specific prefix
+    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(prefix)?;
+        Ok(self)
+    }
+
+    /// Change the iterating order
+    pub fn with_order(mut self, order: Order) -> Self {
+        self.iter = self.iter.with_order(order);
+        self
+    }
+}
+
+impl<'a, V> From<&'a mut RadixNode<'a, V>> for ValuesMut<'a, V> {
+    fn from(value: &'a mut RadixNode<'a, V>) -> Self {
+        Self { iter: IterMut::from(value) }
+    }
+}
+
+impl<'a, V> Iterator for ValuesMut<'a, V> {
+    type Item = &'a mut V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().and_then(|node| node.data.as_mut())
     }
 }
