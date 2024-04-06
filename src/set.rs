@@ -1,3 +1,4 @@
+//! Radix set implementation
 use super::def::*;
 use super::map::*;
 

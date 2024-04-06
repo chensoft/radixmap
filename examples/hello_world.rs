@@ -13,21 +13,22 @@ fn main() -> RadixResult<()> {
     //             └── /user
     //                 └── /12345
     map.insert("/", "/")?;
-    map.insert("/api/v1", "/api/v1")?;
-    map.insert("/api/v1/user", "/api/v1/user")?;
-    map.insert("/api/v2", "/api/v2")?;
-    map.insert("/api/v2/user", "/api/v2/user")?;
-    map.insert("/api/v2/user/12345", "/api/v2/user/12345")?;
-    map.insert("/api", "/api")?;
+    map.insert("/api/v1", "v1")?;
+    map.insert("/api/v1/user", "user1")?;
+    map.insert("/api/v2", "v2")?;
+    map.insert("/api/v2/user", "user2")?;
+    map.insert("/api/v2/user/12345", "user2-12345")?;
+    map.insert("/api", "api")?;
 
     // search the tree and find the data
-    // assert_eq!(map.get("/api"), Some(&"/api"));
-    // assert_eq!(map.get("/api/v1"), Some(&"/api/v1"));
+    assert_eq!(map.get("/api"), Some(&"api"));
+    assert_eq!(map.get("/api/v1"), Some(&"v1"));
+    assert_eq!(map.get("/api/v2/user/12345"), Some(&"user2-12345"));
 
     // iterate the tree with a prefix path
-    // for node in map.iter().with_prefix("/api") {
-    //     println!("{}", node.item.pattern);
-    // }
+    for (path, data) in map.iter().with_prefix("/api/v2")? {
+        println!("{} -> {}", path, data);
+    }
 
     Ok(())
 }

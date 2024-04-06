@@ -1,3 +1,4 @@
+//! Node is the core tree element
 use super::pack;
 use super::def::*;
 use super::rule::*;

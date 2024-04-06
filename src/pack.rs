@@ -1,3 +1,4 @@
+//! Pack represents a node's children
 use super::def::*;
 use super::rule::*;
 use super::node::RadixNode;

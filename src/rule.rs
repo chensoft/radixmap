@@ -1,3 +1,4 @@
+//! Rule represents a match
 use super::def::*;
 
 /// An enum representing various matching patterns

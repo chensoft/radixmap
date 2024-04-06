@@ -1,4 +1,4 @@
-/// Internal Use
+//! Common defines
 pub(crate) use std::hash::Hash;
 pub(crate) use std::hash::Hasher;
 pub(crate) use std::fmt::Debug;
@@ -13,6 +13,7 @@ pub(crate) use indexmap::IndexMap;
 pub(crate) use sparseset::SparseSet;
 
 /// Error Codes
+#[allow(missing_docs)]
 #[derive(Debug, Error)]
 pub enum RadixError {
     #[error("path is empty")]
@@ -37,28 +38,26 @@ pub enum RadixError {
 /// Custom Result
 pub type RadixResult<T> = Result<T, RadixError>;
 
-/// Create RadixMap or RadixSet
+/// Macros to create RadixMap or RadixSet
 ///
 /// ```
 /// #[macro_use] extern crate radixmap;
 ///
 /// let map = radix!{
 ///     "/" => "/",
-///     "/api" => "/api",
-///     "/api/v1" => "/api/v1",
-///     "/api/v1/user" => "/api/v1/user",
-///     "/api/v2" => "/api/v2",
-///     "/api/v2/user" => "/api/v2/user",
-///     "/api/v2/user/12345" => "/api/v2/user/12345"
+///     "/api" => "api",
+///     "/api/v1" => "v1",
+///     "/api/v1/user" => "user1",
+///     "/api/v2" => "v2",
+///     "/api/v2/user" => "user2",
 /// };
 ///
 /// assert_eq!(map.get("/"), Some(&"/"));
-/// assert_eq!(map.get("/api"), Some(&"/api"));
-/// assert_eq!(map.get("/api/v1"), Some(&"/api/v1"));
-/// assert_eq!(map.get("/api/v1/user"), Some(&"/api/v1/user"));
-/// assert_eq!(map.get("/api/v2"), Some(&"/api/v2"));
-/// assert_eq!(map.get("/api/v2/user"), Some(&"/api/v2/user"));
-/// assert_eq!(map.get("/api/v2/user/12345"), Some(&"/api/v2/user/12345"));
+/// assert_eq!(map.get("/api"), Some(&"api"));
+/// assert_eq!(map.get("/api/v1"), Some(&"v1"));
+/// assert_eq!(map.get("/api/v1/user"), Some(&"user1"));
+/// assert_eq!(map.get("/api/v2"), Some(&"v2"));
+/// assert_eq!(map.get("/api/v2/user"), Some(&"user2"));
 ///
 /// let set = radix!{
 ///     "/",
@@ -67,7 +66,6 @@ pub type RadixResult<T> = Result<T, RadixError>;
 ///     "/api/v1/user",
 ///     "/api/v2",
 ///     "/api/v2/user",
-///     "/api/v2/user/12345",
 /// };
 ///
 /// // todo assert

@@ -1,3 +1,4 @@
+//! Radix map implementation
 use super::def::*;
 use super::node;
 use super::node::RadixNode;
