@@ -1,5 +1,5 @@
 //! Rule represents a match
-use super::def::*;
+use super::defs::*;
 
 /// An enum representing various matching patterns
 #[derive(Clone)]
@@ -12,6 +12,7 @@ pub enum RadixRule<'a> {
     /// - /api
     ///
     Plain {
+        /// fragment
         frag: &'a str
     },
 
@@ -23,7 +24,10 @@ pub enum RadixRule<'a> {
     /// - :id
     ///
     Param {
+        /// fragment
         frag: &'a str,
+
+        /// param's name
         name: &'a str
     },
 
@@ -38,8 +42,13 @@ pub enum RadixRule<'a> {
     /// - {id:\d+}
     ///
     Regex {
+        /// fragment
         frag: &'a str,
+
+        /// regex's name
         name: &'a str,
+
+        /// the regex
         expr: Regex,
     },
 
@@ -50,7 +59,10 @@ pub enum RadixRule<'a> {
     /// - *
     ///
     Glob {
+        /// fragment
         frag: &'a str,
+
+        /// glob pattern
         glob: glob::Pattern
     },
 }
@@ -255,22 +267,22 @@ impl<'a> RadixRule<'a> {
 /// fn main() -> RadixResult<()> {
 ///     assert!(RadixRule::try_from(r"").is_err());
 ///
-///     assert_eq!(RadixRule::try_from(r"api")?.origin(), r"api");
-///     assert_eq!(RadixRule::try_from(r"api/v1")?.origin(), r"api/v1");
-///     assert_eq!(RadixRule::try_from(r"/api/v1")?.origin(), r"/api/v1");
+///     assert_eq!(RadixRule::try_from(r"api")?, r"api");
+///     assert_eq!(RadixRule::try_from(r"api/v1")?, r"api/v1");
+///     assert_eq!(RadixRule::try_from(r"/api/v1")?, r"/api/v1");
 ///
-///     assert_eq!(RadixRule::try_from(r":")?.origin(), r":");
-///     assert_eq!(RadixRule::try_from(r":id")?.origin(), r":id");
-///     assert_eq!(RadixRule::try_from(r":id/rest")?.origin(), r":id");
+///     assert_eq!(RadixRule::try_from(r":")?, r":");
+///     assert_eq!(RadixRule::try_from(r":id")?, r":id");
+///     assert_eq!(RadixRule::try_from(r":id/rest")?, r":id");
 ///
-///     assert_eq!(RadixRule::try_from(r"{id:\d+}")?.origin(), r"{id:\d+}");
-///     assert_eq!(RadixRule::try_from(r"{id:\d+}/rest")?.origin(), r"{id:\d+}");
+///     assert_eq!(RadixRule::try_from(r"{id:\d+}")?, r"{id:\d+}");
+///     assert_eq!(RadixRule::try_from(r"{id:\d+}/rest")?, r"{id:\d+}");
 ///     assert!(RadixRule::try_from(r"{id:\d+").is_err());
 ///     assert!(RadixRule::try_from(r"{id:\d+/rest").is_err());
 ///
-///     assert_eq!(RadixRule::try_from(r"*")?.origin(), r"*");
-///     assert_eq!(RadixRule::try_from(r"*rest")?.origin(), r"*rest");
-///     assert_eq!(RadixRule::try_from(r"*/rest")?.origin(), r"*/rest");
+///     assert_eq!(RadixRule::try_from(r"*")?, r"*");
+///     assert_eq!(RadixRule::try_from(r"*rest")?, r"*rest");
+///     assert_eq!(RadixRule::try_from(r"*/rest")?, r"*/rest");
 ///
 ///     Ok(())
 /// }
@@ -317,7 +329,7 @@ impl<'a> TryFrom<&'a str> for RadixRule<'a> {
 /// ```
 /// use radixmap::{rule::RadixRule};
 ///
-/// assert_eq!(RadixRule::default().origin(), "");
+/// assert_eq!(RadixRule::default(), "");
 /// ```
 impl<'a> Default for RadixRule<'a> {
     fn default() -> Self {
@@ -413,6 +425,7 @@ impl<'a> Eq for RadixRule<'a> {}
 ///     assert_ne!(RadixRule::from_regex(r"{id:\d+}")?, RadixRule::from_regex(r"{}")?);
 ///     assert_ne!(RadixRule::from_glob(r"*")?, RadixRule::from_glob(r"**")?);
 ///
+///     // type mismatch
 ///     assert_ne!(RadixRule::from_plain(r"{}")?, RadixRule::from_regex(r"{}")?);
 ///
 ///     Ok(())

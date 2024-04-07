@@ -1,6 +1,6 @@
 //! Node is the core tree element
 use super::pack;
-use super::def::*;
+use super::defs::*;
 use super::rule::*;
 
 /// The basic element inside a tree
@@ -11,7 +11,7 @@ pub struct RadixNode<'a, V> {
     /// The value of the radix map, valid only in a leaf node
     pub data: Option<V>,
 
-    /// The pattern used for matching, supports named params, regex and glob
+    /// The pattern used for matching, supports plain text, named params, regex and glob
     pub rule: RadixRule<'a>,
 
     /// Node's children
@@ -31,6 +31,18 @@ impl<'a, V> RadixNode<'a, V> {
         self.data.is_none()
     }
 
+    /// Get path-data pair
+    #[inline]
+    pub fn item_ref(&self) -> Option<(&str, &V)> {
+        self.data.as_ref().map(|data| (self.path, data))
+    }
+
+    /// Get path-data pair
+    #[inline]
+    pub fn item_mut(&mut self) -> Option<(&str, &mut V)> {
+        self.data.as_mut().map(|data| (self.path, data))
+    }
+
     /// An iterator for node
     ///
     /// ```
@@ -38,15 +50,15 @@ impl<'a, V> RadixNode<'a, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api", "/api")?;
-    ///     node.insert("/api/v1", "/api/v1")?;
-    ///     node.insert("/api/v2", "/api/v2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v2", "v2")?;
     ///
     ///     let mut iter = node.iter();
     ///
-    ///     assert_eq!(iter.next().unwrap().path, "/api");
-    ///     assert_eq!(iter.next().unwrap().path, "/api/v1");
-    ///     assert_eq!(iter.next().unwrap().path, "/api/v1");
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -67,11 +79,15 @@ impl<'a, V> RadixNode<'a, V> {
     ///     node.insert("/api/v1", 1)?;
     ///     node.insert("/api/v2", 2)?;
     ///
+    ///     for node in node.iter_mut() {
+    ///         node.data = Some(node.data.unwrap_or_default() + 10);
+    ///     }
+    ///
     ///     let mut iter = node.iter_mut();
     ///
-    ///     assert_eq!(iter.next().unwrap().path, "/api");
-    ///     assert_eq!(iter.next().unwrap().path, "/api/v1");
-    ///     assert_eq!(iter.next().unwrap().path, "/api/v1");
+    ///     assert_eq!(iter.next().map(|node| node.item_mut()), Some(("/api", &10)));
+    ///     assert_eq!(iter.next().map(|node| node.item_mut()), Some(("/api/v1", &11)));
+    ///     assert_eq!(iter.next().map(|node| node.item_mut()), Some(("/api/v2", &12)));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -94,9 +110,9 @@ impl<'a, V> RadixNode<'a, V> {
     ///
     ///     let mut iter = node.keys();
     ///
-    ///     assert_eq!(iter.next().unwrap(), "/api");
-    ///     assert_eq!(iter.next().unwrap(), "/api/v1");
-    ///     assert_eq!(iter.next().unwrap(), "/api/v1");
+    ///     assert_eq!(iter.next(), Some("/api"));
+    ///     assert_eq!(iter.next(), Some("/api/v1"));
+    ///     assert_eq!(iter.next(), Some("/api/v2"));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -119,9 +135,9 @@ impl<'a, V> RadixNode<'a, V> {
     ///
     ///     let mut iter = node.values();
     ///
-    ///     assert_eq!(iter.next().unwrap(), 0);
-    ///     assert_eq!(iter.next().unwrap(), 1);
-    ///     assert_eq!(iter.next().unwrap(), 2);
+    ///     assert_eq!(iter.next(), Some(&0));
+    ///     assert_eq!(iter.next(), Some(&1));
+    ///     assert_eq!(iter.next(), Some(&2));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -142,11 +158,15 @@ impl<'a, V> RadixNode<'a, V> {
     ///     node.insert("/api/v1", 1)?;
     ///     node.insert("/api/v2", 2)?;
     ///
+    ///     for node in node.iter_mut() {
+    ///         node.data = Some(node.data.unwrap_or_default() + 10);
+    ///     }
+    ///
     ///     let mut iter = node.values_mut();
     ///
-    ///     assert_eq!(iter.next().unwrap(), 0);
-    ///     assert_eq!(iter.next().unwrap(), 1);
-    ///     assert_eq!(iter.next().unwrap(), 2);
+    ///     assert_eq!(iter.next(), Some(&10));
+    ///     assert_eq!(iter.next(), Some(&11));
+    ///     assert_eq!(iter.next(), Some(&12));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -158,7 +178,7 @@ impl<'a, V> RadixNode<'a, V> {
 
     /// Inserts a path and data into this node, which serves as the root node for the insertion.
     /// The method sequentially extracts path fragments and positions each node appropriately,
-    /// ensuring that nodes with a common prefix share a single node in the tree
+    /// ensuring that nodes with a common prefix share a single node in the tree.
     pub fn insert(&mut self, path: &'a str, data: V) -> RadixResult<Option<V>> {
         let mut frag = path;
 
@@ -279,14 +299,10 @@ impl<'a, V> TryFrom<(&'a str, V)> for RadixNode<'a, V> {
 
 /// Default trait
 /// ```
-/// use radixmap::{node::RadixNode, RadixResult};
+/// use radixmap::{node::RadixNode};
 ///
-/// fn main() -> RadixResult<()> {
-///     let mut node = RadixNode::default();
-///     assert!(node.insert("/api", ()).is_ok());
-///
-///     Ok(())
-/// }
+/// let mut node = RadixNode::default();
+/// assert!(node.insert("/api", ()).is_ok());
 /// ```
 impl<'a, V> Default for RadixNode<'a, V> {
     fn default() -> Self {
@@ -354,6 +370,8 @@ pub enum Order {
     Pre,
 
     /// Post-order traversal: 3a -> 2a -> 2b -> 1a
+    ///
+    /// Note that mutable iterators do not currently support this order
     Post,
 
     /// Level-order traversal: 1a -> 2a -> 2b -> 3a
@@ -381,26 +399,26 @@ impl<'a, V> Iter<'a, V> {
     /// Starting to iterate from the node with a specific prefix
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult};
+    /// use radixmap::{node::RadixNode, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
-    ///     map.insert("/api/v2", "/api/v2")?;
-    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "/v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = map.iter().with_prefix("/api/v1")?;
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     let mut iter = node.iter().with_prefix("/api/v1")?;
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next(), None);
     ///
-    ///     let mut iter = map.iter().with_prefix("/api/v")?;
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     let mut iter = node.iter().with_prefix("/api/v")?;
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -424,38 +442,38 @@ impl<'a, V> Iter<'a, V> {
     /// Change the iterating order
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult, node::Order};
+    /// use radixmap::{node::{RadixNode, Order}, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
-    ///     map.insert("/api/v2", "/api/v2")?;
-    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = map.iter(); // same as with_order(Order::Pre);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     let mut iter = node.iter(); // same as with_order(Order::Pre);
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
-    ///     let mut iter = map.iter().with_order(Order::Post);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+    ///     let mut iter = node.iter().with_order(Order::Post);
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
     ///     assert!(iter.next().is_none());
     ///
-    ///     let mut iter = map.iter().with_order(Order::Level);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     let mut iter = node.iter().with_order(Order::Level);
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -469,32 +487,35 @@ impl<'a, V> Iter<'a, V> {
     /// Traverse all nodes, including the internal nodes which do not contain data
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult};
+    /// use radixmap::{node::RadixNode, RadixResult};
     ///
-    /// macro_rules! check {
+    /// macro_rules! verify {
     ///     ($iter:expr, $orig:literal, $data:expr) => {{
-    ///         let node = $iter.next().unwrap();
-    ///         assert_eq!(node.rule.origin(), $orig);
+    ///         let node = match $iter.next() {
+    ///             Some(node) => node,
+    ///             None => unreachable!()
+    ///         };
+    ///         assert_eq!(node.rule, $orig);
     ///         assert_eq!(node.data, $data);
     ///     }};
     /// }
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
-    ///     map.insert("/api/v2", "/api/v2")?;
-    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = map.iter().with_empty();
-    ///     check!(iter, "", None);                        // the root node
-    ///     check!(iter, "/api", Some("/api"));
-    ///     check!(iter, "/v", None);                      // an internal node
-    ///     check!(iter, "1", Some("/api/v1"));
-    ///     check!(iter, "/user1", Some("/api/v1/user1"));
-    ///     check!(iter, "2", Some("/api/v2"));
-    ///     check!(iter, "/user2", Some("/api/v2/user2"));
+    ///     let mut iter = node.iter().with_empty();
+    ///     verify!(iter, "", None);                        // the root node
+    ///     verify!(iter, "/api", Some("api"));
+    ///     verify!(iter, "/v", None);                      // an internal node
+    ///     verify!(iter, "1", Some("v1"));
+    ///     verify!(iter, "/user", Some("user1"));
+    ///     verify!(iter, "2", Some("v2"));
+    ///     verify!(iter, "/user", Some("user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -572,24 +593,6 @@ impl<'a, V> Iter<'a, V> {
     }
 }
 
-/// Creating a new iterator that visits nodes in pre-order by default
-///
-/// ```
-/// use radixmap::{RadixMap, RadixResult};
-///
-/// fn main() -> RadixResult<()> {
-///     let mut map = RadixMap::new();
-///     map.insert("/api", "/api")?;
-///     map.insert("/api/v1", "/api/v1")?;
-///
-///     let mut iter = map.iter();
-///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-///     assert!(iter.next().is_none());
-///
-///     Ok(())
-/// }
-/// ```
 impl<'a, V> From<&'a RadixNode<'a, V>> for Iter<'a, V> {
     fn from(start: &'a RadixNode<'a, V>) -> Self {
         Self { queue: VecDeque::from([pack::Iter::from(start).peekable()]), visit: vec![], order: Order::Pre, empty: false }
@@ -630,26 +633,26 @@ impl<'a, V> IterMut<'a, V> {
     /// Starting to iterate from the node with a specific prefix
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult};
+    /// use radixmap::{node::RadixNode, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
-    ///     map.insert("/api/v2", "/api/v2")?;
-    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = map.iter_mut().with_prefix("/api/v1")?;
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
+    ///     let mut iter = node.iter_mut().with_prefix("/api/v1")?;
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next(), None);
     ///
-    ///     let mut iter = map.iter_mut().with_prefix("/api/v")?;
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     let mut iter = node.iter_mut().with_prefix("/api/v")?;
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -673,38 +676,38 @@ impl<'a, V> IterMut<'a, V> {
     /// Change the iterating order
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult, node::Order};
+    /// use radixmap::{node::{RadixNode, Order}, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
-    ///     map.insert("/api/v2", "/api/v2")?;
-    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = map.iter_mut(); // same as with_order(Order::Pre);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     let mut iter = node.iter_mut(); // same as with_order(Order::Pre);
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
-    ///     let mut iter = map.iter_mut().with_order(Order::Post);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
+    ///     let mut iter = node.iter_mut().with_order(Order::Post);
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
     ///     assert!(iter.next().is_none());
     ///
-    ///     let mut iter = map.iter_mut().with_order(Order::Level);
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v1/user1"));
-    ///     assert_eq!(iter.next().unwrap().data, Some("/api/v2/user2"));
+    ///     let mut iter = node.iter_mut().with_order(Order::Level);
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -718,32 +721,35 @@ impl<'a, V> IterMut<'a, V> {
     /// Traverse all nodes, including the internal nodes which do not contain data
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult};
+    /// use radixmap::{node::RadixNode, RadixResult};
     ///
-    /// macro_rules! check {
+    /// macro_rules! verify {
     ///     ($iter:expr, $orig:literal, $data:expr) => {{
-    ///         let node = $iter.next().unwrap();
-    ///         assert_eq!(node.rule.origin(), $orig);
+    ///         let node = match $iter.next() {
+    ///             Some(node) => node,
+    ///             None => unreachable!()
+    ///         };
+    ///         assert_eq!(node.rule, $orig);
     ///         assert_eq!(node.data, $data);
     ///     }};
     /// }
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", "/api")?;
-    ///     map.insert("/api/v1", "/api/v1")?;
-    ///     map.insert("/api/v1/user1", "/api/v1/user1")?;
-    ///     map.insert("/api/v2", "/api/v2")?;
-    ///     map.insert("/api/v2/user2", "/api/v2/user2")?;
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = map.iter_mut().with_empty();
-    ///     check!(iter, "", None);                        // the root node
-    ///     check!(iter, "/api", Some("/api"));
-    ///     check!(iter, "/v", None);                      // an internal node
-    ///     check!(iter, "1", Some("/api/v1"));
-    ///     check!(iter, "/user1", Some("/api/v1/user1"));
-    ///     check!(iter, "2", Some("/api/v2"));
-    ///     check!(iter, "/user2", Some("/api/v2/user2"));
+    ///     let mut iter = node.iter_mut().with_empty();
+    ///     verify!(iter, "", None);                        // the root node
+    ///     verify!(iter, "/api", Some("api"));
+    ///     verify!(iter, "/v", None);                      // an internal node
+    ///     verify!(iter, "1", Some("v1"));
+    ///     verify!(iter, "/user", Some("user1"));
+    ///     verify!(iter, "2", Some("v2"));
+    ///     verify!(iter, "/user", Some("user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -801,24 +807,6 @@ impl<'a, V> IterMut<'a, V> {
     }
 }
 
-/// Creating a new iterator that visits nodes in pre-order by default
-///
-/// ```
-/// use radixmap::{RadixMap, RadixResult};
-///
-/// fn main() -> RadixResult<()> {
-///     let mut map = RadixMap::new();
-///     map.insert("/api", "/api")?;
-///     map.insert("/api/v1", "/api/v1")?;
-///
-///     let mut iter = map.iter_mut();
-///     assert_eq!(iter.next().unwrap().data, Some("/api"));
-///     assert_eq!(iter.next().unwrap().data, Some("/api/v1"));
-///     assert!(iter.next().is_none());
-///
-///     Ok(())
-/// }
-/// ```
 impl<'a, V> From<&'a mut RadixNode<'a, V>> for IterMut<'a, V> {
     fn from(start: &'a mut RadixNode<'a, V>) -> Self {
         Self { queue: VecDeque::from([pack::IterMut::from(start).peekable()]), order: Order::Pre, empty: false }
@@ -847,6 +835,7 @@ impl<'a, V> Iterator for IterMut<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Iterator adapter for path
 #[derive(Clone)]
 pub struct Keys<'a, V> {
     iter: Iter<'a, V>
@@ -882,6 +871,7 @@ impl<'a, V> Iterator for Keys<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Iterator adapter for data
 #[derive(Clone)]
 pub struct Values<'a, V> {
     iter: Iter<'a, V>
@@ -917,6 +907,7 @@ impl<'a, V> Iterator for Values<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Mutable iterator adapter for data
 pub struct ValuesMut<'a, V> {
     iter: IterMut<'a, V>
 }
