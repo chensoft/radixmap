@@ -80,7 +80,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn get(&self, path: &str) -> Option<&V> {
-        self.values().with_prefix(path, true).ok().and_then(|mut iter| iter.next())
+        self.values().with_prefix(path, true).next()
     }
 
     /// Retrieve the corresponding mutable data
@@ -110,7 +110,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn get_mut<'n: 'k>(&'n mut self, path: &str) -> Option<&mut V> {
-        self.values_mut().with_prefix(path, true).ok().and_then(move |mut iter| iter.next())
+        self.values_mut().with_prefix(path, true).next()
     }
 
     /// Check if the tree contains specific key
@@ -134,7 +134,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn contains_key(&self, path: &str) -> bool {
-        self.iter().with_prefix(path, true).map_or(false, |mut iter| iter.next().is_some())
+        self.iter().with_prefix(path, true).next().is_some()
     }
 
     /// Check if the tree contains specific value
@@ -208,14 +208,14 @@ impl<'k, V> RadixMap<'k, V> {
     ///
     ///     let mut iter = map.iter_mut().peekable();
     ///
-    ///     assert_eq!(iter.peek(), Some(("/api", &0)));
+    ///     assert_eq!(iter.peek(), Some(&("/api", &mut 0)));
     ///
     ///     match iter.peek_mut() {
     ///         Some(node) => *node.1 = 1,
     ///         None => unreachable!()
     ///     }
     ///
-    ///     assert_eq!(iter.next(), Some(("/api", &1)));
+    ///     assert_eq!(iter.next(), Some(("/api", &mut 1)));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -343,16 +343,16 @@ impl<'k, V> RadixMap<'k, V> {
     /// Remove the node of the path
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult};
+    /// use radixmap::{RadixMap, RadixResult, rule::RadixRule};
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api/v1", ())?;
     ///     map.insert("/api/v2", ())?;
     ///
-    ///     assert_eq!(map.remove("/api"), None);
-    ///     assert_eq!(map.remove("/api/v1").map(|node| node.rule), "/api/v1");
-    ///     assert_eq!(map.remove("/api/v2").map(|node| node.rule), "/api/v2");
+    ///     assert_eq!(map.remove("/api").map(|node| node.rule), None);
+    ///     assert_eq!(map.remove("/api/v1").map(|node| node.rule), Some(RadixRule::from_plain("/api/v1")?));
+    ///     assert_eq!(map.remove("/api/v2").map(|node| node.rule), Some(RadixRule::from_plain("/api/v2")?));
     ///     assert_eq!(map.is_empty(), true);
     ///
     ///     Ok(())
@@ -482,9 +482,9 @@ pub struct Iter<'k, V> {
 
 impl<'k, V> Iter<'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order
@@ -518,15 +518,15 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// Mutable iterator for map
 #[derive(Default)]
-pub struct IterMut<'n, 'k, V> {
+pub struct IterMut<'n: 'k, 'k, V> {
     iter: node::IterMut<'n, 'k, V>
 }
 
 impl<'n, 'k, V> IterMut<'n, 'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order
@@ -566,9 +566,9 @@ pub struct Keys<'k, V> {
 
 impl<'k, V> Keys<'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order
@@ -602,9 +602,9 @@ pub struct Values<'k, V> {
 
 impl<'k, V> Values<'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order
@@ -631,15 +631,15 @@ impl<'k, V> Iterator for Values<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Mutable data adapter
-pub struct ValuesMut<'n, 'k, V> {
+pub struct ValuesMut<'n: 'k, 'k, V> {
     iter: IterMut<'n, 'k, V>
 }
 
 impl<'n, 'k, V> ValuesMut<'n, 'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order

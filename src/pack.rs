@@ -25,14 +25,14 @@ impl<'k, V> RadixPack<'k, V> {
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut pack = RadixPack::default();
+    ///     let mut pack = RadixPack::<'_, ()>::default();
     ///     pack.insert(RadixRule::try_from("/api")?)?;
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
     ///     let mut iter = pack.iter();
-    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_plain("/api")));
-    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_regex("{[0-9]+}")));
-    ///     assert_eq!(iter.next(), None);
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), None);
     ///
     ///     Ok(())
     /// }
@@ -47,14 +47,14 @@ impl<'k, V> RadixPack<'k, V> {
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut pack = RadixPack::default();
+    ///     let mut pack = RadixPack::<'_, ()>::default();
     ///     pack.insert(RadixRule::try_from("/api")?)?;
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
     ///     let mut iter = pack.iter_mut();
-    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_plain("/api")));
-    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_regex("{[0-9]+}")));
-    ///     assert_eq!(iter.next(), None);
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), None);
     ///
     ///     Ok(())
     /// }
@@ -74,7 +74,7 @@ impl<'k, V> RadixPack<'k, V> {
     ///     // inserting different nodes into the pack
     ///     assert_eq!(pack.insert(RadixRule::from_plain("/api")?)?.rule, "/api");
     ///     assert_eq!(pack.insert(RadixRule::from_param(":id")?)?.rule, ":id");
-    ///     assert_eq!(pack.insert(RadixRule::from_regex("{}")?)?.rule, "{}");
+    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}")?)?.rule, "{[0-9]+}");
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
@@ -82,7 +82,7 @@ impl<'k, V> RadixPack<'k, V> {
     ///     // inserting duplicate nodes has no effect
     ///     assert_eq!(pack.insert(RadixRule::from_plain("/api")?)?.rule, "/api");
     ///     assert_eq!(pack.insert(RadixRule::from_param(":id")?)?.rule, ":id");
-    ///     assert_eq!(pack.insert(RadixRule::from_regex("{}")?)?.rule, "{}");
+    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}")?)?.rule, "{[0-9]+}");
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
@@ -214,7 +214,9 @@ impl<'k, V> Iterator for Iter<'k, V> {
     type Item = &'k RadixNode<'k, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.onetime.take().or(self.regular.next().map(|node| node.value())).or(self.special.next())
+        self.onetime.take()
+            .or_else(|| self.regular.next().map(|node| node.value()))
+            .or_else(|| self.special.next())
     }
 }
 
@@ -244,6 +246,8 @@ impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
     type Item = &'n mut RadixNode<'k, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.onetime.take().or(self.regular.next().map(|node| node.value_mut())).or(self.special.next())
+        self.onetime.take()
+            .or_else(|| self.regular.next().map(|node| node.value_mut()))
+            .or_else(|| self.special.next())
     }
 }

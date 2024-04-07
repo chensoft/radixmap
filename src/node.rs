@@ -50,10 +50,10 @@ impl<'k, V> RadixNode<'k, V> {
     ///
     ///     let mut iter = node.iter();
     ///
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next(), None);
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     Ok(())
     /// }
@@ -79,10 +79,10 @@ impl<'k, V> RadixNode<'k, V> {
     ///
     ///     let mut iter = node.iter_mut();
     ///
-    ///     assert_eq!(iter.next().map(|node| node.item_mut()), Some(("/api", &10)));
-    ///     assert_eq!(iter.next().map(|node| node.item_mut()), Some(("/api/v1", &11)));
-    ///     assert_eq!(iter.next().map(|node| node.item_mut()), Some(("/api/v2", &12)));
-    ///     assert_eq!(iter.next(), None);
+    ///     assert_eq!(iter.next().and_then(|node| node.item_mut()), Some(("/api", &mut 10)));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_mut()), Some(("/api/v1", &mut 11)));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_mut()), Some(("/api/v2", &mut 12)));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_mut()), None);
     ///
     ///     Ok(())
     /// }
@@ -158,9 +158,9 @@ impl<'k, V> RadixNode<'k, V> {
     ///
     ///     let mut iter = node.values_mut();
     ///
-    ///     assert_eq!(iter.next(), Some(&10));
-    ///     assert_eq!(iter.next(), Some(&11));
-    ///     assert_eq!(iter.next(), Some(&12));
+    ///     assert_eq!(iter.next(), Some(&mut 10));
+    ///     assert_eq!(iter.next(), Some(&mut 11));
+    ///     assert_eq!(iter.next(), Some(&mut 12));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -440,39 +440,45 @@ impl<'k, V> Iter<'k, V> {
     ///     node.insert("/api", "api")?;
     ///     node.insert("/api/v1", "v1")?;
     ///     node.insert("/api/v1/user", "user1")?;
-    ///     node.insert("/api/v2", "/v2")?;
+    ///     node.insert("/api/v2", "v2")?;
     ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = node.iter().with_prefix("/api/v1")?;
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next(), None);
+    ///     let mut iter = node.iter().with_prefix("/api/v1", false);
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter().with_prefix("/api/")?; // exclude /api
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert_eq!(iter.next(), None);
+    ///     let mut iter = node.iter().with_prefix("/api/", false); // exclude /api
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter().with_prefix("/api/v3")?; // not exist
-    ///     assert_eq!(iter.next(), None);
+    ///     let mut iter = node.iter().with_prefix("/api/v3", false); // not exist
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        let mut cursor = self.queue.pop_front().and_then(|mut iter| iter.next()).ok_or(RadixError::PathNotFound)?;
-        cursor = match cursor.search(path, data) {
-            Some(node) if !path.is_empty() => node,
-            _ => return Err(RadixError::PathNotFound)
-        };
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        let cursor = self.queue.pop_front();
 
-        self.queue.push_front(pack::Iter::from(cursor).peekable());
-        self.queue.truncate(1);
+        self.queue.clear();
         self.visit.clear();
 
-        Ok(self)
+        let cursor = cursor
+            .and_then(|mut iter| iter.next())
+            .and_then(|node| match !path.is_empty() {
+                true => node.search(path, data),
+                false => None,
+            });
+
+        if let Some(cursor) = cursor {
+            self.queue.push_front(pack::Iter::from(cursor).peekable());
+        }
+
+        self
     }
 
     /// Change the iterating order
@@ -489,27 +495,27 @@ impl<'k, V> Iter<'k, V> {
     ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter(); // same as with_order(Order::Pre);
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter().with_order(Order::Post);
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter().with_order(Order::Level);
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -659,7 +665,7 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// The iterator for radix tree
 #[derive(Default)]
-pub struct IterMut<'n, 'k, V> {
+pub struct IterMut<'n: 'k, 'k, V> {
     queue: VecDeque<Peekable<pack::IterMut<'n, 'k, V>>>,
     order: Order,
     empty: bool,
@@ -679,25 +685,25 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     node.insert("/api/v2", "v2")?;
     ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = node.iter_mut().with_prefix("/api/v1")?;
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next(), None);
+    ///     let mut iter = node.iter_mut().with_prefix("/api/v1", false);
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter_mut().with_prefix("/api/")?; // exclude /api
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert_eq!(iter.next(), None);
+    ///     let mut iter = node.iter_mut().with_prefix("/api/", false); // exclude /api
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter_mut().with_prefix("/api/v3")?; // not exist
-    ///     assert_eq!(iter.next(), None);
+    ///     let mut iter = node.iter_mut().with_prefix("/api/v3", false); // not exist
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(self, _path: &str, _data: bool) -> RadixResult<Self> {
+    pub fn with_prefix(self, _path: &str, _data: bool) -> Self {
         // todo iterate self and then rewind
         // let start = match self.start.deepest(prefix) {
         //     Some(node) => node,
@@ -709,7 +715,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
         // self.queue.push_back(EntityMut::from(self.start).peekable());
         // self.visit.clear();
 
-        Ok(self)
+        self
     }
 
     /// Change the iterating order
@@ -726,27 +732,27 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter_mut(); // same as with_order(Order::Pre);
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter_mut().with_order(Order::Post);
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter_mut().with_order(Order::Level);
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -882,9 +888,9 @@ pub struct Keys<'k, V> {
 
 impl<'k, V> Keys<'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order
@@ -918,9 +924,9 @@ pub struct Values<'k, V> {
 
 impl<'k, V> Values<'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order
@@ -947,15 +953,15 @@ impl<'k, V> Iterator for Values<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Mutable iterator adapter for data
-pub struct ValuesMut<'n, 'k, V> {
+pub struct ValuesMut<'n: 'k, 'k, V> {
     iter: IterMut<'n, 'k, V>
 }
 
 impl<'n, 'k, V> ValuesMut<'n, 'k, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(path, data)?;
-        Ok(self)
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        self.iter = self.iter.with_prefix(path, data);
+        self
     }
 
     /// Change the iterating order
