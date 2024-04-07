@@ -1,11 +1,12 @@
 ## Todo
 
+- do not allow insert None??? Some(None)
 - tests for params, regex, glob
+- named params and regex capture
 - owned str version using Cow
 - plain only mode
 - item sep customizable
 - serde serde_expr support
-- erase data but not remove node
 
 ## [Unreleased] - 2024-04-xx
 

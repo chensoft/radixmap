@@ -2,7 +2,7 @@
 use super::defs::*;
 use super::map::*;
 
-/// todo
+/// Radix set build on top of map
 #[derive(Default)]
 pub struct RadixSet<'a> {
     base: RadixMap<'a, ()>,

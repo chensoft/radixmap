@@ -8,7 +8,7 @@ pub struct RadixMap<'a, V> {
     /// The root node, always empty
     root: RadixNode<'a, V>,
 
-    /// The number of leaf nodes
+    /// The number of data nodes
     size: usize,
 }
 
@@ -18,7 +18,7 @@ impl<'a, V> RadixMap<'a, V> {
         Default::default()
     }
 
-    /// The leaf nodes' count, note that this excludes the internal nodes
+    /// The data nodes' count, note that RadixMap ignores empty nodes
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -38,7 +38,7 @@ impl<'a, V> RadixMap<'a, V> {
         self.size
     }
 
-    /// Check if the tree contains only a root node
+    /// Check if the tree has no data nodes
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -58,7 +58,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// ```
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.root.is_leaf()
+        self.size == 0
     }
 
     /// Retrieve the corresponding data
@@ -80,10 +80,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// ```
     #[inline]
     pub fn get(&self, path: &str) -> Option<&V> {
-        match self.root.values().with_prefix(path) {
-            Ok(mut iter) => iter.next(),
-            Err(_) => None
-        }
+        self.root.values().with_prefix(path, true).ok().and_then(|mut iter| iter.next())
     }
 
     /// Retrieve the corresponding mutable data
@@ -96,16 +93,16 @@ impl<'a, V> RadixMap<'a, V> {
     ///     map.insert("/api/v1", 1)?;
     ///     map.insert("/api/v2", 2)?;
     ///
-    ///     assert_eq!(map.get_mut("/api/v1"), Some(&1));
-    ///     assert_eq!(map.get_mut("/api/v2"), Some(&2));
+    ///     assert_eq!(map.get_mut("/api/v1"), Some(&mut 1));
+    ///     assert_eq!(map.get_mut("/api/v2"), Some(&mut 2));
     ///     assert_eq!(map.get_mut("/api/v3"), None);
     ///
     ///     if let Some(data) = map.get_mut("/api/v1") {
     ///         *data = 3;
     ///     }
     ///
-    ///     assert_eq!(map.get_mut("/api/v1"), Some(&3));
-    ///     assert_eq!(map.get_mut("/api/v2"), Some(&2));
+    ///     assert_eq!(map.get_mut("/api/v1"), Some(&mut 3));
+    ///     assert_eq!(map.get_mut("/api/v2"), Some(&mut 2));
     ///     assert_eq!(map.get_mut("/api/v3"), None);
     ///
     ///     Ok(())
@@ -113,10 +110,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// ```
     #[inline]
     pub fn get_mut(&'a mut self, path: &str) -> Option<&mut V> {
-        match self.root.values_mut().with_prefix(path) {
-            Ok(mut iter) => iter.next(),
-            Err(_) => None
-        }
+        self.root.values_mut().with_prefix(path, true).ok().and_then(|mut iter| iter.next())
     }
 
     /// Check if the tree contains specific key
@@ -126,8 +120,8 @@ impl<'a, V> RadixMap<'a, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
-    ///     map.insert("/api/v1", 1)?;
-    ///     map.insert("/api/v2", 2)?;
+    ///     map.insert("/api/v1", ())?;
+    ///     map.insert("/api/v2", ())?;
     ///
     ///     assert_eq!(map.contains_key("/api/v1"), true);
     ///     assert_eq!(map.contains_key("/api/v2"), true);
@@ -140,7 +134,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// ```
     #[inline]
     pub fn contains_key(&self, path: &str) -> bool {
-        self.root.values().with_prefix(path).is_ok()
+        self.root.iter().with_prefix(path, true).map_or(false, |mut iter| iter.next().is_some())
     }
 
     /// Check if the tree contains specific value
@@ -179,19 +173,19 @@ impl<'a, V> RadixMap<'a, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", 0)?;
-    ///     map.insert("/api/v1", 1)?;
-    ///     map.insert("/api/v1/user1", 11)?;
-    ///     map.insert("/api/v2", 2)?;
-    ///     map.insert("/api/v2/user2", 22)?;
+    ///     map.insert("/api/v1", "v1")?;
+    ///     map.insert("/api/v1/user", "user1")?;
+    ///     map.insert("/api/v2", "v2")?;
+    ///     map.insert("/api/v2/user", "user2")?;
+    ///     map.insert("/api", "api")?;
     ///
     ///     let mut iter = map.iter();
     ///
-    ///     assert_eq!(iter.next(), Some(("/api", &0)));
-    ///     assert_eq!(iter.next(), Some(("/api/v1", &1)));
-    ///     assert_eq!(iter.next(), Some(("/api/v1/user1", &11)));
-    ///     assert_eq!(iter.next(), Some(("/api/v2", &2)));
-    ///     assert_eq!(iter.next(), Some(("/api/v2/user2", &22)));
+    ///     assert_eq!(iter.next(), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next(), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next(), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next(), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next(), Some(("/api/v2/user", &"user2")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -205,18 +199,21 @@ impl<'a, V> RadixMap<'a, V> {
     /// Iterate over the tree to retrieve nodes' key and mutable value
     ///
     /// ```
+    /// use std::iter::Peekable;
     /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api", 0)?;
     ///
-    ///     let mut iter = map.iter_mut();
+    ///     let mut iter = map.iter_mut().peekable();
     ///
     ///     assert_eq!(iter.peek(), Some(("/api", &0)));
     ///
-    ///     let mut next = iter.peek().unwrap();
-    ///     *next.1 = 1;
+    ///     match iter.peek_mut() {
+    ///         Some(node) => *node.1 = 1,
+    ///         None => unreachable!()
+    ///     }
     ///
     ///     assert_eq!(iter.next(), Some(("/api", &1)));
     ///     assert_eq!(iter.next(), None);
@@ -236,19 +233,19 @@ impl<'a, V> RadixMap<'a, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", 0)?;
-    ///     map.insert("/api/v1", 1)?;
-    ///     map.insert("/api/v1/user1", 11)?;
-    ///     map.insert("/api/v2", 2)?;
-    ///     map.insert("/api/v2/user2", 22)?;
+    ///     map.insert("/api", ())?;
+    ///     map.insert("/api/v1", ())?;
+    ///     map.insert("/api/v1/user", ())?;
+    ///     map.insert("/api/v2", ())?;
+    ///     map.insert("/api/v2/user", ())?;
     ///
     ///     let mut iter = map.keys();
     ///
     ///     assert_eq!(iter.next(), Some("/api"));
     ///     assert_eq!(iter.next(), Some("/api/v1"));
-    ///     assert_eq!(iter.next(), Some("/api/v1/user1"));
+    ///     assert_eq!(iter.next(), Some("/api/v1/user"));
     ///     assert_eq!(iter.next(), Some("/api/v2"));
-    ///     assert_eq!(iter.next(), Some("/api/v2/user2"));
+    ///     assert_eq!(iter.next(), Some("/api/v2/user"));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -266,19 +263,19 @@ impl<'a, V> RadixMap<'a, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
-    ///     map.insert("/api", 0)?;
-    ///     map.insert("/api/v1", 1)?;
-    ///     map.insert("/api/v1/user1", 11)?;
-    ///     map.insert("/api/v2", 2)?;
-    ///     map.insert("/api/v2/user2", 22)?;
+    ///     map.insert("/api", "api")?;
+    ///     map.insert("/api/v1", "v1")?;
+    ///     map.insert("/api/v1/user", "user1")?;
+    ///     map.insert("/api/v2", "v2")?;
+    ///     map.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = map.values();
     ///
-    ///     assert_eq!(iter.next(), Some(&0));
-    ///     assert_eq!(iter.next(), Some(&1));
-    ///     assert_eq!(iter.next(), Some(&11));
-    ///     assert_eq!(iter.next(), Some(&2));
-    ///     assert_eq!(iter.next(), Some(&22));
+    ///     assert_eq!(iter.next(), Some(&"api"));
+    ///     assert_eq!(iter.next(), Some(&"v1"));
+    ///     assert_eq!(iter.next(), Some(&"user1"));
+    ///     assert_eq!(iter.next(), Some(&"v2"));
+    ///     assert_eq!(iter.next(), Some(&"user2"));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -292,18 +289,21 @@ impl<'a, V> RadixMap<'a, V> {
     /// Iterate over the tree to get nodes' mutable value
     ///
     /// ```
+    /// use std::iter::Peekable;
     /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api", 0)?;
     ///
-    ///     let mut iter = map.values_mut();
+    ///     let mut iter = map.values_mut().peekable();
     ///
     ///     assert_eq!(iter.peek(), Some(("/api", &0)));
     ///
-    ///     let mut next = iter.peek().unwrap();
-    ///     *next = 1;
+    ///     match iter.peek_mut() {
+    ///         Some(node) => **node = 1,
+    ///         None => unreachable!()
+    ///     }
     ///
     ///     assert_eq!(iter.next(), Some(("/api", &1)));
     ///     assert_eq!(iter.next(), None);
@@ -347,12 +347,12 @@ impl<'a, V> RadixMap<'a, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
-    ///     map.insert("/api/v1", 1)?;
-    ///     map.insert("/api/v2", 2)?;
+    ///     map.insert("/api/v1", ())?;
+    ///     map.insert("/api/v2", ())?;
     ///
     ///     assert_eq!(map.remove("/api"), None);
-    ///     assert_eq!(map.remove("/api/v1").unwrap().rule, "/api/v1");
-    ///     assert_eq!(map.remove("/api/v2").unwrap().rule, "/api/v2");
+    ///     assert_eq!(map.remove("/api/v1").map(|node| node.rule), "/api/v1");
+    ///     assert_eq!(map.remove("/api/v2").map(|node| node.rule), "/api/v2");
     ///     assert_eq!(map.is_empty(), true);
     ///
     ///     Ok(())
@@ -469,10 +469,12 @@ impl<'a, V: PartialEq> PartialEq for RadixMap<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Re-import Order
 pub type Order = node::Order;
 
 // -----------------------------------------------------------------------------
 
+/// Iterator for map
 #[derive(Default, Clone)]
 pub struct Iter<'a, V> {
     iter: node::Iter<'a, V>
@@ -480,8 +482,8 @@ pub struct Iter<'a, V> {
 
 impl<'a, V> Iter<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 
@@ -503,17 +505,18 @@ impl<'a, V> Iterator for Iter<'a, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         for node in self.iter.by_ref() {
-            if let Some(data) = node.data.as_ref() {
-                return Some((node.path, data));
+            if node.data.as_ref().is_some() {
+                return node.item_ref();
             }
         }
-        
+
         None
     }
 }
 
 // -----------------------------------------------------------------------------
 
+/// Mutable iterator for map
 #[derive(Default)]
 pub struct IterMut<'a, V> {
     iter: node::IterMut<'a, V>
@@ -521,8 +524,8 @@ pub struct IterMut<'a, V> {
 
 impl<'a, V> IterMut<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 
@@ -544,8 +547,8 @@ impl<'a, V> Iterator for IterMut<'a, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         for node in self.iter.by_ref() {
-            if let Some(data) = node.data.as_mut() {
-                return Some((node.path, data));
+            if node.data.as_ref().is_some() {
+                return node.item_mut();
             }
         }
 
@@ -555,6 +558,7 @@ impl<'a, V> Iterator for IterMut<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Path adapter
 #[derive(Clone)]
 pub struct Keys<'a, V> {
     iter: Iter<'a, V>
@@ -562,8 +566,8 @@ pub struct Keys<'a, V> {
 
 impl<'a, V> Keys<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 
@@ -590,6 +594,7 @@ impl<'a, V> Iterator for Keys<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Data adapter
 #[derive(Clone)]
 pub struct Values<'a, V> {
     iter: Iter<'a, V>
@@ -597,8 +602,8 @@ pub struct Values<'a, V> {
 
 impl<'a, V> Values<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 
@@ -625,14 +630,15 @@ impl<'a, V> Iterator for Values<'a, V> {
 
 // -----------------------------------------------------------------------------
 
+/// Mutable data adapter
 pub struct ValuesMut<'a, V> {
     iter: IterMut<'a, V>
 }
 
 impl<'a, V> ValuesMut<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 

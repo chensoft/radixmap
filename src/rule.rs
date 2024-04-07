@@ -129,7 +129,7 @@ impl<'a> RadixRule<'a> {
         // regex must match from the beginning, add ^ if needed
         match find.1.as_bytes().first() {
             Some(b'^') => Ok(Self::Regex { frag, name: find.0, expr: Regex::new(find.1)? }),
-            _ => Ok(Self::Regex { frag, name: find.0, expr: Regex::new(('^'.to_string() + find.1).as_str())? }) // todo improve
+            _ => Ok(Self::Regex { frag, name: find.0, expr: Regex::new(('^'.to_string() + find.1).as_str())? })
         }
     }
 

@@ -5,10 +5,10 @@ use super::rule::*;
 
 /// The basic element inside a tree
 pub struct RadixNode<'a, V> {
-    /// The key of the radix map, valid only in a leaf node
+    /// The key of the radix map, valid in data-node only
     pub path: &'a str,
 
-    /// The value of the radix map, valid only in a leaf node
+    /// The value of the radix map, valid in data-node only
     pub data: Option<V>,
 
     /// The pattern used for matching, supports plain text, named params, regex and glob
@@ -19,12 +19,6 @@ pub struct RadixNode<'a, V> {
 }
 
 impl<'a, V> RadixNode<'a, V> {
-    /// Check if the node is a leaf node
-    #[inline]
-    pub fn is_leaf(&self) -> bool {
-        self.next.is_empty()
-    }
-
     /// Check if the node has no data
     #[inline]
     pub fn is_empty(&self) -> bool {
@@ -104,9 +98,9 @@ impl<'a, V> RadixNode<'a, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api", 0)?;
-    ///     node.insert("/api/v1", 1)?;
-    ///     node.insert("/api/v2", 2)?;
+    ///     node.insert("/api", ())?;
+    ///     node.insert("/api/v1", ())?;
+    ///     node.insert("/api/v2", ())?;
     ///
     ///     let mut iter = node.keys();
     ///
@@ -188,7 +182,7 @@ impl<'a, V> RadixNode<'a, V> {
             let used = next.origin();
             let slot = self.next.insert(next)?;
 
-            // encountering a leaf node indicates completion of insertion
+            // encountering a data node indicates completion of insertion
             if used.len() == frag.len() {
                 let prev = slot.data.take();
                 slot.path = path;
@@ -198,6 +192,48 @@ impl<'a, V> RadixNode<'a, V> {
 
             frag = &frag[used.len()..];
         }
+    }
+
+    /// Find the deepest node that matches to the path
+    pub fn search(&self, mut path: &str, data: bool) -> Option<&RadixNode<'a, V>> {
+        let mut cursor = self;
+
+        loop {
+            // prefix must be part of the current node
+            let (share, order) = cursor.rule.longest(path);
+            if share.len() != path.len() && order != Ordering::Equal {
+                return None;
+            }
+
+            // trim the shared and continue search
+            path = &path[share.len()..];
+
+            // find regular node by sparse array
+            let byte = match path.as_bytes().first() {
+                Some(val) => *val as usize,
+                None => break
+            };
+
+            if let Some(node) = cursor.next.regular.get(byte) {
+                cursor = node;
+                continue;
+            }
+
+            // find special node, if not then terminate
+            for node in cursor.next.special.values() {
+                if let Some(find) = node.search(path, data) {
+                    return Some(find);
+                }
+            }
+
+            return None;
+        }
+
+        if !data || !cursor.is_empty() {
+            return Some(cursor);
+        }
+
+        None
     }
 
     /// Divide the node into two parts
@@ -211,12 +247,12 @@ impl<'a, V> RadixNode<'a, V> {
     ///     assert_eq!(node.rule, "/api");
     ///     assert_eq!(node.data, Some(12345));
     ///
-    ///     let leaf = node.divide(1)?;
+    ///     let frag = node.divide(1)?;
     ///
     ///     assert_eq!(node.rule, "/");
     ///     assert_eq!(node.data, None);
-    ///     assert_eq!(leaf.rule, "api");
-    ///     assert_eq!(leaf.data, Some(12345));
+    ///     assert_eq!(frag.rule, "api");
+    ///     assert_eq!(frag.data, Some(12345));
     ///
     ///     Ok(())
     /// }
@@ -240,12 +276,10 @@ impl<'a, V> RadixNode<'a, V> {
     ///     let mut node = RadixNode::try_from(("/api", ()))?;
     ///     node.insert("/api/v1", ())?;
     ///
-    ///     assert!(!node.is_leaf());
     ///     assert!(!node.is_empty());
     ///
     ///     node.clear();
     ///
-    ///     assert!(node.is_leaf());
     ///     assert!(node.is_empty());
     ///
     ///     Ok(())
@@ -414,27 +448,29 @@ impl<'a, V> Iter<'a, V> {
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next(), None);
     ///
-    ///     let mut iter = node.iter().with_prefix("/api/v")?;
+    ///     let mut iter = node.iter().with_prefix("/api/")?; // exclude /api
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert_eq!(iter.next(), None);
     ///
+    ///     let mut iter = node.iter().with_prefix("/api/v3")?; // not exist
+    ///     assert_eq!(iter.next(), None);
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(self, _prefix: &str) -> RadixResult<Self> {
-        // todo iterate self and then rewind
-        // let start = match self.start.deepest(prefix) {
-        //     Some(node) => node,
-        //     None => return Err(RadixError::PathNotFound),
-        // };
-        // 
-        // self.start = start;
-        // self.queue.clear();
-        // self.queue.push_back(EntityRef::from(self.start).peekable());
-        // self.visit.clear();
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        let mut cursor = self.queue.pop_front().and_then(|mut iter| iter.next()).ok_or(RadixError::PathNotFound)?;
+        cursor = match cursor.search(path, data) {
+            Some(node) if !path.is_empty() => node,
+            _ => return Err(RadixError::PathNotFound)
+        };
+
+        self.queue.push_front(pack::Iter::from(cursor).peekable());
+        self.queue.truncate(1);
+        self.visit.clear();
 
         Ok(self)
     }
@@ -546,7 +582,7 @@ impl<'a, V> Iter<'a, V> {
 
     /// Internal use only, traversing nodes in post-order
     fn next_post(&mut self) -> Option<&'a RadixNode<'a, V>> {
-        // traverse to the deepest leaf node, put all iters into the visit queue
+        // traverse to the deepest data node, put all iters into the visit queue
         if let Some(mut back) = self.queue.pop_back() {
             while let Some(node) = back.peek() {
                 let pack = node.next.iter().peekable();
@@ -648,23 +684,26 @@ impl<'a, V> IterMut<'a, V> {
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next(), None);
     ///
-    ///     let mut iter = node.iter_mut().with_prefix("/api/v")?;
+    ///     let mut iter = node.iter_mut().with_prefix("/api/")?; // exclude /api
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert_eq!(iter.next(), None);
     ///
+    ///     let mut iter = node.iter_mut().with_prefix("/api/v3")?; // not exist
+    ///     assert_eq!(iter.next(), None);
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(self, _prefix: &str) -> RadixResult<Self> {
+    pub fn with_prefix(self, _path: &str, _data: bool) -> RadixResult<Self> {
         // todo iterate self and then rewind
         // let start = match self.start.deepest(prefix) {
         //     Some(node) => node,
         //     None => return Err(RadixError::PathNotFound),
         // };
-        // 
+        //
         // self.start = start;
         // self.queue.clear();
         // self.queue.push_back(EntityMut::from(self.start).peekable());
@@ -843,8 +882,8 @@ pub struct Keys<'a, V> {
 
 impl<'a, V> Keys<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 
@@ -879,8 +918,8 @@ pub struct Values<'a, V> {
 
 impl<'a, V> Values<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 
@@ -914,8 +953,8 @@ pub struct ValuesMut<'a, V> {
 
 impl<'a, V> ValuesMut<'a, V> {
     /// Starting to iterate from the node with a specific prefix
-    pub fn with_prefix(mut self, prefix: &str) -> RadixResult<Self> {
-        self.iter = self.iter.with_prefix(prefix)?;
+    pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
+        self.iter = self.iter.with_prefix(path, data)?;
         Ok(self)
     }
 

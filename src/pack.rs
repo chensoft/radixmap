@@ -123,19 +123,16 @@ impl<'a, V> RadixPack<'a, V> {
         };
         let (share, order) = found.rule.longest(frag);
 
-        match order {
-            Ordering::Greater => {
-                let node = found.divide(share.len())?;
-                found.next.regular.insert(node.rule.origin().as_bytes()[0] as usize, node);
-                found.next.insert(RadixRule::try_from(&frag[share.len()..])?)
-            }
-            Ordering::Equal => {
-                match frag.len().cmp(&share.len()) {
-                    Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
-                    Ordering::Equal => Ok(found),
-                    Ordering::Less => unreachable!(),
-                }
-            }
+        // divide the node into two parts
+        if order == Ordering::Greater {
+            let node = found.divide(share.len())?;
+            found.next.regular.insert(node.rule.origin().as_bytes()[0] as usize, node);
+        }
+
+        // insert the remaining path if found
+        match frag.len().cmp(&share.len()) {
+            Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
+            Ordering::Equal => Ok(found),
             Ordering::Less => unreachable!(),
         }
     }
