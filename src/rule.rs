@@ -3,7 +3,7 @@ use super::defs::*;
 
 /// An enum representing various matching patterns
 #[derive(Clone)]
-pub enum RadixRule<'a> {
+pub enum RadixRule<'k> {
     /// Plain rule that accepts arbitrary strings
     ///
     /// # Syntax
@@ -13,7 +13,7 @@ pub enum RadixRule<'a> {
     ///
     Plain {
         /// fragment
-        frag: &'a str
+        frag: &'k str
     },
 
     /// Named param matches a segment of the route
@@ -25,10 +25,10 @@ pub enum RadixRule<'a> {
     ///
     Param {
         /// fragment
-        frag: &'a str,
+        frag: &'k str,
 
         /// param's name
-        name: &'a str
+        name: &'k str
     },
 
     /// Perl-like regular expressions
@@ -43,10 +43,10 @@ pub enum RadixRule<'a> {
     ///
     Regex {
         /// fragment
-        frag: &'a str,
+        frag: &'k str,
 
         /// regex's name
-        name: &'a str,
+        name: &'k str,
 
         /// the regex
         expr: Regex,
@@ -60,14 +60,14 @@ pub enum RadixRule<'a> {
     ///
     Glob {
         /// fragment
-        frag: &'a str,
+        frag: &'k str,
 
         /// glob pattern
         glob: glob::Pattern
     },
 }
 
-impl<'a> RadixRule<'a> {
+impl<'k> RadixRule<'k> {
     /// Create a plain text rule
     ///
     /// ```
@@ -76,7 +76,7 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::from_plain(r"").is_ok());
     /// assert!(RadixRule::from_plain(r"id").is_ok());
     /// ```
-    pub fn from_plain(frag: &'a str) -> RadixResult<Self> {
+    pub fn from_plain(frag: &'k str) -> RadixResult<Self> {
         Ok(Self::Plain { frag })
     }
 
@@ -90,7 +90,7 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::from_param(r"").is_err());   // missing :
     /// assert!(RadixRule::from_param(r"id").is_err()); // missing :
     /// ```
-    pub fn from_param(frag: &'a str) -> RadixResult<Self> {
+    pub fn from_param(frag: &'k str) -> RadixResult<Self> {
         if !frag.starts_with(':') {
             return Err(RadixError::PathMalformed("param lack of colon".into()));
         }
@@ -115,7 +115,7 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::from_regex(r"{:(0}").is_err());   // missing )
     /// assert!(RadixRule::from_regex(r"{id:(0}").is_err()); // missing )
     /// ```
-    pub fn from_regex(frag: &'a str) -> RadixResult<Self> {
+    pub fn from_regex(frag: &'k str) -> RadixResult<Self> {
         if !frag.starts_with('{') || !frag.ends_with('}') {
             return Err(RadixError::PathMalformed("regex lack of curly braces".into()));
         }
@@ -143,7 +143,7 @@ impl<'a> RadixRule<'a> {
     /// assert!(RadixRule::from_glob(r"").is_err());      // missing rule chars
     /// assert!(RadixRule::from_glob(r"id").is_err());    // missing rule chars
     /// ```
-    pub fn from_glob(frag: &'a str) -> RadixResult<Self> {
+    pub fn from_glob(frag: &'k str) -> RadixResult<Self> {
         match frag.as_bytes().first() {
             Some(b'*') => Ok(Self::Glob { frag, glob: glob::Pattern::new(frag)? }),
             _ => Err(RadixError::PathMalformed("glob lack of asterisk".into()))
@@ -223,7 +223,7 @@ impl<'a> RadixRule<'a> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn divide(&mut self, len: usize) -> RadixResult<RadixRule<'a>> {
+    pub fn divide(&mut self, len: usize) -> RadixResult<RadixRule<'k>> {
         match self {
             RadixRule::Plain { frag } if frag.len() > len => {
                 let rule = RadixRule::from_plain(&frag[len..]);
@@ -249,7 +249,7 @@ impl<'a> RadixRule<'a> {
     /// }
     /// ```
     #[inline]
-    pub fn origin(&self) -> &'a str {
+    pub fn origin(&self) -> &'k str {
         match self {
             RadixRule::Plain { frag } => frag,
             RadixRule::Param { frag, .. } => frag,
@@ -287,10 +287,10 @@ impl<'a> RadixRule<'a> {
 ///     Ok(())
 /// }
 /// ```
-impl<'a> TryFrom<&'a str> for RadixRule<'a> {
+impl<'k> TryFrom<&'k str> for RadixRule<'k> {
     type Error = RadixError;
 
-    fn try_from(path: &'a str) -> Result<Self, Self::Error> {
+    fn try_from(path: &'k str) -> Result<Self, Self::Error> {
         if path.is_empty() {
             return Err(RadixError::PathEmpty);
         }
@@ -331,7 +331,7 @@ impl<'a> TryFrom<&'a str> for RadixRule<'a> {
 ///
 /// assert_eq!(RadixRule::default(), "");
 /// ```
-impl<'a> Default for RadixRule<'a> {
+impl<'k> Default for RadixRule<'k> {
     fn default() -> Self {
         Self::Plain { frag: "" }
     }
@@ -351,7 +351,7 @@ impl<'a> Default for RadixRule<'a> {
 ///     Ok(())
 /// }
 /// ```
-impl<'a> Debug for RadixRule<'a> {
+impl<'k> Debug for RadixRule<'k> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             RadixRule::Plain { frag } => write!(f, "Plain({frag})"),
@@ -383,7 +383,7 @@ impl<'a> Debug for RadixRule<'a> {
 ///     Ok(())
 /// }
 /// ```
-impl<'a> Hash for RadixRule<'a> {
+impl<'k> Hash for RadixRule<'k> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             RadixRule::Plain { frag } => {
@@ -407,7 +407,7 @@ impl<'a> Hash for RadixRule<'a> {
 }
 
 /// == & !=
-impl<'a> Eq for RadixRule<'a> {}
+impl<'k> Eq for RadixRule<'k> {}
 
 /// == & !=
 ///
@@ -431,7 +431,7 @@ impl<'a> Eq for RadixRule<'a> {}
 ///     Ok(())
 /// }
 /// ```
-impl<'a> PartialEq for RadixRule<'a> {
+impl<'k> PartialEq for RadixRule<'k> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (RadixRule::Plain { frag: a }, RadixRule::Plain { frag: b }) => a == b,
@@ -462,7 +462,7 @@ impl<'a> PartialEq for RadixRule<'a> {
 ///     Ok(())
 /// }
 /// ```
-impl<'a> PartialEq<&str> for RadixRule<'a> {
+impl<'k> PartialEq<&str> for RadixRule<'k> {
     fn eq(&self, other: &&str) -> bool {
         self.origin() == *other
     }

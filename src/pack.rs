@@ -4,15 +4,15 @@ use super::rule::*;
 use super::node::RadixNode;
 
 /// A group of regular and special nodes
-pub struct RadixPack<'a, V> {
+pub struct RadixPack<'k, V> {
     /// The most common nodes, utilizing sparse arrays to accelerate queries
-    pub regular: SparseSet<RadixNode<'a, V>>,
+    pub regular: SparseSet<RadixNode<'k, V>>,
 
     /// Nodes which need to be checked one by one to determine if they match
-    pub special: IndexMap<&'a str, RadixNode<'a, V>>,
+    pub special: IndexMap<&'k str, RadixNode<'k, V>>,
 }
 
-impl<'a, V> RadixPack<'a, V> {
+impl<'k, V> RadixPack<'k, V> {
     /// Check if the group is empty
     #[inline]
     pub fn is_empty(&self) -> bool {
@@ -59,7 +59,7 @@ impl<'a, V> RadixPack<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn iter_mut(&'a mut self) -> IterMut<'_, V> {
+    pub fn iter_mut(&'k mut self) -> IterMut<'_, V> {
         IterMut::from(self)
     }
 
@@ -90,7 +90,7 @@ impl<'a, V> RadixPack<'a, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(&mut self, rule: RadixRule<'a>) -> RadixResult<&mut RadixNode<'a, V>> {
+    pub fn insert(&mut self, rule: RadixRule<'k>) -> RadixResult<&mut RadixNode<'k, V>> {
         // special nodes inserted directly into map
         let frag = rule.origin();
         if !matches!(rule, RadixRule::Plain { .. }) {
@@ -165,7 +165,7 @@ impl<'a, V> RadixPack<'a, V> {
 }
 
 /// Default Trait
-impl<'a, V> Default for RadixPack<'a, V> {
+impl<'k, V> Default for RadixPack<'k, V> {
     fn default() -> Self {
         Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
     }
@@ -174,7 +174,7 @@ impl<'a, V> Default for RadixPack<'a, V> {
 // todo Debug
 
 /// Clone Trait
-impl<'a, V: Clone> Clone for RadixPack<'a, V> {
+impl<'k, V: Clone> Clone for RadixPack<'k, V> {
     fn clone(&self) -> Self {
         let mut map = SparseSet::with_capacity(256);
 
@@ -192,26 +192,26 @@ impl<'a, V: Clone> Clone for RadixPack<'a, V> {
 
 /// Iterate regular and special
 #[derive(Default, Clone)]
-pub struct Iter<'a, V> {
-    onetime: Option<&'a RadixNode<'a, V>>,
-    regular: std::slice::Iter<'a, sparseset::Entry<RadixNode<'a, V>>>,
-    special: indexmap::map::Values<'a, &'a str, RadixNode<'a, V>>,
+pub struct Iter<'k, V> {
+    onetime: Option<&'k RadixNode<'k, V>>,
+    regular: std::slice::Iter<'k, sparseset::Entry<RadixNode<'k, V>>>,
+    special: indexmap::map::Values<'k, &'k str, RadixNode<'k, V>>,
 }
 
-impl<'a, V> From<&'a RadixNode<'a, V>> for Iter<'a, V> {
-    fn from(value: &'a RadixNode<'a, V>) -> Self {
+impl<'k, V> From<&'k RadixNode<'k, V>> for Iter<'k, V> {
+    fn from(value: &'k RadixNode<'k, V>) -> Self {
         Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
     }
 }
 
-impl<'a, V> From<&'a RadixPack<'a, V>> for Iter<'a, V> {
-    fn from(value: &'a RadixPack<'a, V>) -> Self {
+impl<'k, V> From<&'k RadixPack<'k, V>> for Iter<'k, V> {
+    fn from(value: &'k RadixPack<'k, V>) -> Self {
         Self { onetime: None, regular: value.regular.iter(), special: value.special.values() }
     }
 }
 
-impl<'a, V> Iterator for Iter<'a, V> {
-    type Item = &'a RadixNode<'a, V>;
+impl<'k, V> Iterator for Iter<'k, V> {
+    type Item = &'k RadixNode<'k, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.onetime.take().or(self.regular.next().map(|node| node.value())).or(self.special.next())
@@ -222,26 +222,26 @@ impl<'a, V> Iterator for Iter<'a, V> {
 
 /// Iterate regular and special
 #[derive(Default)]
-pub struct IterMut<'a, V> {
-    onetime: Option<&'a mut RadixNode<'a, V>>,
-    regular: std::slice::IterMut<'a, sparseset::Entry<RadixNode<'a, V>>>,
-    special: indexmap::map::ValuesMut<'a, &'a str, RadixNode<'a, V>>,
+pub struct IterMut<'k, V> {
+    onetime: Option<&'k mut RadixNode<'k, V>>,
+    regular: std::slice::IterMut<'k, sparseset::Entry<RadixNode<'k, V>>>,
+    special: indexmap::map::ValuesMut<'k, &'k str, RadixNode<'k, V>>,
 }
 
-impl<'a, V> From<&'a mut RadixNode<'a, V>> for IterMut<'a, V> {
-    fn from(value: &'a mut RadixNode<'a, V>) -> Self {
+impl<'k, V> From<&'k mut RadixNode<'k, V>> for IterMut<'k, V> {
+    fn from(value: &'k mut RadixNode<'k, V>) -> Self {
         Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
     }
 }
 
-impl<'a, V> From<&'a mut RadixPack<'a, V>> for IterMut<'a, V> {
-    fn from(value: &'a mut RadixPack<'a, V>) -> Self {
+impl<'k, V> From<&'k mut RadixPack<'k, V>> for IterMut<'k, V> {
+    fn from(value: &'k mut RadixPack<'k, V>) -> Self {
         Self { onetime: None, regular: value.regular.iter_mut(), special: value.special.values_mut() }
     }
 }
 
-impl<'a, V> Iterator for IterMut<'a, V> {
-    type Item = &'a mut RadixNode<'a, V>;
+impl<'k, V> Iterator for IterMut<'k, V> {
+    type Item = &'k mut RadixNode<'k, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.onetime.take().or(self.regular.next().map(|node| node.value_mut())).or(self.special.next())
