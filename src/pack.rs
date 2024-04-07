@@ -59,7 +59,7 @@ impl<'k, V> RadixPack<'k, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn iter_mut(&'k mut self) -> IterMut<'_, V> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, 'k, V> {
         IterMut::from(self)
     }
 
@@ -222,26 +222,26 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// Iterate regular and special
 #[derive(Default)]
-pub struct IterMut<'k, V> {
-    onetime: Option<&'k mut RadixNode<'k, V>>,
+pub struct IterMut<'n: 'k, 'k, V> {
+    onetime: Option<&'n mut RadixNode<'k, V>>,
     regular: std::slice::IterMut<'k, sparseset::Entry<RadixNode<'k, V>>>,
     special: indexmap::map::ValuesMut<'k, &'k str, RadixNode<'k, V>>,
 }
 
-impl<'k, V> From<&'k mut RadixNode<'k, V>> for IterMut<'k, V> {
-    fn from(value: &'k mut RadixNode<'k, V>) -> Self {
+impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {
+    fn from(value: &'n mut RadixNode<'k, V>) -> Self {
         Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
     }
 }
 
-impl<'k, V> From<&'k mut RadixPack<'k, V>> for IterMut<'k, V> {
-    fn from(value: &'k mut RadixPack<'k, V>) -> Self {
+impl<'n, 'k, V> From<&'n mut RadixPack<'k, V>> for IterMut<'n, 'k, V> {
+    fn from(value: &'n mut RadixPack<'k, V>) -> Self {
         Self { onetime: None, regular: value.regular.iter_mut(), special: value.special.values_mut() }
     }
 }
 
-impl<'k, V> Iterator for IterMut<'k, V> {
-    type Item = &'k mut RadixNode<'k, V>;
+impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
+    type Item = &'n mut RadixNode<'k, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.onetime.take().or(self.regular.next().map(|node| node.value_mut())).or(self.special.next())

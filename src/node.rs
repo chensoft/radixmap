@@ -87,7 +87,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn iter_mut(&'k mut self) -> IterMut<'_, V> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, 'k, V> {
         IterMut::from(self)
     }
 
@@ -166,7 +166,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn values_mut(&'k mut self) -> ValuesMut<'_, V> {
+    pub fn values_mut(&mut self) -> ValuesMut<'_, 'k, V> {
         ValuesMut::from(self)
     }
 
@@ -659,13 +659,13 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// The iterator for radix tree
 #[derive(Default)]
-pub struct IterMut<'k, V> {
-    queue: VecDeque<Peekable<pack::IterMut<'k, V>>>,
+pub struct IterMut<'n, 'k, V> {
+    queue: VecDeque<Peekable<pack::IterMut<'n, 'k, V>>>,
     order: Order,
     empty: bool,
 }
 
-impl<'k, V> IterMut<'k, V> {
+impl<'n, 'k, V> IterMut<'n, 'k, V> {
     /// Starting to iterate from the node with a specific prefix
     ///
     /// ```
@@ -804,7 +804,7 @@ impl<'k, V> IterMut<'k, V> {
     /// # Safety
     ///
     /// DO NOT MODIFY THE RETURNED NODE'S `next` FIELD
-    fn next_pre(&mut self) -> Option<&'k mut RadixNode<'k, V>> {
+    fn next_pre(&mut self) -> Option<&'n mut RadixNode<'k, V>> {
         loop {
             let back = match self.queue.back_mut() {
                 Some(obj) => obj,
@@ -827,7 +827,7 @@ impl<'k, V> IterMut<'k, V> {
     /// # Safety
     ///
     /// DO NOT MODIFY THE RETURNED NODE'S `next` FIELD
-    fn next_level(&mut self) -> Option<&'k mut RadixNode<'k, V>> {
+    fn next_level(&mut self) -> Option<&'n mut RadixNode<'k, V>> {
         loop {
             let front = match self.queue.front_mut() {
                 Some(obj) => obj,
@@ -846,14 +846,14 @@ impl<'k, V> IterMut<'k, V> {
     }
 }
 
-impl<'k, V> From<&'k mut RadixNode<'k, V>> for IterMut<'k, V> {
-    fn from(start: &'k mut RadixNode<'k, V>) -> Self {
+impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {
+    fn from(start: &'n mut RadixNode<'k, V>) -> Self {
         Self { queue: VecDeque::from([pack::IterMut::from(start).peekable()]), order: Order::Pre, empty: false }
     }
 }
 
-impl<'k, V> Iterator for IterMut<'k, V> {
-    type Item = &'k mut RadixNode<'k, V>;
+impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
+    type Item = &'n mut RadixNode<'k, V>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -947,11 +947,11 @@ impl<'k, V> Iterator for Values<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Mutable iterator adapter for data
-pub struct ValuesMut<'k, V> {
-    iter: IterMut<'k, V>
+pub struct ValuesMut<'n, 'k, V> {
+    iter: IterMut<'n, 'k, V>
 }
 
-impl<'k, V> ValuesMut<'k, V> {
+impl<'n, 'k, V> ValuesMut<'n, 'k, V> {
     /// Starting to iterate from the node with a specific prefix
     pub fn with_prefix(mut self, path: &str, data: bool) -> RadixResult<Self> {
         self.iter = self.iter.with_prefix(path, data)?;
@@ -965,14 +965,14 @@ impl<'k, V> ValuesMut<'k, V> {
     }
 }
 
-impl<'k, V> From<&'k mut RadixNode<'k, V>> for ValuesMut<'k, V> {
-    fn from(value: &'k mut RadixNode<'k, V>) -> Self {
+impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for ValuesMut<'n, 'k, V> {
+    fn from(value: &'n mut RadixNode<'k, V>) -> Self {
         Self { iter: IterMut::from(value) }
     }
 }
 
-impl<'k, V> Iterator for ValuesMut<'k, V> {
-    type Item = &'k mut V;
+impl<'n, 'k, V> Iterator for ValuesMut<'n, 'k, V> {
+    type Item = &'n mut V;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().and_then(|node| node.data.as_mut())
