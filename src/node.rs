@@ -453,27 +453,27 @@ impl<'a, V> Iter<'a, V> {
     ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter(); // same as with_order(Order::Pre);
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter().with_order(Order::Post);
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter().with_order(Order::Level);
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -644,15 +644,15 @@ impl<'a, V> IterMut<'a, V> {
     ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter_mut().with_prefix("/api/v1")?;
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     let mut iter = node.iter_mut().with_prefix("/api/v")?;
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -687,27 +687,27 @@ impl<'a, V> IterMut<'a, V> {
     ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter_mut(); // same as with_order(Order::Pre);
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter_mut().with_order(Order::Post);
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter_mut().with_order(Order::Level);
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api", &"api")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1", &"v1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2", &"v2")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
+    ///     assert_eq!(iter.next().map(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())

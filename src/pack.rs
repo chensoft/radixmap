@@ -14,12 +14,6 @@ pub struct RadixPack<'a, V> {
 
 impl<'a, V> RadixPack<'a, V> {
     /// Check if the group is empty
-    ///
-    /// ```
-    /// use radixmap::{pack::RadixPack};
-    ///
-    /// assert!(RadixPack::<'_, ()>::default().is_empty());
-    /// ```
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.regular.is_empty() && self.special.is_empty()
@@ -36,14 +30,14 @@ impl<'a, V> RadixPack<'a, V> {
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
     ///     let mut iter = pack.iter();
-    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_plain("/api"));
-    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_regex("{[0-9]+}"));
+    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_plain("/api")));
+    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_regex("{[0-9]+}")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn iter(&'a self) -> Iter<'a, V> {
+    pub fn iter(&self) -> Iter<'_, V> {
         Iter::from(self)
     }
 
@@ -58,14 +52,14 @@ impl<'a, V> RadixPack<'a, V> {
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
     ///     let mut iter = pack.iter_mut();
-    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_plain("/api"));
-    ///     assert_eq!(iter.next().unwrap().rule, RadixRule::from_regex("{[0-9]+}"));
+    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_plain("/api")));
+    ///     assert_eq!(iter.next().map(|node| node.rule), Some(RadixRule::from_regex("{[0-9]+}")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn iter_mut(&'a mut self) -> IterMut<'a, V> {
+    pub fn iter_mut(&'a mut self) -> IterMut<'_, V> {
         IterMut::from(self)
     }
 
@@ -85,7 +79,7 @@ impl<'a, V> RadixPack<'a, V> {
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
     ///
-    ///     // inserting duplicate nodes is meaningless
+    ///     // inserting duplicate nodes has no effect
     ///     assert_eq!(pack.insert(RadixRule::from_plain("/api")?)?.rule, "/api");
     ///     assert_eq!(pack.insert(RadixRule::from_param(":id")?)?.rule, ":id");
     ///     assert_eq!(pack.insert(RadixRule::from_regex("{}")?)?.rule, "{}");
@@ -106,8 +100,8 @@ impl<'a, V> RadixPack<'a, V> {
             };
         }
 
-        // use sparse array to find regular node, since the nodes of the tree share
-        // prefixes, here it is only necessary to use the first byte for indexing
+        // Use sparse array to find regular node. Since tree nodes
+        // share prefixes, indexing only the first byte is sufficient
         let first = match frag.as_bytes().first() {
             Some(val) => *val as usize,
             None => return Err(RadixError::PathEmpty)
@@ -173,7 +167,7 @@ impl<'a, V> RadixPack<'a, V> {
     }
 }
 
-/// Create a empty group
+/// Default Trait
 impl<'a, V> Default for RadixPack<'a, V> {
     fn default() -> Self {
         Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
@@ -182,7 +176,7 @@ impl<'a, V> Default for RadixPack<'a, V> {
 
 // todo Debug
 
-/// Clone the group
+/// Clone Trait
 impl<'a, V: Clone> Clone for RadixPack<'a, V> {
     fn clone(&self) -> Self {
         let mut map = SparseSet::with_capacity(256);

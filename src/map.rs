@@ -198,7 +198,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn iter(&'a self) -> Iter<'a, V> {
+    pub fn iter(&self) -> Iter<'_, V> {
         Iter::from(self)
     }
 
@@ -225,7 +225,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn iter_mut(&'a mut self) -> IterMut<'a, V> {
+    pub fn iter_mut(&'a mut self) -> IterMut<'_, V> {
         IterMut::from(self)
     }
 
@@ -255,7 +255,7 @@ impl<'a, V> RadixMap<'a, V> {
     /// }
     /// ```
     #[inline]
-    pub fn keys(&'a self) -> Keys<'a, V> {
+    pub fn keys(&self) -> Keys<'_, V> {
         Keys::from(self)
     }
 
