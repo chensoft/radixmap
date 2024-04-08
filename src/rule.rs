@@ -76,6 +76,7 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_plain(r"").is_ok());
     /// assert!(RadixRule::from_plain(r"id").is_ok());
     /// ```
+    #[inline]
     pub fn from_plain(frag: &'k str) -> RadixResult<Self> {
         Ok(Self::Plain { frag })
     }
@@ -90,6 +91,7 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_param(r"").is_err());   // missing :
     /// assert!(RadixRule::from_param(r"id").is_err()); // missing :
     /// ```
+    #[inline]
     pub fn from_param(frag: &'k str) -> RadixResult<Self> {
         if !frag.starts_with(':') {
             return Err(RadixError::PathMalformed("param lack of colon".into()));
@@ -115,6 +117,7 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_regex(r"{:(0}").is_err());   // missing )
     /// assert!(RadixRule::from_regex(r"{id:(0}").is_err()); // missing )
     /// ```
+    #[inline]
     pub fn from_regex(frag: &'k str) -> RadixResult<Self> {
         if !frag.starts_with('{') || !frag.ends_with('}') {
             return Err(RadixError::PathMalformed("regex lack of curly braces".into()));
@@ -143,6 +146,7 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_glob(r"").is_err());      // missing rule chars
     /// assert!(RadixRule::from_glob(r"id").is_err());    // missing rule chars
     /// ```
+    #[inline]
     pub fn from_glob(frag: &'k str) -> RadixResult<Self> {
         match frag.as_bytes().first() {
             Some(b'*') => Ok(Self::Glob { frag, glob: glob::Pattern::new(frag)? }),
@@ -178,6 +182,7 @@ impl<'k> RadixRule<'k> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn longest<'b>(&self, path: &'b str) -> (&'b str, Ordering) {
         match self {
             RadixRule::Plain { frag } => {
@@ -223,6 +228,7 @@ impl<'k> RadixRule<'k> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn divide(&mut self, len: usize) -> RadixResult<RadixRule<'k>> {
         match self {
             RadixRule::Plain { frag } if frag.len() > len => {
@@ -332,6 +338,7 @@ impl<'k> TryFrom<&'k str> for RadixRule<'k> {
 /// assert_eq!(RadixRule::default(), "");
 /// ```
 impl<'k> Default for RadixRule<'k> {
+    #[inline]
     fn default() -> Self {
         Self::Plain { frag: "" }
     }
@@ -384,6 +391,7 @@ impl<'k> Debug for RadixRule<'k> {
 /// }
 /// ```
 impl<'k> Hash for RadixRule<'k> {
+    #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             RadixRule::Plain { frag } => {
@@ -432,6 +440,7 @@ impl<'k> Eq for RadixRule<'k> {}
 /// }
 /// ```
 impl<'k> PartialEq for RadixRule<'k> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             (RadixRule::Plain { frag: a }, RadixRule::Plain { frag: b }) => a == b,
@@ -463,6 +472,7 @@ impl<'k> PartialEq for RadixRule<'k> {
 /// }
 /// ```
 impl<'k> PartialEq<&str> for RadixRule<'k> {
+    #[inline]
     fn eq(&self, other: &&str) -> bool {
         self.origin() == *other
     }

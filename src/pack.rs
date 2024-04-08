@@ -37,6 +37,7 @@ impl<'k, V> RadixPack<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn iter(&self) -> Iter<'_, V> {
         Iter::from(self)
     }
@@ -64,6 +65,7 @@ impl<'k, V> RadixPack<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn iter_mut(&mut self) -> IterMut<'_, 'k, V> {
         IterMut::from(self)
     }
@@ -163,6 +165,7 @@ impl<'k, V> RadixPack<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn clear(&mut self) {
         self.regular.clear();
         self.special.clear();
@@ -171,6 +174,7 @@ impl<'k, V> RadixPack<'k, V> {
 
 /// Default Trait
 impl<'k, V> Default for RadixPack<'k, V> {
+    #[inline]
     fn default() -> Self {
         Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
     }
@@ -180,6 +184,7 @@ impl<'k, V> Default for RadixPack<'k, V> {
 
 /// Clone Trait
 impl<'k, V: Clone> Clone for RadixPack<'k, V> {
+    #[inline]
     fn clone(&self) -> Self {
         let mut map = SparseSet::with_capacity(256);
 
@@ -204,12 +209,14 @@ pub struct Iter<'k, V> {
 }
 
 impl<'k, V> From<&'k RadixNode<'k, V>> for Iter<'k, V> {
+    #[inline]
     fn from(value: &'k RadixNode<'k, V>) -> Self {
         Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
     }
 }
 
 impl<'k, V> From<&'k RadixPack<'k, V>> for Iter<'k, V> {
+    #[inline]
     fn from(value: &'k RadixPack<'k, V>) -> Self {
         Self { onetime: None, regular: value.regular.iter(), special: value.special.values() }
     }
@@ -218,6 +225,7 @@ impl<'k, V> From<&'k RadixPack<'k, V>> for Iter<'k, V> {
 impl<'k, V> Iterator for Iter<'k, V> {
     type Item = &'k RadixNode<'k, V>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.onetime.take()
             .or_else(|| self.regular.next().map(|node| node.value()))
@@ -236,12 +244,14 @@ pub struct IterMut<'n, 'k, V> {
 }
 
 impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {
+    #[inline]
     fn from(value: &'n mut RadixNode<'k, V>) -> Self {
         Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
     }
 }
 
 impl<'n, 'k, V> From<&'n mut RadixPack<'k, V>> for IterMut<'n, 'k, V> {
+    #[inline]
     fn from(value: &'n mut RadixPack<'k, V>) -> Self {
         Self { onetime: None, regular: value.regular.iter_mut(), special: value.special.values_mut() }
     }
@@ -250,6 +260,7 @@ impl<'n, 'k, V> From<&'n mut RadixPack<'k, V>> for IterMut<'n, 'k, V> {
 impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
     type Item = &'n mut RadixNode<'k, V>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.onetime.take()
             .or_else(|| self.regular.next().map(|node| node.value_mut()))

@@ -58,6 +58,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn iter(&self) -> Iter<'_, V> {
         Iter::from(self)
     }
@@ -87,6 +88,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn iter_mut(&mut self) -> IterMut<'_, 'k, V> {
         IterMut::from(self)
     }
@@ -112,6 +114,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn keys(&self) -> Keys<'_, V> {
         Keys::from(self)
     }
@@ -137,6 +140,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn values(&self) -> Values<'_, V> {
         Values::from(self)
     }
@@ -166,6 +170,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn values_mut(&mut self) -> ValuesMut<'_, 'k, V> {
         ValuesMut::from(self)
     }
@@ -299,6 +304,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn divide(&mut self, len: usize) -> RadixResult<RadixNode<'k, V>> {
         Ok(RadixNode {
             path: std::mem::take(&mut self.path),
@@ -327,6 +333,7 @@ impl<'k, V> RadixNode<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn clear(&mut self) {
         self.path = "";
         self.data = None;
@@ -348,6 +355,7 @@ impl<'k, V> RadixNode<'k, V> {
 /// }
 /// ```
 impl<'k, V> From<RadixRule<'k>> for RadixNode<'k, V> {
+    #[inline]
     fn from(rule: RadixRule<'k>) -> Self {
         Self { path: "", data: None, rule, next: Default::default() }
     }
@@ -368,6 +376,7 @@ impl<'k, V> From<RadixRule<'k>> for RadixNode<'k, V> {
 impl<'k, V> TryFrom<(&'k str, V)> for RadixNode<'k, V> {
     type Error = RadixError;
 
+    #[inline]
     fn try_from((path, data): (&'k str, V)) -> RadixResult<Self> {
         Ok(Self { path, data: Some(data), rule: RadixRule::try_from(path)?, next: Default::default() })
     }
@@ -381,6 +390,7 @@ impl<'k, V> TryFrom<(&'k str, V)> for RadixNode<'k, V> {
 /// assert!(node.insert("/api", ()).is_ok());
 /// ```
 impl<'k, V> Default for RadixNode<'k, V> {
+    #[inline]
     fn default() -> Self {
         Self { path: "", data: None, rule: RadixRule::default(), next: pack::RadixPack::default() }
     }
@@ -422,6 +432,7 @@ impl<'k, V> Debug for RadixNode<'k, V> {
 /// }
 /// ```
 impl<'k, V: Clone> Clone for RadixNode<'k, V> {
+    #[inline]
     fn clone(&self) -> Self {
         Self {
             path: self.path,
@@ -455,6 +466,7 @@ pub enum Order {
 }
 
 impl Default for Order {
+    #[inline]
     fn default() -> Self {
         Self::Pre
     }
@@ -563,6 +575,7 @@ impl<'k, V> Iter<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn with_order(mut self, order: Order) -> Self {
         self.order = order;
         self
@@ -605,6 +618,7 @@ impl<'k, V> Iter<'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn with_empty(mut self) -> Self {
         self.empty = true;
         self
@@ -678,6 +692,7 @@ impl<'k, V> Iter<'k, V> {
 }
 
 impl<'k, V> From<&'k RadixNode<'k, V>> for Iter<'k, V> {
+    #[inline]
     fn from(start: &'k RadixNode<'k, V>) -> Self {
         Self { queue: VecDeque::from([pack::Iter::from(start).peekable()]), visit: vec![], order: Order::Pre, empty: false }
     }
@@ -708,7 +723,7 @@ impl<'k, V> Iterator for Iter<'k, V> {
 /// The iterator for radix tree
 #[derive(Default)]
 pub struct IterMut<'n, 'k, V> {
-    queue: VecDeque<Peekable<pack::IterMut<'n, 'k, V>>>,
+    queue: VecDeque<pack::IterMut<'n, 'k, V>>,
     order: Order,
     empty: bool,
 }
@@ -758,7 +773,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
             });
 
         if let Some(cursor) = cursor {
-            self.queue.push_front(pack::IterMut::from(cursor).peekable());
+            self.queue.push_front(pack::IterMut::from(cursor));
         }
 
         self
@@ -796,6 +811,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn with_order(mut self, order: Order) -> Self {
         self.order = order;
         self
@@ -838,6 +854,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn with_empty(mut self) -> Self {
         self.empty = true;
         self
@@ -858,7 +875,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
             match back.next() {
                 Some(node) => {
                     let ptr = node as *mut RadixNode<'k, V>;
-                    self.queue.push_back(node.next.iter_mut().peekable());
+                    self.queue.push_back(node.next.iter_mut());
                     unsafe { return Some(&mut *ptr); }
                 }
                 None => { self.queue.pop_back(); }
@@ -881,7 +898,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
             match front.next() {
                 Some(node) => {
                     let ptr = node as *mut RadixNode<'k, V>;
-                    self.queue.push_back(node.next.iter_mut().peekable());
+                    self.queue.push_back(node.next.iter_mut());
                     unsafe { return Some(&mut *ptr); }
                 }
                 None => { self.queue.pop_front(); }
@@ -891,8 +908,9 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
 }
 
 impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {
+    #[inline]
     fn from(start: &'n mut RadixNode<'k, V>) -> Self {
-        Self { queue: VecDeque::from([pack::IterMut::from(start).peekable()]), order: Order::Pre, empty: false }
+        Self { queue: VecDeque::from([pack::IterMut::from(start)]), order: Order::Pre, empty: false }
     }
 }
 
@@ -926,12 +944,14 @@ pub struct Keys<'k, V> {
 
 impl<'k, V> Keys<'k, V> {
     /// Starting to iterate from the node with a specific prefix
+    #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
 
     /// Change the iterating order
+    #[inline]
     pub fn with_order(mut self, order: Order) -> Self {
         self.iter = self.iter.with_order(order);
         self
@@ -939,6 +959,7 @@ impl<'k, V> Keys<'k, V> {
 }
 
 impl<'k, V> From<&'k RadixNode<'k, V>> for Keys<'k, V> {
+    #[inline]
     fn from(value: &'k RadixNode<'k, V>) -> Self {
         Self { iter: Iter::from(value) }
     }
@@ -947,6 +968,7 @@ impl<'k, V> From<&'k RadixNode<'k, V>> for Keys<'k, V> {
 impl<'k, V> Iterator for Keys<'k, V> {
     type Item = &'k str;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|node| node.path)
     }
@@ -962,12 +984,14 @@ pub struct Values<'k, V> {
 
 impl<'k, V> Values<'k, V> {
     /// Starting to iterate from the node with a specific prefix
+    #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
 
     /// Change the iterating order
+    #[inline]
     pub fn with_order(mut self, order: Order) -> Self {
         self.iter = self.iter.with_order(order);
         self
@@ -975,6 +999,7 @@ impl<'k, V> Values<'k, V> {
 }
 
 impl<'k, V> From<&'k RadixNode<'k, V>> for Values<'k, V> {
+    #[inline]
     fn from(value: &'k RadixNode<'k, V>) -> Self {
         Self { iter: Iter::from(value) }
     }
@@ -983,6 +1008,7 @@ impl<'k, V> From<&'k RadixNode<'k, V>> for Values<'k, V> {
 impl<'k, V> Iterator for Values<'k, V> {
     type Item = &'k V;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().and_then(|node| node.data.as_ref())
     }
@@ -997,12 +1023,14 @@ pub struct ValuesMut<'n, 'k, V> {
 
 impl<'n, 'k, V> ValuesMut<'n, 'k, V> {
     /// Starting to iterate from the node with a specific prefix
+    #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
 
     /// Change the iterating order
+    #[inline]
     pub fn with_order(mut self, order: Order) -> Self {
         self.iter = self.iter.with_order(order);
         self
@@ -1010,6 +1038,7 @@ impl<'n, 'k, V> ValuesMut<'n, 'k, V> {
 }
 
 impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for ValuesMut<'n, 'k, V> {
+    #[inline]
     fn from(value: &'n mut RadixNode<'k, V>) -> Self {
         Self { iter: IterMut::from(value) }
     }
@@ -1018,6 +1047,7 @@ impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for ValuesMut<'n, 'k, V> {
 impl<'n, 'k, V> Iterator for ValuesMut<'n, 'k, V> {
     type Item = &'n mut V;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().and_then(|node| node.data.as_mut())
     }

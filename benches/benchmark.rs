@@ -8,7 +8,6 @@ use criterion::*;
 use radixmap::RadixMap;
 use indexmap::IndexMap;
 use std::collections::HashMap;
-use std::collections::BTreeMap;
 
 fn radixmap(c: &mut Criterion) {
     let mut map = RadixMap::new();
@@ -21,39 +20,7 @@ fn radixmap(c: &mut Criterion) {
         }
     }));
 
-    c.bench_function("radixmap-longest", |b| b.iter(|| {
-        black_box(map.get(LONGEST));
-    }));
-}
-
-fn hashmap(c: &mut Criterion) {
-    let mut map = HashMap::new();
-
-    c.bench_function("hashmap-insert", |b| b.iter(|| {
-        map.clear();
-
-        for url in APIS {
-            black_box(map.insert(*url, true));
-        }
-    }));
-
-    c.bench_function("hashmap-longest", |b| b.iter(|| {
-        black_box(map.get(LONGEST));
-    }));
-}
-
-fn btreemap(c: &mut Criterion) {
-    let mut map = BTreeMap::new();
-
-    c.bench_function("btreemap-insert", |b| b.iter(|| {
-        map.clear();
-
-        for url in APIS {
-            black_box(map.insert(*url, true));
-        }
-    }));
-
-    c.bench_function("btreemap-longest", |b| b.iter(|| {
+    c.bench_function("radixmap-search", |b| b.iter(|| {
         black_box(map.get(LONGEST));
     }));
 }
@@ -69,7 +36,23 @@ fn indexmap(c: &mut Criterion) {
         }
     }));
 
-    c.bench_function("indexmap-longest", |b| b.iter(|| {
+    c.bench_function("indexmap-search", |b| b.iter(|| {
+        black_box(map.get(LONGEST));
+    }));
+}
+
+fn hashmap(c: &mut Criterion) {
+    let mut map = HashMap::new();
+
+    c.bench_function("hashmap-insert", |b| b.iter(|| {
+        map.clear();
+
+        for url in APIS {
+            black_box(map.insert(*url, true));
+        }
+    }));
+
+    c.bench_function("hashmap-search", |b| b.iter(|| {
         black_box(map.get(LONGEST));
     }));
 }
@@ -77,8 +60,7 @@ fn indexmap(c: &mut Criterion) {
 criterion_group!(
     benches,
     radixmap,
-    hashmap,
-    btreemap,
     indexmap,
+    hashmap,
 );
 criterion_main!(benches);
