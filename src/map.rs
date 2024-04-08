@@ -463,7 +463,19 @@ impl<'k, V: PartialEq> PartialEq for RadixMap<'k, V> {
             return false;
         }
 
-        todo!()
+        let mut iter_a = self.iter();
+        let mut iter_b = other.iter();
+
+        for _ in 0..self.len() {
+            let item_a = iter_a.next();
+            let item_b = iter_b.next();
+
+            if item_a != item_b {
+                return false;
+            }
+        }
+
+        true
     }
 }
 

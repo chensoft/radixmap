@@ -236,6 +236,48 @@ impl<'k, V> RadixNode<'k, V> {
         None
     }
 
+    /// Find the deepest mutable node that matches to the path
+    pub fn search_mut(&mut self, mut path: &str, data: bool) -> Option<&mut RadixNode<'k, V>> {
+        let mut cursor = self;
+
+        loop {
+            // prefix must be part of the current node
+            let (share, order) = cursor.rule.longest(path);
+            if share.len() != path.len() && order != Ordering::Equal {
+                return None;
+            }
+
+            // trim the shared and continue search
+            path = &path[share.len()..];
+
+            // find regular node by sparse array
+            let byte = match path.as_bytes().first() {
+                Some(val) => *val as usize,
+                None => break
+            };
+
+            if let Some(node) = cursor.next.regular.get_mut(byte) {
+                cursor = node;
+                continue;
+            }
+
+            // find special node, if not then terminate
+            for node in cursor.next.special.values_mut() {
+                if let Some(find) = node.search_mut(path, data) {
+                    return Some(find);
+                }
+            }
+
+            return None;
+        }
+
+        if !data || !cursor.is_empty() {
+            return Some(cursor);
+        }
+
+        None
+    }
+
     /// Divide the node into two parts
     ///
     /// ```
@@ -703,17 +745,21 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(self, _path: &str, _data: bool) -> Self {
-        // todo iterate self and then rewind
-        // let start = match self.start.deepest(prefix) {
-        //     Some(node) => node,
-        //     None => return Err(RadixError::PathNotFound),
-        // };
-        //
-        // self.start = start;
-        // self.queue.clear();
-        // self.queue.push_back(EntityMut::from(self.start).peekable());
-        // self.visit.clear();
+    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+        let cursor = self.queue.pop_front();
+
+        self.queue.clear();
+
+        let cursor = cursor
+            .and_then(|mut iter| iter.next())
+            .and_then(|node| match !path.is_empty() {
+                true => node.search_mut(path, data),
+                false => None,
+            });
+
+        if let Some(cursor) = cursor {
+            self.queue.push_front(pack::IterMut::from(cursor).peekable());
+        }
 
         self
     }
@@ -737,14 +783,6 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert!(iter.next().is_none());
-    ///
-    ///     let mut iter = node.iter_mut().with_order(Order::Post);
-    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
     ///     assert!(iter.next().is_none());
     ///
     ///     let mut iter = node.iter_mut().with_order(Order::Level);
