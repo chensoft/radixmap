@@ -627,11 +627,7 @@ impl<'k, V> Iter<'k, V> {
     /// Internal use only, traversing nodes in pre-order
     fn next_pre(&mut self) -> Option<&'k RadixNode<'k, V>> {
         loop {
-            let back = match self.queue.back_mut() {
-                Some(obj) => obj,
-                None => return None,
-            };
-
+            let back = self.queue.back_mut()?;
             match back.next() {
                 Some(node) => {
                     self.queue.push_back(node.next.iter().peekable());
@@ -657,11 +653,7 @@ impl<'k, V> Iter<'k, V> {
 
         // pop node from visit queue, re-push iter if the next node is not empty
         loop {
-            let mut back = match self.visit.pop() {
-                Some(obj) => obj,
-                None => return None,
-            };
-
+            let mut back = self.visit.pop()?;
             if let Some(node) = back.next() {
                 if back.peek().is_some() {
                     self.queue.push_back(back);
@@ -675,11 +667,7 @@ impl<'k, V> Iter<'k, V> {
     /// Internal use only, traversing nodes in level-order
     fn next_level(&mut self) -> Option<&'k RadixNode<'k, V>> {
         loop {
-            let front = match self.queue.front_mut() {
-                Some(obj) => obj,
-                None => return None,
-            };
-
+            let front = self.queue.front_mut()?;
             match front.next() {
                 Some(node) => {
                     self.queue.push_back(node.next.iter().peekable());
@@ -867,11 +855,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     /// DO NOT MODIFY THE RETURNED NODE'S `next` FIELD
     fn next_pre(&mut self) -> Option<&'n mut RadixNode<'k, V>> {
         loop {
-            let back = match self.queue.back_mut() {
-                Some(obj) => obj,
-                None => return None,
-            };
-
+            let back = self.queue.back_mut()?;
             match back.next() {
                 Some(node) => {
                     let ptr = node as *mut RadixNode<'k, V>;
@@ -890,11 +874,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     /// DO NOT MODIFY THE RETURNED NODE'S `next` FIELD
     fn next_level(&mut self) -> Option<&'n mut RadixNode<'k, V>> {
         loop {
-            let front = match self.queue.front_mut() {
-                Some(obj) => obj,
-                None => return None,
-            };
-
+            let front = self.queue.front_mut()?;
             match front.next() {
                 Some(node) => {
                     let ptr = node as *mut RadixNode<'k, V>;

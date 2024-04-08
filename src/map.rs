@@ -345,22 +345,24 @@ impl<'k, V> RadixMap<'k, V> {
     /// Remove the node of the path
     ///
     /// ```
-    /// use radixmap::{RadixMap, RadixResult, rule::RadixRule};
+    /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
-    ///     map.insert("/api/v1", ())?;
-    ///     map.insert("/api/v2", ())?;
+    ///     map.insert("/api/v1", "v1")?;
+    ///     map.insert("/api/v2", "v2")?;
     ///
-    ///     assert_eq!(map.remove("/api").map(|node| node.rule), None);
-    ///     assert_eq!(map.remove("/api/v1").map(|node| node.rule), Some(RadixRule::from_plain("/api/v1")?));
-    ///     assert_eq!(map.remove("/api/v2").map(|node| node.rule), Some(RadixRule::from_plain("/api/v2")?));
+    ///     assert_eq!(map.remove("/api"), None);
+    ///     assert_eq!(map.remove("/api/v1"), Some(("/api/v1", "v1")));
+    ///     assert_eq!(map.remove("/api/v2"), Some(("/api/v2", "v2")));
     ///     assert_eq!(map.is_empty(), true);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn remove(&mut self, _path: &str) -> Option<RadixNode<'k, V>> {
+    pub fn remove(&mut self, path: &str) -> Option<(&'k str, V)> {
+        let node = self.root.search_mut(path, true)?;
+
         // inline?
         todo!()
     }
