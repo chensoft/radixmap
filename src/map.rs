@@ -46,12 +46,12 @@ impl<'k, V> RadixMap<'k, V> {
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///
-    ///     assert!(map.is_empty());
+    ///     assert_eq!(map.is_empty(), true);
     ///
     ///     map.insert("/api/v1", ())?;
     ///     map.insert("/api/v2", ())?;
     ///
-    ///     assert!(!map.is_empty());
+    ///     assert_eq!(map.is_empty(), false);
     ///
     ///     Ok(())
     /// }
@@ -386,7 +386,7 @@ impl<'k, V> RadixMap<'k, V> {
     ///
     ///     map.clear();
     ///
-    ///     assert!(map.is_empty());
+    ///     assert_eq!(map.is_empty(), true);
     ///     assert_eq!(map.len(), 0);
     ///
     ///     Ok(())
@@ -412,6 +412,7 @@ impl<'k, V> RadixMap<'k, V> {
 ///     assert_eq!(map.len(), 2);
 ///     assert_eq!(map.get("/api/v1"), Some(&1));
 ///     assert_eq!(map.get("/api/v2"), Some(&2));
+///     assert_eq!(map.get("/api/v3"), None);
 ///
 ///     Ok(())
 /// }
@@ -581,7 +582,7 @@ impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Path adapter
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Keys<'k, V> {
     iter: Iter<'k, V>
 }
@@ -621,7 +622,7 @@ impl<'k, V> Iterator for Keys<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Data adapter
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Values<'k, V> {
     iter: Iter<'k, V>
 }
@@ -661,6 +662,7 @@ impl<'k, V> Iterator for Values<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Mutable data adapter
+#[derive(Default)]
 pub struct ValuesMut<'n, 'k, V> {
     iter: IterMut<'n, 'k, V>
 }

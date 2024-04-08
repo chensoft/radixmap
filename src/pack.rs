@@ -174,7 +174,7 @@ impl<'k, V> RadixPack<'k, V> {
     ///
     ///     pack.clear();
     ///
-    ///     assert!(pack.is_empty());
+    ///     assert_eq!(pack.is_empty(), true);
     ///
     ///     Ok(())
     /// }
@@ -194,9 +194,12 @@ impl<'k, V> Default for RadixPack<'k, V> {
     }
 }
 
-// todo Debug
-
-// todo Eq, PartialEq
+/// Debug trait
+impl<'k, V: Debug> Debug for RadixPack<'k, V> {
+    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
 
 // -----------------------------------------------------------------------------
 

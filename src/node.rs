@@ -369,11 +369,11 @@ impl<'k, V> RadixNode<'k, V> {
     ///     let mut node = RadixNode::try_from(("/api", ()))?;
     ///     node.insert("/api/v1", ())?;
     ///
-    ///     assert!(!node.is_empty());
+    ///     assert_eq!(node.is_empty(), false);
     ///
     ///     node.clear();
     ///
-    ///     assert!(node.is_empty());
+    ///     assert_eq!(node.is_empty(), true);
     ///
     ///     Ok(())
     /// }
@@ -599,7 +599,7 @@ impl<'k, V> Iter<'k, V> {
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert!(iter.next().is_none());
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     let mut iter = node.iter().with_order(Order::Post);
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
@@ -607,7 +607,7 @@ impl<'k, V> Iter<'k, V> {
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
-    ///     assert!(iter.next().is_none());
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     let mut iter = node.iter().with_order(Order::Level);
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
@@ -615,7 +615,7 @@ impl<'k, V> Iter<'k, V> {
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert!(iter.next().is_none());
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     Ok(())
     /// }
@@ -831,7 +831,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert!(iter.next().is_none());
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     let mut iter = node.iter_mut().with_order(Order::Level);
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api", &"api")));
@@ -839,7 +839,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2", &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v1/user", &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some(("/api/v2/user", &"user2")));
-    ///     assert!(iter.next().is_none());
+    ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     Ok(())
     /// }
@@ -962,7 +962,7 @@ impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Iterator adapter for path
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Keys<'k, V> {
     iter: Iter<'k, V>
 }
@@ -1002,7 +1002,7 @@ impl<'k, V> Iterator for Keys<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Iterator adapter for data
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Values<'k, V> {
     iter: Iter<'k, V>
 }
@@ -1042,6 +1042,7 @@ impl<'k, V> Iterator for Values<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Mutable iterator adapter for data
+#[derive(Default)]
 pub struct ValuesMut<'n, 'k, V> {
     iter: IterMut<'n, 'k, V>
 }
