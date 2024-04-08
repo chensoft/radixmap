@@ -20,7 +20,6 @@
 //! use radixmap::{RadixMap, RadixResult};
 //!
 //! fn main() -> RadixResult<()> {
-//!     // creation
 //!     let mut map = RadixMap::new();
 //!     map.insert("/api", "api")?;
 //!     map.insert("/api/v1", "v1")?;
@@ -28,11 +27,9 @@
 //!     map.insert("/api/v2", "v2")?;
 //!     map.insert("/api/v2/user", "user2")?;
 //!
-//!     // searching
 //!     assert_eq!(map.get("/api/v1/user"), Some(&"user1"));
 //!     assert_eq!(map.get("/api/v2/user"), Some(&"user2"));
 //!
-//!     // iteration
 //!     let mut iter = map.iter(); // pre-order by default
 //!
 //!     assert_eq!(iter.next(), Some(("/api", &"api")));

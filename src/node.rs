@@ -250,7 +250,7 @@ impl<'k, V> RadixNode<'k, V> {
             };
 
             // find regular node by sparse array
-            if let Some(node) = cursor.next.regular.get(byte) {
+            if let Some(Some(node)) = cursor.next.regular.get(byte) {
                 cursor = node;
                 continue;
             }
@@ -312,7 +312,7 @@ impl<'k, V> RadixNode<'k, V> {
             };
 
             // find regular node by sparse array
-            if let Some(node) = cursor.next.regular.get_mut(byte) {
+            if let Some(Some(node)) = cursor.next.regular.get_mut(byte) {
                 cursor = node;
                 continue;
             }

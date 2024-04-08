@@ -1,7 +1,6 @@
 //! Radix map implementation
 use super::defs::*;
-use super::node;
-use super::node::RadixNode;
+use super::node::{self, RadixNode};
 
 /// The radix map where the key is &'k str and the value is arbitrary data
 pub struct RadixMap<'k, V> {

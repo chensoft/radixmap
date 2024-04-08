@@ -4,9 +4,10 @@ use super::rule::*;
 use super::node::RadixNode;
 
 /// A group of regular and special nodes
+#[derive(Clone)]
 pub struct RadixPack<'k, V> {
     /// The most common nodes, utilizing sparse arrays to accelerate queries
-    pub regular: SparseSet<RadixNode<'k, V>>,
+    pub regular: Vec<Option<RadixNode<'k, V>>>,
 
     /// Nodes which need to be checked one by one to determine if they match
     pub special: IndexMap<&'k str, RadixNode<'k, V>>,
@@ -115,25 +116,30 @@ impl<'k, V> RadixPack<'k, V> {
         };
 
         // insert regular node if no shared prefix
-        if !self.regular.contains(first) {
-            self.regular.insert(first, RadixNode::from(rule));
-            return match self.regular.get_mut(first) {
+        self.ensure(first);
+
+        if self.regular[first].is_none() {
+            self.regular[first] = Some(RadixNode::from(rule));
+            return match &mut self.regular[first] {
                 Some(node) => Ok(node),
-                None => unreachable!()
+                _ => unreachable!()
             };
         }
 
         // compare the path with the existing node
-        let found = match self.regular.get_mut(first) {
+        let found = match &mut self.regular[first] {
             Some(node) => node,
-            None => unreachable!()
+            _ => unreachable!()
         };
         let (share, order) = found.rule.longest(frag);
 
         // divide the node into two parts
         if order == Ordering::Greater {
             let node = found.divide(share.len())?;
-            found.next.regular.insert(node.rule.origin().as_bytes()[0] as usize, node);
+            let byte = node.rule.origin().as_bytes()[0] as usize;
+
+            found.next.ensure(byte);
+            found.next.regular[byte] = Some(node);
         }
 
         // insert the remaining path if found
@@ -141,6 +147,14 @@ impl<'k, V> RadixPack<'k, V> {
             Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
             Ordering::Equal => Ok(found),
             Ordering::Less => unreachable!(),
+        }
+    }
+
+    /// Expand regular container if below `byte + 1` size
+    #[inline]
+    pub fn ensure(&mut self, byte: usize) {
+        if self.regular.len() < byte + 1 {
+            self.regular.resize_with(byte + 1, || None);
         }
     }
 
@@ -176,25 +190,11 @@ impl<'k, V> RadixPack<'k, V> {
 impl<'k, V> Default for RadixPack<'k, V> {
     #[inline]
     fn default() -> Self {
-        Self { regular: SparseSet::with_capacity(256), special: IndexMap::new() }
+        Self { regular: vec![], special: IndexMap::new() }
     }
 }
 
 // todo Debug
-
-/// Clone Trait
-impl<'k, V: Clone> Clone for RadixPack<'k, V> {
-    #[inline]
-    fn clone(&self) -> Self {
-        let mut map = SparseSet::with_capacity(256);
-
-        for obj in &self.regular {
-            map.insert(obj.key(), obj.value.clone());
-        }
-
-        Self { regular: map, special: self.special.clone() }
-    }
-}
 
 // todo Eq, PartialEq
 
@@ -204,7 +204,7 @@ impl<'k, V: Clone> Clone for RadixPack<'k, V> {
 #[derive(Default, Clone)]
 pub struct Iter<'k, V> {
     onetime: Option<&'k RadixNode<'k, V>>,
-    regular: std::slice::Iter<'k, sparseset::Entry<RadixNode<'k, V>>>,
+    regular: std::slice::Iter<'k, Option<RadixNode<'k, V>>>, // todo improve
     special: indexmap::map::Values<'k, &'k str, RadixNode<'k, V>>,
 }
 
@@ -226,10 +226,19 @@ impl<'k, V> Iterator for Iter<'k, V> {
     type Item = &'k RadixNode<'k, V>;
 
     #[inline]
+    #[allow(clippy::while_let_on_iterator)]
     fn next(&mut self) -> Option<Self::Item> {
-        self.onetime.take()
-            .or_else(|| self.regular.next().map(|node| node.value()))
-            .or_else(|| self.special.next())
+        if let Some(node) = self.onetime.take() {
+            return Some(node);
+        }
+
+        while let Some(node) = self.regular.next() {
+            if let Some(node) = node {
+                return Some(node);
+            }
+        }
+
+        self.special.next()
     }
 }
 
@@ -239,7 +248,7 @@ impl<'k, V> Iterator for Iter<'k, V> {
 #[derive(Default)]
 pub struct IterMut<'n, 'k, V> {
     onetime: Option<&'n mut RadixNode<'k, V>>,
-    regular: std::slice::IterMut<'n, sparseset::Entry<RadixNode<'k, V>>>,
+    regular: std::slice::IterMut<'n, Option<RadixNode<'k, V>>>,
     special: indexmap::map::ValuesMut<'n, &'k str, RadixNode<'k, V>>,
 }
 
@@ -261,9 +270,18 @@ impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
     type Item = &'n mut RadixNode<'k, V>;
 
     #[inline]
+    #[allow(clippy::while_let_on_iterator)]
     fn next(&mut self) -> Option<Self::Item> {
-        self.onetime.take()
-            .or_else(|| self.regular.next().map(|node| node.value_mut()))
-            .or_else(|| self.special.next())
+        if let Some(node) = self.onetime.take() {
+            return Some(node);
+        }
+
+        while let Some(node) = self.regular.next() {
+            if let Some(node) = node {
+                return Some(node);
+            }
+        }
+
+        self.special.next()
     }
 }

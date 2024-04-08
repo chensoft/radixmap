@@ -10,7 +10,6 @@ pub(crate) use std::collections::VecDeque;
 
 pub(crate) use regex::Regex;
 pub(crate) use indexmap::IndexMap;
-pub(crate) use sparseset::SparseSet;
 
 /// Error Codes
 #[allow(missing_docs)]

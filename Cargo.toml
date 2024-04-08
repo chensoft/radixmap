@@ -3,7 +3,7 @@ name = "radixmap"
 version = "0.1.0"
 authors = ["Jian Chen <admin@chensoft.com>"]
 edition = "2021"
-description = "Rust-based Radix Tree for fast prefix lookup, supporting params, regex and glob"
+description = "Rust-based Radix Tree for fast prefix lookup, supporting named param, regex and glob"
 documentation = "https://docs.rs/radixmap"
 readme = "README.md"
 repository = "https://github.com/chensoft/radixmap"
@@ -15,7 +15,6 @@ glob = "0.3"
 regex = "1.10"
 indexmap = "2.2"
 thiserror = "1.0"
-sparseset = "1.0"
 
 [dev-dependencies]
 criterion = "0.5"
