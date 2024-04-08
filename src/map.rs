@@ -134,7 +134,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn contains_key(&self, path: &str) -> bool {
-        self.iter().with_prefix(path, true).next().is_some()
+        self.root.search(path, true).map_or(false, |node| !node.is_empty())
     }
 
     /// Check if the tree contains specific value
