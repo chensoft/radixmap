@@ -665,7 +665,7 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// The iterator for radix tree
 #[derive(Default)]
-pub struct IterMut<'n: 'k, 'k, V> {
+pub struct IterMut<'n, 'k, V> {
     queue: VecDeque<Peekable<pack::IterMut<'n, 'k, V>>>,
     order: Order,
     empty: bool,
@@ -953,7 +953,7 @@ impl<'k, V> Iterator for Values<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Mutable iterator adapter for data
-pub struct ValuesMut<'n: 'k, 'k, V> {
+pub struct ValuesMut<'n, 'k, V> {
     iter: IterMut<'n, 'k, V>
 }
 

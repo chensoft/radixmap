@@ -51,6 +51,11 @@ impl<'k, V> RadixPack<'k, V> {
     ///     pack.insert(RadixRule::try_from("/api")?)?;
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
+    ///     // test with multiple calls
+    ///     let _ = pack.iter_mut();
+    ///     let _ = pack.iter_mut();
+    ///
+    ///     // test the iteration method
     ///     let mut iter = pack.iter_mut();
     ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api")?));
     ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}")?));
@@ -224,10 +229,10 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// Iterate regular and special
 #[derive(Default)]
-pub struct IterMut<'n: 'k, 'k, V> {
+pub struct IterMut<'n, 'k, V> {
     onetime: Option<&'n mut RadixNode<'k, V>>,
-    regular: std::slice::IterMut<'k, sparseset::Entry<RadixNode<'k, V>>>,
-    special: indexmap::map::ValuesMut<'k, &'k str, RadixNode<'k, V>>,
+    regular: std::slice::IterMut<'n, sparseset::Entry<RadixNode<'k, V>>>,
+    special: indexmap::map::ValuesMut<'n, &'k str, RadixNode<'k, V>>,
 }
 
 impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {

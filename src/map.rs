@@ -109,7 +109,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// }
     /// ```
     #[inline]
-    pub fn get_mut<'n: 'k>(&'n mut self, path: &str) -> Option<&mut V> {
+    pub fn get_mut(&mut self, path: &str) -> Option<&mut V> {
         self.values_mut().with_prefix(path, true).next()
     }
 
@@ -518,7 +518,7 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// Mutable iterator for map
 #[derive(Default)]
-pub struct IterMut<'n: 'k, 'k, V> {
+pub struct IterMut<'n, 'k, V> {
     iter: node::IterMut<'n, 'k, V>
 }
 
@@ -543,7 +543,7 @@ impl<'n, 'k, V> From<&'n mut RadixMap<'k, V>> for IterMut<'n, 'k, V> {
 }
 
 impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
-    type Item = (&'k str, &'n mut V);
+    type Item = (&'n str, &'n mut V);
 
     fn next(&mut self) -> Option<Self::Item> {
         for node in self.iter.by_ref() {
@@ -631,7 +631,7 @@ impl<'k, V> Iterator for Values<'k, V> {
 // -----------------------------------------------------------------------------
 
 /// Mutable data adapter
-pub struct ValuesMut<'n: 'k, 'k, V> {
+pub struct ValuesMut<'n, 'k, V> {
     iter: IterMut<'n, 'k, V>
 }
 
