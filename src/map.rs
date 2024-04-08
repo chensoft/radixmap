@@ -342,7 +342,7 @@ impl<'k, V> RadixMap<'k, V> {
         ret
     }
 
-    /// Remove the node of the path
+    /// Remove the nodes along the path, affecting data nodes only
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -351,20 +351,26 @@ impl<'k, V> RadixMap<'k, V> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api/v1", "v1")?;
     ///     map.insert("/api/v2", "v2")?;
+    ///     map.insert("/api", "api")?;
     ///
-    ///     assert_eq!(map.remove("/api"), None);
-    ///     assert_eq!(map.remove("/api/v1"), Some(("/api/v1", "v1")));
-    ///     assert_eq!(map.remove("/api/v2"), Some(("/api/v2", "v2")));
-    ///     assert_eq!(map.is_empty(), true);
+    ///     assert_eq!(map.len(), 3);
+    ///     assert_eq!(map.remove("/"), None);                          // non-data node
+    ///     assert_eq!(map.remove("/api"), Some(("/api", "api")));      // len - 1
+    ///     assert_eq!(map.remove("/api/v2"), Some(("/api/v2", "v2"))); // len - 1
+    ///     assert_eq!(map.len(), 1);
     ///
     ///     Ok(())
     /// }
     /// ```
+    #[inline]
     pub fn remove(&mut self, path: &str) -> Option<(&'k str, V)> {
         let node = self.root.search_mut(path, true)?;
+        let path = std::mem::take(&mut node.path);
+        let data = std::mem::take(&mut node.data);
 
-        // inline?
-        todo!()
+        self.size -= 1;
+
+        Some((path, data?))
     }
 
     /// Clear the radix map but preserve its capacity

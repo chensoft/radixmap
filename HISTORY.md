@@ -7,6 +7,7 @@
 - plain only mode
 - item sep customizable
 - serde serde_expr support
+- re-balance on removed node
 
 ## [Unreleased] - 2024-04-xx
 

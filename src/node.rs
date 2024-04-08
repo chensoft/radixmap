@@ -199,7 +199,37 @@ impl<'k, V> RadixNode<'k, V> {
         }
     }
 
-    /// Find the deepest node that matches to the path
+    /// Finds the deepest node that matches the given path.
+    ///
+    /// - If `data` is true, the function returns the deepest node that is a data node and matches
+    ///   the path exactly.
+    /// - If `data` is false, the function returns the deepest node that matches the path as far as
+    ///   possible, regardless of whether it is a data node or not.
+    ///
+    /// ```
+    /// use radixmap::{node::RadixNode, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///
+    ///     assert_eq!(node.search("/", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.search("/api", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.search("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
+    ///     assert_eq!(node.search("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.search("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
+    ///
+    ///     assert_eq!(node.search("/", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.search("/api", true).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.search("/api/v", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.search("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.search("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn search(&self, mut path: &str, data: bool) -> Option<&RadixNode<'k, V>> {
         let mut cursor = self;
 
@@ -213,12 +243,13 @@ impl<'k, V> RadixNode<'k, V> {
             // trim the shared and continue search
             path = &path[share.len()..];
 
-            // find regular node by sparse array
             let byte = match path.as_bytes().first() {
-                Some(val) => *val as usize,
-                None => break
+                Some(&val) => val as usize,
+                None if data && (order == Ordering::Greater || cursor.is_empty()) => return None, // data node must be an exact match
+                None => return Some(cursor),
             };
 
+            // find regular node by sparse array
             if let Some(node) = cursor.next.regular.get(byte) {
                 cursor = node;
                 continue;
@@ -233,15 +264,34 @@ impl<'k, V> RadixNode<'k, V> {
 
             return None;
         }
-
-        if !data || !cursor.is_empty() {
-            return Some(cursor);
-        }
-
-        None
     }
 
-    /// Find the deepest mutable node that matches to the path
+    /// Same as search
+    ///
+    /// ```
+    /// use radixmap::{node::RadixNode, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut node = RadixNode::default();
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///
+    ///     assert_eq!(node.search_mut("/", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.search_mut("/api", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.search_mut("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
+    ///     assert_eq!(node.search_mut("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.search_mut("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
+    ///
+    ///     assert_eq!(node.search_mut("/", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.search_mut("/api", true).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.search_mut("/api/v", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.search_mut("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.search_mut("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn search_mut(&mut self, mut path: &str, data: bool) -> Option<&mut RadixNode<'k, V>> {
         let mut cursor = self;
 
@@ -255,12 +305,13 @@ impl<'k, V> RadixNode<'k, V> {
             // trim the shared and continue search
             path = &path[share.len()..];
 
-            // find regular node by sparse array
             let byte = match path.as_bytes().first() {
-                Some(val) => *val as usize,
-                None => break
+                Some(&val) => val as usize,
+                None if data && (order == Ordering::Greater || cursor.is_empty()) => return None, // data node must be an exact match
+                None => return Some(cursor),
             };
 
+            // find regular node by sparse array
             if let Some(node) = cursor.next.regular.get_mut(byte) {
                 cursor = node;
                 continue;
@@ -275,12 +326,6 @@ impl<'k, V> RadixNode<'k, V> {
 
             return None;
         }
-
-        if !data || !cursor.is_empty() {
-            return Some(cursor);
-        }
-
-        None
     }
 
     /// Divide the node into two parts

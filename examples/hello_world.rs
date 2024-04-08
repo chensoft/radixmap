@@ -26,7 +26,7 @@ fn main() -> RadixResult<()> {
     assert_eq!(map.get("/api/v2/user/12345"), Some(&"user2-12345"));
 
     // iterate the tree with a prefix path
-    let mut iter = map.iter().with_prefix("/api/v2", true)?;
+    let mut iter = map.iter().with_prefix("/api/v2", true);
 
     assert_eq!(iter.next(), Some(("/api/v2", &"v2")));
     assert_eq!(iter.next(), Some(("/api/v2/user", &"user2")));
