@@ -58,6 +58,35 @@ impl<'k> RadixSet<'k> {
         self.base.is_empty()
     }
 
+    /// Retrieve the corresponding data and collect named captures
+    ///
+    /// ```
+    /// use radixmap::{RadixSet, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut set = RadixSet::new();
+    ///     set.insert("/api/v1/user/12345")?;
+    ///     set.insert("/api/v2/user/:id")?;
+    ///     set.insert("/api/v3/user/{id:[0-9]+}")?;
+    ///     set.insert("/api/v4/user/{id:[^0-9]+}")?;
+    ///     set.insert("/api/v5/user/*345")?;
+    ///
+    ///     assert_eq!(set.capture("/api/v1/user/12345"), (true, vec![]));
+    ///     assert_eq!(set.capture("/api/v2/user/12345"), (true, vec![("id", "12345")]));
+    ///     assert_eq!(set.capture("/api/v3/user/12345"), (true, vec![("id", "12345")]));
+    ///     assert_eq!(set.capture("/api/v4/user/12345"), (false, vec![]));
+    ///     assert_eq!(set.capture("/api/v5/user/12345"), (true, vec![]));
+    ///     assert_eq!(set.capture("/api/v6"), (false, vec![]));
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    #[inline]
+    pub fn capture<'u>(&self, path: &'u str) -> (bool, Vec<(&'k str, &'u str)>) {
+        let (data, capt) = self.base.capture(path);
+        (data.is_some(), capt)
+    }
+
     /// Check if the tree contains specific key
     ///
     /// ```

@@ -80,7 +80,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn get(&self, path: &str) -> Option<&V> {
-        self.root.lookup(path, true).and_then(|node| node.data.as_ref())
+        self.root.lookup(path, true, &mut None).and_then(|node| node.data.as_ref())
     }
 
     /// Retrieve the corresponding mutable data
@@ -110,7 +110,65 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn get_mut(&mut self, path: &str) -> Option<&mut V> {
-        self.root.lookup_mut(path, true).and_then(|node| node.data.as_mut())
+        self.root.lookup_mut(path, true, &mut None).and_then(|node| node.data.as_mut())
+    }
+
+    /// Retrieve the corresponding data and collect named captures
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/api/v1/user/12345", "user1")?;
+    ///     map.insert("/api/v2/user/:id", "user2")?;
+    ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
+    ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
+    ///     map.insert("/api/v5/user/*345", "user5")?;
+    ///
+    ///     assert_eq!(map.capture("/api/v1/user/12345"), (Some(&"user1"), vec![]));
+    ///     assert_eq!(map.capture("/api/v2/user/12345"), (Some(&"user2"), vec![("id", "12345")]));
+    ///     assert_eq!(map.capture("/api/v3/user/12345"), (Some(&"user3"), vec![("id", "12345")]));
+    ///     assert_eq!(map.capture("/api/v4/user/12345"), (None, vec![]));
+    ///     assert_eq!(map.capture("/api/v5/user/12345"), (Some(&"user5"), vec![]));
+    ///     assert_eq!(map.capture("/api/v6"), (None, vec![]));
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    #[inline]
+    pub fn capture<'u>(&self, path: &'u str) -> (Option<&V>, Vec<(&'k str, &'u str)>) {
+        let mut capt = vec![];
+        (self.root.lookup(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_ref()), capt)
+    }
+
+    /// Retrieve the corresponding mutable data and collect named captures
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/api/v1/user/12345", "user1")?;
+    ///     map.insert("/api/v2/user/:id", "user2")?;
+    ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
+    ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
+    ///     map.insert("/api/v5/user/*345", "user5")?;
+    ///
+    ///     assert_eq!(map.capture_mut("/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
+    ///     assert_eq!(map.capture_mut("/api/v2/user/12345"), (Some(&mut "user2"), vec![("id", "12345")]));
+    ///     assert_eq!(map.capture_mut("/api/v3/user/12345"), (Some(&mut "user3"), vec![("id", "12345")]));
+    ///     assert_eq!(map.capture_mut("/api/v4/user/12345"), (None, vec![]));
+    ///     assert_eq!(map.capture_mut("/api/v5/user/12345"), (Some(&mut "user5"), vec![]));
+    ///     assert_eq!(map.capture_mut("/api/v6"), (None, vec![]));
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    #[inline]
+    pub fn capture_mut<'u>(&mut self, path: &'u str) -> (Option<&mut V>, Vec<(&'k str, &'u str)>) {
+        let mut capt = vec![];
+        (self.root.lookup_mut(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_mut()), capt)
     }
 
     /// Check if the tree contains specific key
@@ -134,7 +192,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn contains_key(&self, path: &str) -> bool {
-        self.root.lookup(path, true).map_or(false, |node| !node.is_empty())
+        self.root.lookup(path, true, &mut None).map_or(false, |node| !node.is_empty())
     }
 
     /// Check if the tree contains specific value
@@ -363,7 +421,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn remove(&mut self, path: &str) -> Option<(&'k str, V)> {
-        let node = self.root.lookup_mut(path, true)?;
+        let node = self.root.lookup_mut(path, true, &mut None)?;
         let path = std::mem::take(&mut node.path);
         let data = std::mem::take(&mut node.data);
 

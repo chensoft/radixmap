@@ -183,7 +183,7 @@ impl<'k> RadixRule<'k> {
     /// }
     /// ```
     #[inline]
-    pub fn longest<'b>(&self, path: &'b str) -> (&'b str, Ordering) {
+    pub fn longest<'u>(&self, path: &'u str) -> (&'u str, Ordering) {
         match self {
             RadixRule::Plain { frag } => {
                 let min = std::cmp::min(frag.len(), path.len());
@@ -261,6 +261,32 @@ impl<'k> RadixRule<'k> {
             RadixRule::Param { frag, .. } => frag,
             RadixRule::Regex { frag, .. } => frag,
             RadixRule::Glob { frag, .. } => frag,
+        }
+    }
+
+    /// The name of the named param and regex
+    ///
+    /// ```
+    /// use radixmap::{rule::RadixRule, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     assert_eq!(RadixRule::from_param(r":id")?.identity(), r"id");
+    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.identity(), r"id");
+    ///
+    ///     assert_eq!(RadixRule::from_plain(r"/api")?.identity(), r"");
+    ///     assert_eq!(RadixRule::from_param(r":")?.identity(), r"");
+    ///     assert_eq!(RadixRule::from_regex(r"{\d+}")?.identity(), r"");
+    ///     assert_eq!(RadixRule::from_glob(r"*")?.identity(), r"");
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    #[inline]
+    pub fn identity(&self) -> &'k str {
+        match self {
+            RadixRule::Param { name, .. } => name,
+            RadixRule::Regex { name, .. } => name,
+            _ => "",
         }
     }
 }

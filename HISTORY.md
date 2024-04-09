@@ -1,6 +1,5 @@
 ## Todo
 
-- named params and regex capture
 - owned str version using Cow
 - plain only mode
 - item sep customizable

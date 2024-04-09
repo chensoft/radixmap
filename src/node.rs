@@ -219,35 +219,42 @@ impl<'k, V> RadixNode<'k, V> {
     ///     node.insert("/api/v2/user/{id:[^0-9]+}", "user2")?;
     ///     node.insert("/api/v3/user/*cde", "user3")?;
     ///
-    ///     assert_eq!(node.lookup("/", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.lookup("/api", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.lookup("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
-    ///     assert_eq!(node.lookup("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.lookup("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
-    ///     assert_eq!(node.lookup("/api/v3", false).map(|node| node.rule.origin()), Some("3/user/"));
+    ///     assert_eq!(node.lookup("/", false, &mut None).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup("/api", false, &mut None).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup("/api/v", false, &mut None).map(|node| node.rule.origin()), Some("/v"));
+    ///     assert_eq!(node.lookup("/api/v1", false, &mut None).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup("/api/v2", false, &mut None).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup("/api/v3", false, &mut None).map(|node| node.rule.origin()), Some("3/user/"));
     ///
-    ///     assert_eq!(node.lookup("/", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api", true).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.lookup("/api/v", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.lookup("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
-    ///     assert_eq!(node.lookup("/api/v1/user/12345", true).map(|node| node.rule.origin()), Some(":id"));
-    ///     assert_eq!(node.lookup("/api/v2/user/12345", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api/v2/user/abcde", true).map(|node| node.rule.origin()), Some("{id:[^0-9]+}"));
-    ///     assert_eq!(node.lookup("/api/v3/user/12345", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api/v3/user/abcde", true).map(|node| node.rule.origin()), Some("*cde"));
+    ///     assert_eq!(node.lookup("/", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api", true, &mut None).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup("/api/v", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api/v1", true, &mut None).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup("/api/v2", true, &mut None).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup("/api/v1/user/12345", true, &mut None).map(|node| node.rule.origin()), Some(":id"));
+    ///     assert_eq!(node.lookup("/api/v2/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api/v2/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some("{id:[^0-9]+}"));
+    ///     assert_eq!(node.lookup("/api/v3/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api/v3/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some("*cde"));
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn lookup(&self, mut path: &str, data: bool) -> Option<&RadixNode<'k, V>> {
-        let mut cursor = self;
+    pub fn lookup<'u>(&self, mut path: &'u str, data: bool, capt: &mut Option<&mut Vec<(&'k str, &'u str)>>) -> Option<&RadixNode<'k, V>> {
+        let mut curr = self;
 
         loop {
             // prefix must be part of the current node
-            let (share, order) = cursor.rule.longest(path);
+            let (share, order) = curr.rule.longest(path);
             if share.len() != path.len() && order != Ordering::Equal {
                 return None;
+            }
+
+            if let Some(capt) = capt {
+                let ident = curr.rule.identity();
+                if !ident.is_empty() && !share.is_empty() {
+                    capt.push((ident, share));
+                }
             }
 
             // trim the shared and continue lookup
@@ -255,19 +262,19 @@ impl<'k, V> RadixNode<'k, V> {
 
             let byte = match path.as_bytes().first() {
                 Some(&val) => val as usize,
-                None if data && (order == Ordering::Greater || cursor.is_empty()) => return None, // data node must be an exact match
-                None => return Some(cursor),
+                None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
+                None => return Some(curr),
             };
 
             // find regular node by vector map
-            if let Some(node) = cursor.next.regular.get(byte) {
-                cursor = node;
+            if let Some(node) = curr.next.regular.get(byte) {
+                curr = node;
                 continue;
             }
 
             // find special node, if not then terminate
-            for node in cursor.next.special.values() {
-                if let Some(find) = node.lookup(path, data) {
+            for node in curr.next.special.values() {
+                if let Some(find) = node.lookup(path, data, capt) {
                     return Some(find);
                 }
             }
@@ -290,35 +297,42 @@ impl<'k, V> RadixNode<'k, V> {
     ///     node.insert("/api/v2/user/{id:[^0-9]+}", "user2")?;
     ///     node.insert("/api/v3/user/*cde", "user3")?;
     ///
-    ///     assert_eq!(node.lookup_mut("/", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.lookup_mut("/api", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.lookup_mut("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
-    ///     assert_eq!(node.lookup_mut("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.lookup_mut("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
-    ///     assert_eq!(node.lookup_mut("/api/v3", false).map(|node| node.rule.origin()), Some("3/user/"));
+    ///     assert_eq!(node.lookup_mut("/", false, &mut None).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup_mut("/api", false, &mut None).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup_mut("/api/v", false, &mut None).map(|node| node.rule.origin()), Some("/v"));
+    ///     assert_eq!(node.lookup_mut("/api/v1", false, &mut None).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup_mut("/api/v2", false, &mut None).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup_mut("/api/v3", false, &mut None).map(|node| node.rule.origin()), Some("3/user/"));
     ///
-    ///     assert_eq!(node.lookup_mut("/", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api", true).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.lookup_mut("/api/v", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.lookup_mut("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
-    ///     assert_eq!(node.lookup_mut("/api/v1/user/12345", true).map(|node| node.rule.origin()), Some(":id"));
-    ///     assert_eq!(node.lookup_mut("/api/v2/user/12345", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api/v2/user/abcde", true).map(|node| node.rule.origin()), Some("{id:[^0-9]+}"));
-    ///     assert_eq!(node.lookup_mut("/api/v3/user/12345", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api/v3/user/abcde", true).map(|node| node.rule.origin()), Some("*cde"));
+    ///     assert_eq!(node.lookup_mut("/", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api", true, &mut None).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup_mut("/api/v", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api/v1", true, &mut None).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup_mut("/api/v2", true, &mut None).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup_mut("/api/v1/user/12345", true, &mut None).map(|node| node.rule.origin()), Some(":id"));
+    ///     assert_eq!(node.lookup_mut("/api/v2/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api/v2/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some("{id:[^0-9]+}"));
+    ///     assert_eq!(node.lookup_mut("/api/v3/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api/v3/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some("*cde"));
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn lookup_mut(&mut self, mut path: &str, data: bool) -> Option<&mut RadixNode<'k, V>> {
-        let mut cursor = self;
+    pub fn lookup_mut<'u>(&mut self, mut path: &'u str, data: bool, capt: &mut Option<&mut Vec<(&'k str, &'u str)>>) -> Option<&mut RadixNode<'k, V>> {
+        let mut curr = self;
 
         loop {
             // prefix must be part of the current node
-            let (share, order) = cursor.rule.longest(path);
+            let (share, order) = curr.rule.longest(path);
             if share.len() != path.len() && order != Ordering::Equal {
                 return None;
+            }
+
+            if let Some(capt) = capt {
+                let ident = curr.rule.identity();
+                if !ident.is_empty() && !share.is_empty() {
+                    capt.push((ident, share));
+                }
             }
 
             // trim the shared and continue lookup
@@ -326,19 +340,19 @@ impl<'k, V> RadixNode<'k, V> {
 
             let byte = match path.as_bytes().first() {
                 Some(&val) => val as usize,
-                None if data && (order == Ordering::Greater || cursor.is_empty()) => return None, // data node must be an exact match
-                None => return Some(cursor),
+                None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
+                None => return Some(curr),
             };
 
             // find regular node by vector map
-            if let Some(node) = cursor.next.regular.get_mut(byte) {
-                cursor = node;
+            if let Some(node) = curr.next.regular.get_mut(byte) {
+                curr = node;
                 continue;
             }
 
             // find special node, if not then terminate
-            for node in cursor.next.special.values_mut() {
-                if let Some(find) = node.lookup_mut(path, data) {
+            for node in curr.next.special.values_mut() {
+                if let Some(find) = node.lookup_mut(path, data, capt) {
                     return Some(find);
                 }
             }
@@ -588,7 +602,7 @@ impl<'k, V> Iter<'k, V> {
         let cursor = cursor
             .and_then(|mut iter| iter.next())
             .and_then(|node| match !path.is_empty() {
-                true => node.lookup(path, data),
+                true => node.lookup(path, data, &mut None),
                 false => None,
             });
 
@@ -820,7 +834,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
         let cursor = cursor
             .and_then(|mut iter| iter.next())
             .and_then(|node| match !path.is_empty() {
-                true => node.lookup_mut(path, data),
+                true => node.lookup_mut(path, data, &mut None),
                 false => None,
             });
 

@@ -8,11 +8,11 @@ fn main() -> RadixResult<()> {
     map.insert("/api/v3/user/*cde", "user3")?;
     map.insert("/", "/")?;
 
-    assert_eq!(map.get("/api/v1/user/12345"), Some(&"user1"));
-    assert_eq!(map.get("/api/v2/user/12345"), None);
-    assert_eq!(map.get("/api/v2/user/abcde"), Some(&"user2"));
-    assert_eq!(map.get("/api/v3/user/12345"), None);
-    assert_eq!(map.get("/api/v3/user/abcde"), Some(&"user3"));
+    assert_eq!(map.capture("/api/v1/user/12345"), (Some(&"user1"), vec![("id", "12345")]));
+    assert_eq!(map.capture("/api/v2/user/12345"), (None, vec![]));
+    assert_eq!(map.capture("/api/v2/user/abcde"), (Some(&"user2"), vec![("id", "abcde")]));
+    assert_eq!(map.capture("/api/v3/user/12345"), (None, vec![]));
+    assert_eq!(map.capture("/api/v3/user/abcde"), (Some(&"user3"), vec![]));
 
     let mut iter = map.iter().with_prefix("/api/v", false);
 
