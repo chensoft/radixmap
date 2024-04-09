@@ -1,6 +1,5 @@
 ## Todo
 
-- tests for params, regex, glob
 - named params and regex capture
 - owned str version using Cow
 - plain only mode
@@ -13,5 +12,5 @@
 
 - RadixMap and RadixSet
 - HashMap-like interfaces
-- Three traversal orders
-- Named params, regex and glob
+- Multiple traversal orders
+- Named param, regex and glob

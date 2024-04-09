@@ -197,7 +197,7 @@ impl<'k> RadixRule<'k> {
             }
             RadixRule::Param { .. } => match path.find('/') {
                 Some(p) => (&path[..p], Ordering::Equal),
-                None => ("", Ordering::Equal)
+                None => (path, Ordering::Equal)
             }
             RadixRule::Regex { expr, .. } => match expr.find(path) {
                 Some(m) => (&path[..m.len()], Ordering::Equal),

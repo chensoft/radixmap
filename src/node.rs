@@ -180,12 +180,13 @@ impl<'k, V> RadixNode<'k, V> {
     /// ensuring that nodes with a common prefix share a single node in the tree.
     pub fn insert(&mut self, path: &'k str, data: V) -> RadixResult<Option<V>> {
         let mut frag = path;
+        let mut slot = self;
 
         loop {
             // extract the next path fragment and insert it via pack
             let next = RadixRule::try_from(frag)?;
             let used = next.origin();
-            let slot = self.next.insert(next)?;
+            slot = slot.next.insert(next)?;
 
             // encountering a data node indicates completion of insertion
             if used.len() == frag.len() {
@@ -214,18 +215,27 @@ impl<'k, V> RadixNode<'k, V> {
     ///     node.insert("/api", "api")?;
     ///     node.insert("/api/v1", "v1")?;
     ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v1/user/:id", "user1")?;
+    ///     node.insert("/api/v2/user/{id:[^0-9]+}", "user2")?;
+    ///     node.insert("/api/v3/user/*cde", "user3")?;
     ///
     ///     assert_eq!(node.lookup("/", false).map(|node| node.rule.origin()), Some("/api"));
     ///     assert_eq!(node.lookup("/api", false).map(|node| node.rule.origin()), Some("/api"));
     ///     assert_eq!(node.lookup("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
     ///     assert_eq!(node.lookup("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
     ///     assert_eq!(node.lookup("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup("/api/v3", false).map(|node| node.rule.origin()), Some("3/user/"));
     ///
     ///     assert_eq!(node.lookup("/", true).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup("/api", true).map(|node| node.rule.origin()), Some("/api"));
     ///     assert_eq!(node.lookup("/api/v", true).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
     ///     assert_eq!(node.lookup("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup("/api/v1/user/12345", true).map(|node| node.rule.origin()), Some(":id"));
+    ///     assert_eq!(node.lookup("/api/v2/user/12345", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api/v2/user/abcde", true).map(|node| node.rule.origin()), Some("{id:[^0-9]+}"));
+    ///     assert_eq!(node.lookup("/api/v3/user/12345", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api/v3/user/abcde", true).map(|node| node.rule.origin()), Some("*cde"));
     ///
     ///     Ok(())
     /// }
@@ -276,18 +286,27 @@ impl<'k, V> RadixNode<'k, V> {
     ///     node.insert("/api", "api")?;
     ///     node.insert("/api/v1", "v1")?;
     ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v1/user/:id", "user1")?;
+    ///     node.insert("/api/v2/user/{id:[^0-9]+}", "user2")?;
+    ///     node.insert("/api/v3/user/*cde", "user3")?;
     ///
     ///     assert_eq!(node.lookup_mut("/", false).map(|node| node.rule.origin()), Some("/api"));
     ///     assert_eq!(node.lookup_mut("/api", false).map(|node| node.rule.origin()), Some("/api"));
     ///     assert_eq!(node.lookup_mut("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
     ///     assert_eq!(node.lookup_mut("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
     ///     assert_eq!(node.lookup_mut("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup_mut("/api/v3", false).map(|node| node.rule.origin()), Some("3/user/"));
     ///
     ///     assert_eq!(node.lookup_mut("/", true).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup_mut("/api", true).map(|node| node.rule.origin()), Some("/api"));
     ///     assert_eq!(node.lookup_mut("/api/v", true).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup_mut("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
     ///     assert_eq!(node.lookup_mut("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup_mut("/api/v1/user/12345", true).map(|node| node.rule.origin()), Some(":id"));
+    ///     assert_eq!(node.lookup_mut("/api/v2/user/12345", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api/v2/user/abcde", true).map(|node| node.rule.origin()), Some("{id:[^0-9]+}"));
+    ///     assert_eq!(node.lookup_mut("/api/v3/user/12345", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api/v3/user/abcde", true).map(|node| node.rule.origin()), Some("*cde"));
     ///
     ///     Ok(())
     /// }
