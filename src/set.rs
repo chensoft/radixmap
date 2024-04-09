@@ -225,13 +225,6 @@ impl<'k> Default for RadixSet<'k> {
     }
 }
 
-/// Debug trait
-impl<'k> Debug for RadixSet<'k> {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
 /// Clone trait
 ///
 /// ```

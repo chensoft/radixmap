@@ -10,7 +10,7 @@
 //! - Fast prefix-based lookup
 //! - RadixMap and RadixSet support
 //! - Standard collection-compatible interfaces
-//! - Named params, regex and glob support
+//! - Named param, regex and glob support
 //! - Pre-order, post-order, level-order iterations
 //! - Comprehensive unit tests for correctness
 //!

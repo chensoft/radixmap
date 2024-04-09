@@ -182,13 +182,6 @@ impl<'k, V> Default for RadixPack<'k, V> {
     }
 }
 
-/// Debug trait
-impl<'k, V: Debug> Debug for RadixPack<'k, V> {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
 // -----------------------------------------------------------------------------
 
 /// Iterate regular and special
@@ -209,7 +202,7 @@ impl<'k, V> From<&'k RadixNode<'k, V>> for Iter<'k, V> {
 impl<'k, V> From<&'k RadixPack<'k, V>> for Iter<'k, V> {
     #[inline]
     fn from(value: &'k RadixPack<'k, V>) -> Self {
-        Self { onetime: None, regular: None, special: value.special.values() }
+        Self { onetime: None, regular: Some(value.regular.values()), special: value.special.values() }
     }
 }
 
@@ -217,7 +210,6 @@ impl<'k, V> Iterator for Iter<'k, V> {
     type Item = &'k RadixNode<'k, V>;
 
     #[inline]
-    #[allow(clippy::while_let_on_iterator)]
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(node) = self.onetime.take() {
             return Some(node);
@@ -253,7 +245,7 @@ impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {
 impl<'n, 'k, V> From<&'n mut RadixPack<'k, V>> for IterMut<'n, 'k, V> {
     #[inline]
     fn from(value: &'n mut RadixPack<'k, V>) -> Self {
-        Self { onetime: None, regular: None, special: value.special.values_mut() }
+        Self { onetime: None, regular: Some(value.regular.values_mut()), special: value.special.values_mut() }
     }
 }
 
@@ -261,7 +253,6 @@ impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
     type Item = &'n mut RadixNode<'k, V>;
 
     #[inline]
-    #[allow(clippy::while_let_on_iterator)]
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(node) = self.onetime.take() {
             return Some(node);

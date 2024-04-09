@@ -1,12 +1,11 @@
 ## Todo
 
-- do not allow insert None??? Some(None)
+- debug trait
 - tests for params, regex, glob
 - named params and regex capture
 - owned str version using Cow
 - plain only mode
 - item sep customizable
-- serde serde_expr support
 - re-balance on removed node
 
 ## [Unreleased] - 2024-04-xx

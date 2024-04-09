@@ -11,7 +11,7 @@ pub struct RadixNode<'k, V> {
     /// The value of the radix map, valid in data-node only
     pub data: Option<V>,
 
-    /// The pattern used for matching, supports plain text, named params, regex and glob
+    /// The pattern used for matching, supports plain text, named param, regex and glob
     pub rule: RadixRule<'k>,
 
     /// Node's children
@@ -215,22 +215,22 @@ impl<'k, V> RadixNode<'k, V> {
     ///     node.insert("/api/v1", "v1")?;
     ///     node.insert("/api/v2", "v2")?;
     ///
-    ///     assert_eq!(node.search("/", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.search("/api", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.search("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
-    ///     assert_eq!(node.search("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.search("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup("/", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup("/api", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
+    ///     assert_eq!(node.lookup("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
     ///
-    ///     assert_eq!(node.search("/", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.search("/api", true).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.search("/api/v", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.search("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.search("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup("/", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api", true).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup("/api/v", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn search(&self, mut path: &str, data: bool) -> Option<&RadixNode<'k, V>> {
+    pub fn lookup(&self, mut path: &str, data: bool) -> Option<&RadixNode<'k, V>> {
         let mut cursor = self;
 
         loop {
@@ -240,7 +240,7 @@ impl<'k, V> RadixNode<'k, V> {
                 return None;
             }
 
-            // trim the shared and continue search
+            // trim the shared and continue lookup
             path = &path[share.len()..];
 
             let byte = match path.as_bytes().first() {
@@ -257,7 +257,7 @@ impl<'k, V> RadixNode<'k, V> {
 
             // find special node, if not then terminate
             for node in cursor.next.special.values() {
-                if let Some(find) = node.search(path, data) {
+                if let Some(find) = node.lookup(path, data) {
                     return Some(find);
                 }
             }
@@ -266,7 +266,7 @@ impl<'k, V> RadixNode<'k, V> {
         }
     }
 
-    /// Same as search
+    /// Same as lookup
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};
@@ -277,22 +277,22 @@ impl<'k, V> RadixNode<'k, V> {
     ///     node.insert("/api/v1", "v1")?;
     ///     node.insert("/api/v2", "v2")?;
     ///
-    ///     assert_eq!(node.search_mut("/", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.search_mut("/api", false).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.search_mut("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
-    ///     assert_eq!(node.search_mut("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.search_mut("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup_mut("/", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup_mut("/api", false).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup_mut("/api/v", false).map(|node| node.rule.origin()), Some("/v"));
+    ///     assert_eq!(node.lookup_mut("/api/v1", false).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup_mut("/api/v2", false).map(|node| node.rule.origin()), Some("2"));
     ///
-    ///     assert_eq!(node.search_mut("/", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.search_mut("/api", true).map(|node| node.rule.origin()), Some("/api"));
-    ///     assert_eq!(node.search_mut("/api/v", true).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.search_mut("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
-    ///     assert_eq!(node.search_mut("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
+    ///     assert_eq!(node.lookup_mut("/", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api", true).map(|node| node.rule.origin()), Some("/api"));
+    ///     assert_eq!(node.lookup_mut("/api/v", true).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut("/api/v1", true).map(|node| node.rule.origin()), Some("1"));
+    ///     assert_eq!(node.lookup_mut("/api/v2", true).map(|node| node.rule.origin()), Some("2"));
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn search_mut(&mut self, mut path: &str, data: bool) -> Option<&mut RadixNode<'k, V>> {
+    pub fn lookup_mut(&mut self, mut path: &str, data: bool) -> Option<&mut RadixNode<'k, V>> {
         let mut cursor = self;
 
         loop {
@@ -302,7 +302,7 @@ impl<'k, V> RadixNode<'k, V> {
                 return None;
             }
 
-            // trim the shared and continue search
+            // trim the shared and continue lookup
             path = &path[share.len()..];
 
             let byte = match path.as_bytes().first() {
@@ -319,7 +319,7 @@ impl<'k, V> RadixNode<'k, V> {
 
             // find special node, if not then terminate
             for node in cursor.next.special.values_mut() {
-                if let Some(find) = node.search_mut(path, data) {
+                if let Some(find) = node.lookup_mut(path, data) {
                     return Some(find);
                 }
             }
@@ -569,7 +569,7 @@ impl<'k, V> Iter<'k, V> {
         let cursor = cursor
             .and_then(|mut iter| iter.next())
             .and_then(|node| match !path.is_empty() {
-                true => node.search(path, data),
+                true => node.lookup(path, data),
                 false => None,
             });
 
@@ -801,7 +801,7 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
         let cursor = cursor
             .and_then(|mut iter| iter.next())
             .and_then(|node| match !path.is_empty() {
-                true => node.search_mut(path, data),
+                true => node.lookup_mut(path, data),
                 false => None,
             });
 

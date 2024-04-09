@@ -80,7 +80,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn get(&self, path: &str) -> Option<&V> {
-        self.root.search(path, true).and_then(|node| node.data.as_ref())
+        self.root.lookup(path, true).and_then(|node| node.data.as_ref())
     }
 
     /// Retrieve the corresponding mutable data
@@ -110,7 +110,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn get_mut(&mut self, path: &str) -> Option<&mut V> {
-        self.root.search_mut(path, true).and_then(|node| node.data.as_mut())
+        self.root.lookup_mut(path, true).and_then(|node| node.data.as_mut())
     }
 
     /// Check if the tree contains specific key
@@ -134,7 +134,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn contains_key(&self, path: &str) -> bool {
-        self.root.search(path, true).map_or(false, |node| !node.is_empty())
+        self.root.lookup(path, true).map_or(false, |node| !node.is_empty())
     }
 
     /// Check if the tree contains specific value
@@ -363,7 +363,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn remove(&mut self, path: &str) -> Option<(&'k str, V)> {
-        let node = self.root.search_mut(path, true)?;
+        let node = self.root.lookup_mut(path, true)?;
         let path = std::mem::take(&mut node.path);
         let data = std::mem::take(&mut node.data);
 
@@ -437,13 +437,6 @@ impl<'k, V> Default for RadixMap<'k, V> {
     #[inline]
     fn default() -> Self {
         Self { root: RadixNode::default(), size: 0 }
-    }
-}
-
-/// Debug trait
-impl<'k, V: Debug> Debug for RadixMap<'k, V> {
-    fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
     }
 }
 
