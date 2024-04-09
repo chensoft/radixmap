@@ -461,6 +461,26 @@ impl<'k, V: Clone> Clone for RadixMap<'k, V> {
     }
 }
 
+/// Debug trait
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
+///
+///     assert_eq!(format!("{:?}", map).as_str(), r#"{"/api/v1": 1, "/api/v2": 2}"#);
+///
+///     Ok(())
+/// }
+/// ```
+impl<'k, V: Debug> Debug for RadixMap<'k, V> {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_map().entries(self.iter()).finish()
+    }
+}
+
 /// == & !=
 impl<'k, V: Eq> Eq for RadixMap<'k, V> {}
 

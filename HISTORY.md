@@ -1,6 +1,5 @@
 ## Todo
 
-- debug trait
 - tests for params, regex, glob
 - named params and regex capture
 - owned str version using Cow

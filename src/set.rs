@@ -246,6 +246,26 @@ impl<'k> Clone for RadixSet<'k> {
     }
 }
 
+/// Debug trait
+///
+/// ```
+/// use radixmap::{RadixSet, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let set = RadixSet::try_from(["/api/v1", "/api/v2"])?;
+///
+///     assert_eq!(format!("{:?}", set).as_str(), r#"{"/api/v1", "/api/v2"}"#);
+///
+///     Ok(())
+/// }
+/// ```
+impl<'k> Debug for RadixSet<'k> {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_set().entries(self.iter()).finish()
+    }
+}
+
 /// == & !=
 impl<'k> Eq for RadixSet<'k> {}
 
