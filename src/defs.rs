@@ -9,6 +9,7 @@ pub(crate) use std::iter::Peekable;
 pub(crate) use std::collections::VecDeque;
 
 pub(crate) use regex::Regex;
+pub(crate) use vec_map::VecMap;
 pub(crate) use indexmap::IndexMap;
 
 /// Error Codes

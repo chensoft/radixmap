@@ -6,8 +6,8 @@ use super::node::RadixNode;
 /// A group of regular and special nodes
 #[derive(Clone)]
 pub struct RadixPack<'k, V> {
-    /// The most common nodes, utilizing sparse arrays to accelerate queries
-    pub regular: Vec<Option<RadixNode<'k, V>>>,
+    /// The most common nodes, utilizing vector map to accelerate queries
+    pub regular: VecMap<RadixNode<'k, V>>,
 
     /// Nodes which need to be checked one by one to determine if they match
     pub special: IndexMap<&'k str, RadixNode<'k, V>>,
@@ -108,7 +108,7 @@ impl<'k, V> RadixPack<'k, V> {
             };
         }
 
-        // Use sparse array to find regular node. Since tree nodes
+        // Use vector map to find regular node. Since tree nodes
         // share prefixes, indexing only the first byte is sufficient
         let first = match frag.as_bytes().first() {
             Some(val) => *val as usize,
@@ -116,18 +116,16 @@ impl<'k, V> RadixPack<'k, V> {
         };
 
         // insert regular node if no shared prefix
-        self.ensure(first);
-
-        if self.regular[first].is_none() {
-            self.regular[first] = Some(RadixNode::from(rule));
-            return match &mut self.regular[first] {
+        if !self.regular.contains_key(first) {
+            self.regular.insert(first, RadixNode::from(rule));
+            return match self.regular.get_mut(first) {
                 Some(node) => Ok(node),
                 _ => unreachable!()
             };
         }
 
         // compare the path with the existing node
-        let found = match &mut self.regular[first] {
+        let found = match self.regular.get_mut(first) {
             Some(node) => node,
             _ => unreachable!()
         };
@@ -137,9 +135,7 @@ impl<'k, V> RadixPack<'k, V> {
         if order == Ordering::Greater {
             let node = found.divide(share.len())?;
             let byte = node.rule.origin().as_bytes()[0] as usize;
-
-            found.next.ensure(byte);
-            found.next.regular[byte] = Some(node);
+            found.next.regular.insert(byte, node);
         }
 
         // insert the remaining path if found
@@ -147,14 +143,6 @@ impl<'k, V> RadixPack<'k, V> {
             Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
             Ordering::Equal => Ok(found),
             Ordering::Less => unreachable!(),
-        }
-    }
-
-    /// Expand regular container if below `byte + 1` size
-    #[inline]
-    pub fn ensure(&mut self, byte: usize) {
-        if self.regular.len() < byte + 1 {
-            self.regular.resize_with(byte + 1, || None);
         }
     }
 
@@ -190,7 +178,7 @@ impl<'k, V> RadixPack<'k, V> {
 impl<'k, V> Default for RadixPack<'k, V> {
     #[inline]
     fn default() -> Self {
-        Self { regular: vec![], special: IndexMap::new() }
+        Self { regular: VecMap::new(), special: IndexMap::new() }
     }
 }
 
@@ -207,21 +195,21 @@ impl<'k, V: Debug> Debug for RadixPack<'k, V> {
 #[derive(Default, Clone)]
 pub struct Iter<'k, V> {
     onetime: Option<&'k RadixNode<'k, V>>,
-    regular: std::slice::Iter<'k, Option<RadixNode<'k, V>>>, // todo improve
+    regular: Option<vec_map::Values<'k, RadixNode<'k, V>>>,
     special: indexmap::map::Values<'k, &'k str, RadixNode<'k, V>>,
 }
 
 impl<'k, V> From<&'k RadixNode<'k, V>> for Iter<'k, V> {
     #[inline]
     fn from(value: &'k RadixNode<'k, V>) -> Self {
-        Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
+        Self { onetime: Some(value), regular: None, special: Default::default() }
     }
 }
 
 impl<'k, V> From<&'k RadixPack<'k, V>> for Iter<'k, V> {
     #[inline]
     fn from(value: &'k RadixPack<'k, V>) -> Self {
-        Self { onetime: None, regular: value.regular.iter(), special: value.special.values() }
+        Self { onetime: None, regular: None, special: value.special.values() }
     }
 }
 
@@ -235,8 +223,8 @@ impl<'k, V> Iterator for Iter<'k, V> {
             return Some(node);
         }
 
-        while let Some(node) = self.regular.next() {
-            if let Some(node) = node {
+        if let Some(iter) = &mut self.regular {
+            if let Some(node) = iter.next() {
                 return Some(node);
             }
         }
@@ -251,21 +239,21 @@ impl<'k, V> Iterator for Iter<'k, V> {
 #[derive(Default)]
 pub struct IterMut<'n, 'k, V> {
     onetime: Option<&'n mut RadixNode<'k, V>>,
-    regular: std::slice::IterMut<'n, Option<RadixNode<'k, V>>>,
+    regular: Option<vec_map::ValuesMut<'n, RadixNode<'k, V>>>,
     special: indexmap::map::ValuesMut<'n, &'k str, RadixNode<'k, V>>,
 }
 
 impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {
     #[inline]
     fn from(value: &'n mut RadixNode<'k, V>) -> Self {
-        Self { onetime: Some(value), regular: Default::default(), special: Default::default() }
+        Self { onetime: Some(value), regular: None, special: Default::default() }
     }
 }
 
 impl<'n, 'k, V> From<&'n mut RadixPack<'k, V>> for IterMut<'n, 'k, V> {
     #[inline]
     fn from(value: &'n mut RadixPack<'k, V>) -> Self {
-        Self { onetime: None, regular: value.regular.iter_mut(), special: value.special.values_mut() }
+        Self { onetime: None, regular: None, special: value.special.values_mut() }
     }
 }
 
@@ -279,8 +267,8 @@ impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
             return Some(node);
         }
 
-        while let Some(node) = self.regular.next() {
-            if let Some(node) = node {
+        if let Some(iter) = &mut self.regular {
+            if let Some(node) = iter.next() {
                 return Some(node);
             }
         }

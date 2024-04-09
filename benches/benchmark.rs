@@ -13,8 +13,6 @@ fn radixmap(c: &mut Criterion) {
     let mut map = RadixMap::new();
 
     c.bench_function("radixmap-insert", |b| b.iter(|| {
-        map.clear();
-
         for url in APIS {
             let _ = black_box(map.insert(*url, true));
         }
@@ -29,8 +27,6 @@ fn indexmap(c: &mut Criterion) {
     let mut map = IndexMap::new();
 
     c.bench_function("indexmap-insert", |b| b.iter(|| {
-        map.clear();
-
         for url in APIS {
             black_box(map.insert(*url, true));
         }
@@ -45,8 +41,6 @@ fn hashmap(c: &mut Criterion) {
     let mut map = HashMap::new();
 
     c.bench_function("hashmap-insert", |b| b.iter(|| {
-        map.clear();
-
         for url in APIS {
             black_box(map.insert(*url, true));
         }
