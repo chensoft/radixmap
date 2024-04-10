@@ -12,11 +12,15 @@ macro_rules! insert {
     ($test:expr, $kind:tt, $size:literal, $urls:expr) => {{
         let mut map = $kind::new();
 
-        $test.bench_function(concat!("insert-plain-", stringify!($size), "-", stringify!($kind)), |b| b.iter(|| {
-            for url in $urls {
-                let _ = black_box(map.insert(*url, true));
-            }
-        }));
+        $test.bench_function(concat!("insert-plain-", stringify!($size), "-", stringify!($kind)), |b| {
+            map.clear();
+
+            b.iter(|| {
+                for url in $urls {
+                    let _ = black_box(map.insert(*url, true));
+                }
+            })
+        });
 
         assert_eq!(map.len(), $size);
     }};
