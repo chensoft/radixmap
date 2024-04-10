@@ -1,7 +1,8 @@
 ## Todo
 
-- owned str version using Cow
+- performance
 - plain only mode
+- owned str version using Cow
 - item sep customizable
 - re-balance on removed node
 

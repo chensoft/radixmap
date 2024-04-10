@@ -125,6 +125,7 @@ impl<'k, V> RadixMap<'k, V> {
     ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
     ///     map.insert("/api/v5/user/*345", "user5")?;
+    ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture("/api/v1/user/12345"), (Some(&"user1"), vec![]));
     ///     assert_eq!(map.capture("/api/v2/user/12345"), (Some(&"user2"), vec![("id", "12345")]));
@@ -132,6 +133,8 @@ impl<'k, V> RadixMap<'k, V> {
     ///     assert_eq!(map.capture("/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture("/api/v5/user/12345"), (Some(&"user5"), vec![]));
     ///     assert_eq!(map.capture("/api/v6"), (None, vec![]));
+    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![("date", "2024-04-10"), ("author", "chensoft")]));
+    ///     assert_eq!(map.capture("/blog/2024-04-10/"), (None, vec![("date", "2024-04-10")]));
     ///
     ///     Ok(())
     /// }

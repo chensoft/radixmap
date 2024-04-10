@@ -166,6 +166,7 @@ impl<'k> RadixRule<'k> {
     ///     assert_eq!(RadixRule::from_plain(r"api")?.longest("api"), (r"api", Ordering::Equal));
     ///     assert_eq!(RadixRule::from_plain(r"api/v1")?.longest("api"), (r"api", Ordering::Greater));
     ///     assert_eq!(RadixRule::from_plain(r"api/v1")?.longest("api/v2"), (r"api/v", Ordering::Greater));
+    ///     assert_eq!(RadixRule::from_plain(r"roadmap/issues/events/6430295168")?.longest("roadmap/issues/events/6635165802"), (r"roadmap/issues/events/6", Ordering::Greater));
     ///
     ///     assert_eq!(RadixRule::from_param(r":")?.longest("12345/rest"), (r"12345", Ordering::Equal));
     ///     assert_eq!(RadixRule::from_param(r":id")?.longest("12345/rest"), (r"12345", Ordering::Equal));
@@ -186,9 +187,23 @@ impl<'k> RadixRule<'k> {
     pub fn longest<'u>(&self, path: &'u str) -> (&'u str, Ordering) {
         match self {
             RadixRule::Plain { frag } => {
+                // accelerating string comparison with 16-byte grouping
                 let min = std::cmp::min(frag.len(), path.len());
                 let mut len = 0;
 
+                const BLK: usize = std::mem::size_of::<u128>();
+
+                while len + BLK <= min {
+                    let frag_chunk: &u128 = unsafe { &*(frag.as_ptr().add(len) as *const u128) };
+                    let path_chunk: &u128 = unsafe { &*(path.as_ptr().add(len) as *const u128) };
+
+                    match frag_chunk == path_chunk {
+                        true => len += BLK,
+                        false => break,
+                    }
+                }
+
+                // process the leftover unmatched substring
                 while len < min && frag.as_bytes()[len] == path.as_bytes()[len] {
                     len += 1;
                 }
@@ -326,16 +341,16 @@ impl<'k> TryFrom<&'k str> for RadixRule<'k> {
         let data = path.as_bytes();
         let init = data.first().ok_or(RadixError::PathEmpty)?;
 
-        match init {
-            &b':' => match memchr::memchr(b'/', data) {
+        match *init {
+            b':' => match memchr::memchr(b'/', data) {
                 Some(pos) => Self::from_param(&path[..pos]),
                 _ => Self::from_param(path),
             }
-            &b'{' => match memchr::memchr(b'}', data) {
+            b'{' => match memchr::memchr(b'}', data) {
                 Some(pos) => Self::from_regex(&path[..pos + 1]),
                 _ => Err(RadixError::PathMalformed("missing closing sign '}'".into()))
             }
-            &b'*' => {
+            b'*' => {
                 Self::from_glob(path)
             }
             _ => match memchr::memchr3(b'{', b':', b'*', data) {
