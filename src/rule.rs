@@ -191,11 +191,11 @@ impl<'k> RadixRule<'k> {
                 let min = std::cmp::min(frag.len(), path.len());
                 let mut len = 0;
 
-                const BLK: usize = std::mem::size_of::<u128>();
+                const BLK: usize = std::mem::size_of::<usize>();
 
                 while len + BLK <= min {
-                    let frag_chunk: &u128 = unsafe { &*(frag.as_ptr().add(len) as *const u128) };
-                    let path_chunk: &u128 = unsafe { &*(path.as_ptr().add(len) as *const u128) };
+                    let frag_chunk: &usize = unsafe { &*(frag.as_ptr().add(len) as *const usize) };
+                    let path_chunk: &usize = unsafe { &*(path.as_ptr().add(len) as *const usize) };
 
                     match frag_chunk == path_chunk {
                         true => len += BLK,

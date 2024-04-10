@@ -382,6 +382,9 @@ impl<'k, V> RadixMap<'k, V> {
     /// fn main() -> RadixResult<()> {
     ///     let mut map = RadixMap::new();
     ///
+    ///     assert_eq!(map.insert("12345678901234567890", 0)?, None);
+    ///     assert_eq!(map.insert("12345678901234567890", 0)?, Some(0));
+    ///
     ///     assert_eq!(map.insert("/api/v1", 1)?, None);
     ///     assert_eq!(map.insert("/api/v2", 2)?, None);
     ///     assert_eq!(map.insert("/api/v1", 3)?, Some(1));
