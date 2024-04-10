@@ -124,7 +124,7 @@ impl<'k> RadixRule<'k> {
         }
 
         let data = &frag[1..frag.len() - 1];
-        let find = match data.find(':') {
+        let find = match memchr::memchr(b':', data.as_bytes()) {
             Some(pos) => (&data[..pos], &data[pos + 1..]),
             None => ("", data)
         };
@@ -195,7 +195,7 @@ impl<'k> RadixRule<'k> {
 
                 (&path[..len], frag.len().cmp(&len))
             }
-            RadixRule::Param { .. } => match path.find('/') {
+            RadixRule::Param { .. } => match memchr::memchr(b'/', path.as_bytes()) {
                 Some(p) => (&path[..p], Ordering::Equal),
                 None => (path, Ordering::Equal)
             }
@@ -323,32 +323,22 @@ impl<'k> TryFrom<&'k str> for RadixRule<'k> {
     type Error = RadixError;
 
     fn try_from(path: &'k str) -> Result<Self, Self::Error> {
-        if path.is_empty() {
-            return Err(RadixError::PathEmpty);
-        }
+        let data = path.as_bytes();
+        let init = data.first().ok_or(RadixError::PathEmpty)?;
 
-        const MAP: [bool; 256] = {
-            let mut map = [false; 256];
-            map[b'{' as usize] = true;
-            map[b':' as usize] = true;
-            map[b'*' as usize] = true;
-            map
-        };
-
-        let raw = path.as_bytes();
-        match raw.first() {
-            Some(b':') => match raw.iter().position(|c| *c == b'/') {
+        match init {
+            &b':' => match memchr::memchr(b'/', data) {
                 Some(pos) => Self::from_param(&path[..pos]),
                 _ => Self::from_param(path),
             }
-            Some(b'{') => match raw.iter().position(|c| *c == b'}') {
+            &b'{' => match memchr::memchr(b'}', data) {
                 Some(pos) => Self::from_regex(&path[..pos + 1]),
                 _ => Err(RadixError::PathMalformed("missing closing sign '}'".into()))
             }
-            Some(b'*') => {
+            &b'*' => {
                 Self::from_glob(path)
             }
-            _ => match raw.iter().position(|c| MAP[*c as usize]) {
+            _ => match memchr::memchr3(b'{', b':', b'*', data) {
                 Some(pos) => Self::from_plain(&path[..pos]),
                 None => Self::from_plain(path),
             }

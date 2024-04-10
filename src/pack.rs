@@ -110,10 +110,7 @@ impl<'k, V> RadixPack<'k, V> {
 
         // Use vector map to find regular node. Since tree nodes
         // share prefixes, indexing only the first byte is sufficient
-        let first = match frag.as_bytes().first() {
-            Some(val) => *val as usize,
-            None => return Err(RadixError::PathEmpty)
-        };
+        let first = *frag.as_bytes().first().ok_or(RadixError::PathEmpty)? as usize;
 
         // insert regular node if no shared prefix
         if !self.regular.contains_key(first) {
