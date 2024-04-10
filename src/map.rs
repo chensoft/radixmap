@@ -133,8 +133,8 @@ impl<'k, V> RadixMap<'k, V> {
     ///     assert_eq!(map.capture("/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture("/api/v5/user/12345"), (Some(&"user5"), vec![]));
     ///     assert_eq!(map.capture("/api/v6"), (None, vec![]));
+    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date", "2024-04-10"), ("author", "chensoft")]));
     ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![("date", "2024-04-10"), ("author", "chensoft")]));
-    ///     assert_eq!(map.capture("/blog/2024-04-10/"), (None, vec![("date", "2024-04-10")]));
     ///
     ///     Ok(())
     /// }
@@ -157,6 +157,7 @@ impl<'k, V> RadixMap<'k, V> {
     ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
     ///     map.insert("/api/v5/user/*345", "user5")?;
+    ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture_mut("/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
     ///     assert_eq!(map.capture_mut("/api/v2/user/12345"), (Some(&mut "user2"), vec![("id", "12345")]));
@@ -164,6 +165,8 @@ impl<'k, V> RadixMap<'k, V> {
     ///     assert_eq!(map.capture_mut("/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture_mut("/api/v5/user/12345"), (Some(&mut "user5"), vec![]));
     ///     assert_eq!(map.capture_mut("/api/v6"), (None, vec![]));
+    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date", "2024-04-10"), ("author", "chensoft")]));
+    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.html"), (Some(&mut "blog"), vec![("date", "2024-04-10"), ("author", "chensoft")]));
     ///
     ///     Ok(())
     /// }
@@ -174,7 +177,7 @@ impl<'k, V> RadixMap<'k, V> {
         (self.root.lookup_mut(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_mut()), capt)
     }
 
-    /// Check if the tree contains specific key
+    /// Check if the tree contains specific path
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -198,7 +201,7 @@ impl<'k, V> RadixMap<'k, V> {
         self.root.lookup(path, true, &mut None).map_or(false, |node| !node.is_empty())
     }
 
-    /// Check if the tree contains specific value
+    /// Check if the tree contains specific data
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -218,16 +221,10 @@ impl<'k, V> RadixMap<'k, V> {
     /// ```
     #[inline]
     pub fn contains_value(&self, data: &V) -> bool where V: PartialEq {
-        for value in self.values() {
-            if value == data {
-                return true;
-            }
-        }
-
-        false
+        self.values().any(|value| value == data)
     }
 
-    /// Iterate over the tree to retrieve nodes' key and value
+    /// Iterate over the tree to retrieve nodes' path and data
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -257,7 +254,7 @@ impl<'k, V> RadixMap<'k, V> {
         Iter::from(self)
     }
 
-    /// Iterate over the tree to retrieve nodes' key and mutable value
+    /// Iterate over the tree to retrieve nodes' path and mutable data
     ///
     /// ```
     /// use std::iter::Peekable;
@@ -287,7 +284,7 @@ impl<'k, V> RadixMap<'k, V> {
         IterMut::from(self)
     }
 
-    /// Iterate over the tree to get nodes' key only
+    /// Iterate over the tree to get nodes' path only
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -317,7 +314,7 @@ impl<'k, V> RadixMap<'k, V> {
         Keys::from(self)
     }
 
-    /// Iterate over the tree to get nodes' value only
+    /// Iterate over the tree to get nodes' data only
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -347,7 +344,7 @@ impl<'k, V> RadixMap<'k, V> {
         Values::from(self)
     }
 
-    /// Iterate over the tree to get nodes' mutable value
+    /// Iterate over the tree to get nodes' mutable data
     ///
     /// ```
     /// use std::iter::Peekable;

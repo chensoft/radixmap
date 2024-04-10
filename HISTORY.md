@@ -6,7 +6,7 @@
 - item sep customizable
 - re-balance on removed node
 
-## [Unreleased] - 2024-04-xx
+## [0.1.0] - 2024-04-10
 
 ### Added
 

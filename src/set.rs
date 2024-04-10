@@ -87,7 +87,7 @@ impl<'k> RadixSet<'k> {
         (data.is_some(), capt)
     }
 
-    /// Check if the tree contains specific key
+    /// Check if the tree contains specific path
     ///
     /// ```
     /// use radixmap::{RadixSet, RadixResult};
@@ -111,7 +111,7 @@ impl<'k> RadixSet<'k> {
         self.base.contains_key(path)
     }
 
-    /// Iterate over the set to retrieve nodes' key
+    /// Iterate over the set to retrieve nodes' path
     ///
     /// ```
     /// use radixmap::{RadixSet, RadixResult};
