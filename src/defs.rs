@@ -5,8 +5,10 @@ pub(crate) use std::fmt::Debug;
 pub(crate) use std::fmt::Formatter;
 pub(crate) use std::cmp::Ordering;
 pub(crate) use std::iter::Peekable;
+pub(crate) use std::str::Utf8Error;
 pub(crate) use std::collections::VecDeque;
 
+pub(crate) use bytes::Bytes;
 pub(crate) use regex::Regex;
 pub(crate) use vec_map::VecMap;
 pub(crate) use thiserror::Error;
@@ -21,6 +23,9 @@ pub enum RadixError {
 
     #[error("path not found")]
     PathNotFound,
+
+    #[error("{0}")]
+    PathInvalid(#[from] Utf8Error),
 
     #[error("{0}")]
     PathMalformed(&'static str),

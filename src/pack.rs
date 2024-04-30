@@ -98,49 +98,50 @@ impl<'k, V> RadixPack<'k, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(&mut self, rule: RadixRule<'k>) -> RadixResult<&mut RadixNode<'k, V>> {
-        // special nodes inserted directly into map
-        let frag = rule.origin();
-        if !matches!(rule, RadixRule::Plain { .. }) {
-            return match self.special.contains_key(frag) {
-                true => Ok(&mut self.special[frag]),
-                false => Ok(self.special.entry(frag).or_insert(RadixNode::from(rule)))
-            };
-        }
-
-        // Use vector map to find regular node. Since tree nodes
-        // share prefixes, indexing only the first byte is sufficient
-        let first = *frag.as_bytes().first().ok_or(RadixError::PathEmpty)? as usize;
-
-        // insert regular node if no shared prefix
-        if !self.regular.contains_key(first) {
-            self.regular.insert(first, RadixNode::from(rule));
-            return match self.regular.get_mut(first) {
-                Some(node) => Ok(node),
-                _ => unreachable!()
-            };
-        }
-
-        // compare the path with the existing node
-        let found = match self.regular.get_mut(first) {
-            Some(node) => node,
-            _ => unreachable!()
-        };
-        let (share, order) = found.rule.longest(frag);
-
-        // divide the node into two parts
-        if order == Ordering::Greater {
-            let node = found.divide(share.len())?;
-            let byte = node.rule.origin().as_bytes()[0] as usize;
-            found.next.regular.insert(byte, node);
-        }
-
-        // insert the remaining path if found
-        match frag.len().cmp(&share.len()) {
-            Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
-            Ordering::Equal => Ok(found),
-            Ordering::Less => unreachable!(),
-        }
+    pub fn insert(&mut self, rule: RadixRule) -> RadixResult<&mut RadixNode<'k, V>> {
+        // // special nodes inserted directly into map
+        // let frag = rule.origin();
+        // if !matches!(rule, RadixRule::Plain { .. }) {
+        //     return match self.special.contains_key(frag) {
+        //         true => Ok(&mut self.special[frag]),
+        //         false => Ok(self.special.entry(frag).or_insert(RadixNode::from(rule)))
+        //     };
+        // }
+        // 
+        // // Use vector map to find regular node. Since tree nodes
+        // // share prefixes, indexing only the first byte is sufficient
+        // let first = *frag.as_bytes().first().ok_or(RadixError::PathEmpty)? as usize;
+        // 
+        // // insert regular node if no shared prefix
+        // if !self.regular.contains_key(first) {
+        //     self.regular.insert(first, RadixNode::from(rule));
+        //     return match self.regular.get_mut(first) {
+        //         Some(node) => Ok(node),
+        //         _ => unreachable!()
+        //     };
+        // }
+        // 
+        // // compare the path with the existing node
+        // let found = match self.regular.get_mut(first) {
+        //     Some(node) => node,
+        //     _ => unreachable!()
+        // };
+        // let (share, order) = found.rule.longest(frag);
+        // 
+        // // divide the node into two parts
+        // if order == Ordering::Greater {
+        //     let node = found.divide(share.len())?;
+        //     let byte = node.rule.origin().as_bytes()[0] as usize;
+        //     found.next.regular.insert(byte, node);
+        // }
+        // 
+        // // insert the remaining path if found
+        // match frag.len().cmp(&share.len()) {
+        //     Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
+        //     Ordering::Equal => Ok(found),
+        //     Ordering::Less => unreachable!(),
+        // }
+        todo!()
     }
 
     /// Clear the nodes and preserve its capacity

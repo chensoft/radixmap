@@ -3,7 +3,7 @@ use super::defs::*;
 
 /// An enum representing various matching patterns
 #[derive(Clone)]
-pub enum RadixRule<'k> {
+pub enum RadixRule {
     /// Plain rule that accepts arbitrary strings
     ///
     /// # Syntax
@@ -13,7 +13,7 @@ pub enum RadixRule<'k> {
     ///
     Plain {
         /// fragment
-        frag: &'k str
+        frag: Bytes
     },
 
     /// Named param matches a segment of the route
@@ -25,10 +25,10 @@ pub enum RadixRule<'k> {
     ///
     Param {
         /// fragment
-        frag: &'k str,
+        frag: Bytes,
 
         /// param's name
-        name: &'k str
+        name: Bytes,
     },
 
     /// Unix glob style matcher, note that it must be the last component of a route
@@ -39,7 +39,7 @@ pub enum RadixRule<'k> {
     ///
     Glob {
         /// fragment
-        frag: &'k str,
+        frag: Bytes,
 
         /// glob pattern
         glob: glob::Pattern
@@ -57,17 +57,17 @@ pub enum RadixRule<'k> {
     ///
     Regex {
         /// fragment
-        frag: &'k str,
+        frag: Bytes,
 
         /// regex's name
-        name: &'k str,
+        name: Bytes,
 
         /// the regex
         expr: Regex,
     },
 }
 
-impl<'k> RadixRule<'k> {
+impl RadixRule {
     /// Create a plain text rule
     ///
     /// ```
@@ -77,8 +77,8 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_plain(r"id").is_ok());
     /// ```
     #[inline]
-    pub fn from_plain(frag: &'k str) -> RadixResult<Self> {
-        Ok(Self::Plain { frag })
+    pub fn from_plain(frag: impl Into<Bytes>) -> RadixResult<Self> {
+        Ok(Self::Plain { frag: frag.into() })
     }
 
     /// Create a named param rule
@@ -92,12 +92,15 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_param(r"id").is_err()); // missing :
     /// ```
     #[inline]
-    pub fn from_param(frag: &'k str) -> RadixResult<Self> {
-        if !frag.starts_with(':') {
+    pub fn from_param(frag: impl Into<Bytes>) -> RadixResult<Self> {
+        let frag = frag.into();
+
+        if !frag.starts_with(b":") {
             return Err(RadixError::PathMalformed("param lack of colon"));
         }
 
-        Ok(Self::Param { frag, name: &frag[1..] })
+        let name = frag.slice(1..);
+        Ok(Self::Param { frag, name })
     }
 
     /// Create a unix glob style rule
@@ -111,11 +114,15 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_glob(r"id").is_err());    // missing rule chars
     /// ```
     #[inline]
-    pub fn from_glob(frag: &'k str) -> RadixResult<Self> {
-        match frag.as_bytes().first() {
-            Some(b'*') => Ok(Self::Glob { frag, glob: glob::Pattern::new(frag)? }),
-            _ => Err(RadixError::PathMalformed("glob lack of asterisk"))
+    pub fn from_glob(frag: impl Into<Bytes>) -> RadixResult<Self> {
+        let frag = frag.into();
+
+        if !frag.starts_with(b"*") {
+            return Err(RadixError::PathMalformed("glob lack of asterisk"));
         }
+
+        let glob = glob::Pattern::new(std::str::from_utf8(frag.as_ref())?)?;
+        Ok(Self::Glob { frag, glob })
     }
 
     /// Create a regular expression rule
@@ -136,21 +143,23 @@ impl<'k> RadixRule<'k> {
     /// assert!(RadixRule::from_regex(r"{id:(0}").is_err()); // missing )
     /// ```
     #[inline]
-    pub fn from_regex(frag: &'k str) -> RadixResult<Self> {
-        if !frag.starts_with('{') || !frag.ends_with('}') {
+    pub fn from_regex(frag: impl Into<Bytes>) -> RadixResult<Self> {
+        let frag = frag.into();
+
+        if !frag.starts_with(b"{") || !frag.ends_with(b"}") {
             return Err(RadixError::PathMalformed("regex lack of curly braces"));
         }
 
-        let data = &frag[1..frag.len() - 1];
-        let find = match memchr::memchr(b':', data.as_bytes()) {
-            Some(pos) => (&data[..pos], &data[pos + 1..]),
-            None => ("", data)
+        let data = frag.slice(1..frag.len() - 1);
+        let find = match memchr::memchr(b':', data.as_ref()) {
+            Some(pos) => (data.slice(..pos), data.slice(pos + 1..)),
+            None => (Bytes::new(), data)
         };
 
         // regex must match from the beginning, add ^ if needed
-        match find.1.as_bytes().first() {
-            Some(b'^') => Ok(Self::Regex { frag, name: find.0, expr: Regex::new(find.1)? }),
-            _ => Ok(Self::Regex { frag, name: find.0, expr: Regex::new(('^'.to_string() + find.1).as_str())? })
+        match find.1.first() {
+            Some(b'^') => Ok(Self::Regex { frag: frag.into(), name: find.0, expr: Regex::new(std::str::from_utf8(find.1.as_ref())?)? }),
+            _ => Ok(Self::Regex { frag: frag.into(), name: find.0, expr: Regex::new(('^'.to_string() + std::str::from_utf8(find.1.as_ref())?).as_str())? })
         }
     }
 
@@ -173,7 +182,7 @@ impl<'k> RadixRule<'k> {
     ///
     ///     assert_eq!(RadixRule::from_glob(r"*")?.longest("12345/rest"), (r"12345/rest", Ordering::Equal));
     ///     assert_eq!(RadixRule::from_glob(r"*id")?.longest("12345/rest"), (r"", Ordering::Equal));
-    /// 
+    ///
     ///     assert_eq!(RadixRule::from_regex(r"{}")?.longest("12345/rest"), (r"", Ordering::Equal));
     ///     assert_eq!(RadixRule::from_regex(r"{:}")?.longest("12345/rest"), (r"", Ordering::Equal));
     ///     assert_eq!(RadixRule::from_regex(r"{\d+}")?.longest("12345/rest"), (r"12345", Ordering::Equal));
@@ -187,7 +196,7 @@ impl<'k> RadixRule<'k> {
     pub fn longest<'u>(&self, path: &'u str) -> (&'u str, Ordering) {
         match self {
             RadixRule::Plain { frag } => {
-                // accelerating string comparison with 16-byte grouping
+                // accelerating string comparison using numbers
                 let min = std::cmp::min(frag.len(), path.len());
                 let mut len = 0;
 
@@ -204,7 +213,7 @@ impl<'k> RadixRule<'k> {
                 }
 
                 // process the leftover unmatched substring
-                while len < min && frag.as_bytes()[len] == path.as_bytes()[len] {
+                while len < min && frag[len] == path.as_bytes()[len] {
                     len += 1;
                 }
 
@@ -244,11 +253,11 @@ impl<'k> RadixRule<'k> {
     /// }
     /// ```
     #[inline]
-    pub fn divide(&mut self, len: usize) -> RadixResult<RadixRule<'k>> {
+    pub fn divide(&mut self, len: usize) -> RadixResult<RadixRule> {
         match self {
             RadixRule::Plain { frag } if frag.len() > len => {
-                let rule = RadixRule::from_plain(&frag[len..]);
-                *frag = &frag[..len];
+                let rule = RadixRule::from_plain(frag.slice(len..));
+                *frag = frag.slice(..len);
                 rule
             }
             _ => Err(RadixError::RuleIndivisible)
@@ -270,7 +279,7 @@ impl<'k> RadixRule<'k> {
     /// }
     /// ```
     #[inline]
-    pub fn origin(&self) -> &'k str {
+    pub fn origin(&self) -> &Bytes {
         match self {
             RadixRule::Plain { frag } => frag,
             RadixRule::Param { frag, .. } => frag,
@@ -297,11 +306,12 @@ impl<'k> RadixRule<'k> {
     /// }
     /// ```
     #[inline]
-    pub fn identity(&self) -> &'k str {
+    pub fn identity(&self) -> &Bytes {
+        static EMPTY: Bytes = Bytes::new();
         match self {
             RadixRule::Param { name, .. } => name,
             RadixRule::Regex { name, .. } => name,
-            _ => "",
+            _ => &EMPTY,
         }
     }
 }
@@ -334,30 +344,38 @@ impl<'k> RadixRule<'k> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k> TryFrom<&'k str> for RadixRule<'k> {
+impl TryFrom<Bytes> for RadixRule {
     type Error = RadixError;
 
-    fn try_from(path: &'k str) -> Result<Self, Self::Error> {
-        let data = path.as_bytes();
-        let init = data.first().ok_or(RadixError::PathEmpty)?;
+    fn try_from(path: Bytes) -> Result<Self, Self::Error> {
+        let init = path.first().ok_or(RadixError::PathEmpty)?;
 
         match *init {
-            b':' => match memchr::memchr(b'/', data) {
-                Some(pos) => Self::from_param(&path[..pos]),
+            b':' => match memchr::memchr(b'/', path.as_ref()) {
+                Some(pos) => Self::from_param(path.slice(..pos)),
                 _ => Self::from_param(path),
             }
             b'*' => {
                 Self::from_glob(path)
             }
-            b'{' => match memchr::memchr(b'}', data) {
-                Some(pos) => Self::from_regex(&path[..pos + 1]),
+            b'{' => match memchr::memchr(b'}', path.as_ref()) {
+                Some(pos) => Self::from_regex(path.slice(..pos + 1)),
                 _ => Err(RadixError::PathMalformed("missing closing sign '}'"))
             }
-            _ => match memchr::memchr3(b'{', b':', b'*', data) {
-                Some(pos) => Self::from_plain(&path[..pos]),
+            _ => match memchr::memchr3(b'{', b':', b'*', path.as_ref()) {
+                Some(pos) => Self::from_plain(path.slice(..pos)),
                 None => Self::from_plain(path),
             }
         }
+    }
+}
+
+/// Analyze a path as long as possible and construct a rule
+impl TryFrom<&'static str> for RadixRule {
+    type Error = RadixError;
+
+    fn try_from(path: &'static str) -> Result<Self, Self::Error> {
+        Bytes::from(path).try_into()
     }
 }
 
@@ -368,10 +386,10 @@ impl<'k> TryFrom<&'k str> for RadixRule<'k> {
 ///
 /// assert_eq!(RadixRule::default(), "");
 /// ```
-impl<'k> Default for RadixRule<'k> {
+impl Default for RadixRule {
     #[inline]
     fn default() -> Self {
-        Self::Plain { frag: "" }
+        Self::Plain { frag: Bytes::new() }
     }
 }
 
@@ -389,13 +407,13 @@ impl<'k> Default for RadixRule<'k> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k> Debug for RadixRule<'k> {
+impl Debug for RadixRule {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            RadixRule::Plain { frag } => write!(f, "Plain({frag})"),
-            RadixRule::Param { frag, .. } => write!(f, "Param({frag})"),
-            RadixRule::Glob { frag, .. } => write!(f, "Glob({frag})"),
-            RadixRule::Regex { frag, .. } => write!(f, "Regex({frag})"),
+            RadixRule::Plain { frag } => write!(f, "Plain({})", unsafe { std::str::from_utf8_unchecked(frag.as_ref()) }),
+            RadixRule::Param { frag, .. } => write!(f, "Param({})", unsafe { std::str::from_utf8_unchecked(frag.as_ref()) }),
+            RadixRule::Glob { frag, .. } => write!(f, "Glob({})", unsafe { std::str::from_utf8_unchecked(frag.as_ref()) }),
+            RadixRule::Regex { frag, .. } => write!(f, "Regex({})", unsafe { std::str::from_utf8_unchecked(frag.as_ref()) }),
         }
     }
 }
@@ -421,7 +439,7 @@ impl<'k> Debug for RadixRule<'k> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k> Hash for RadixRule<'k> {
+impl Hash for RadixRule {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
@@ -446,7 +464,7 @@ impl<'k> Hash for RadixRule<'k> {
 }
 
 /// == & !=
-impl<'k> Eq for RadixRule<'k> {}
+impl Eq for RadixRule {}
 
 /// == & !=
 ///
@@ -470,7 +488,7 @@ impl<'k> Eq for RadixRule<'k> {}
 ///     Ok(())
 /// }
 /// ```
-impl<'k> PartialEq for RadixRule<'k> {
+impl PartialEq for RadixRule {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -502,7 +520,7 @@ impl<'k> PartialEq for RadixRule<'k> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k> PartialEq<&str> for RadixRule<'k> {
+impl PartialEq<&str> for RadixRule {
     #[inline]
     fn eq(&self, other: &&str) -> bool {
         self.origin() == *other

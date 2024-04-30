@@ -12,6 +12,7 @@ keywords = ["radixtree", "radixmap", "radixset", "glob", "regex"]
 
 [dependencies]
 glob = "0.3"
+bytes = "1.6"
 regex = "1.10"
 memchr = "2.7"
 vec_map = "0.8"

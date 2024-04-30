@@ -12,7 +12,7 @@ pub struct RadixNode<'k, V> {
     pub data: Option<V>,
 
     /// The pattern used for matching, supports plain text, named param, glob and regex
-    pub rule: RadixRule<'k>,
+    pub rule: RadixRule,
 
     /// Node's children
     pub next: pack::RadixPack<'k, V>,
@@ -179,25 +179,26 @@ impl<'k, V> RadixNode<'k, V> {
     /// The method sequentially extracts path fragments and positions each node appropriately,
     /// ensuring that nodes with a common prefix share a single node in the tree.
     pub fn insert(&mut self, path: &'k str, data: V) -> RadixResult<Option<V>> {
-        let mut frag = path;
-        let mut slot = self;
-
-        loop {
-            // extract the next path fragment and insert it via pack
-            let next = RadixRule::try_from(frag)?;
-            let used = next.origin();
-            slot = slot.next.insert(next)?;
-
-            // encountering a data node indicates completion of insertion
-            if used.len() == frag.len() {
-                let prev = slot.data.take();
-                slot.path = path;
-                slot.data = Some(data);
-                return Ok(prev);
-            }
-
-            frag = &frag[used.len()..];
-        }
+        // let mut frag = path;
+        // let mut slot = self;
+        // 
+        // loop {
+        //     // extract the next path fragment and insert it via pack
+        //     let next = RadixRule::try_from(frag)?;
+        //     let used = next.origin();
+        //     slot = slot.next.insert(next)?;
+        // 
+        //     // encountering a data node indicates completion of insertion
+        //     if used.len() == frag.len() {
+        //         let prev = slot.data.take();
+        //         slot.path = path;
+        //         slot.data = Some(data);
+        //         return Ok(prev);
+        //     }
+        // 
+        //     frag = &frag[used.len()..];
+        // }
+        todo!()
     }
 
     /// Finds the deepest node that matches the given path.
@@ -241,46 +242,47 @@ impl<'k, V> RadixNode<'k, V> {
     /// }
     /// ```
     pub fn lookup<'u>(&self, mut path: &'u str, data: bool, capt: &mut Option<&mut Vec<(&'k str, &'u str)>>) -> Option<&RadixNode<'k, V>> {
-        let mut curr = self;
-
-        loop {
-            // prefix must be part of the current node
-            let (share, order) = curr.rule.longest(path);
-            if share.len() != path.len() && order != Ordering::Equal {
-                return None;
-            }
-
-            if let Some(capt) = capt {
-                let ident = curr.rule.identity();
-                if !ident.is_empty() && !share.is_empty() {
-                    capt.push((ident, share));
-                }
-            }
-
-            // trim the shared and continue lookup
-            path = &path[share.len()..];
-
-            let byte = match path.as_bytes().first() {
-                Some(&val) => val as usize,
-                None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
-                None => return Some(curr),
-            };
-
-            // find regular node by vector map
-            if let Some(node) = curr.next.regular.get(byte) {
-                curr = node;
-                continue;
-            }
-
-            // find special node, if not then terminate
-            for node in curr.next.special.values() {
-                if let Some(find) = node.lookup(path, data, capt) {
-                    return Some(find);
-                }
-            }
-
-            return None;
-        }
+        // let mut curr = self;
+        // 
+        // loop {
+        //     // prefix must be part of the current node
+        //     let (share, order) = curr.rule.longest(path);
+        //     if share.len() != path.len() && order != Ordering::Equal {
+        //         return None;
+        //     }
+        // 
+        //     if let Some(capt) = capt {
+        //         let ident = curr.rule.identity();
+        //         if !ident.is_empty() && !share.is_empty() {
+        //             capt.push((ident, share));
+        //         }
+        //     }
+        // 
+        //     // trim the shared and continue lookup
+        //     path = &path[share.len()..];
+        // 
+        //     let byte = match path.as_bytes().first() {
+        //         Some(&val) => val as usize,
+        //         None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
+        //         None => return Some(curr),
+        //     };
+        // 
+        //     // find regular node by vector map
+        //     if let Some(node) = curr.next.regular.get(byte) {
+        //         curr = node;
+        //         continue;
+        //     }
+        // 
+        //     // find special node, if not then terminate
+        //     for node in curr.next.special.values() {
+        //         if let Some(find) = node.lookup(path, data, capt) {
+        //             return Some(find);
+        //         }
+        //     }
+        // 
+        //     return None;
+        // }
+        todo!()
     }
 
     /// Same as lookup
@@ -319,46 +321,47 @@ impl<'k, V> RadixNode<'k, V> {
     /// }
     /// ```
     pub fn lookup_mut<'u>(&mut self, mut path: &'u str, data: bool, capt: &mut Option<&mut Vec<(&'k str, &'u str)>>) -> Option<&mut RadixNode<'k, V>> {
-        let mut curr = self;
-
-        loop {
-            // prefix must be part of the current node
-            let (share, order) = curr.rule.longest(path);
-            if share.len() != path.len() && order != Ordering::Equal {
-                return None;
-            }
-
-            if let Some(capt) = capt {
-                let ident = curr.rule.identity();
-                if !ident.is_empty() && !share.is_empty() {
-                    capt.push((ident, share));
-                }
-            }
-
-            // trim the shared and continue lookup
-            path = &path[share.len()..];
-
-            let byte = match path.as_bytes().first() {
-                Some(&val) => val as usize,
-                None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
-                None => return Some(curr),
-            };
-
-            // find regular node by vector map
-            if let Some(node) = curr.next.regular.get_mut(byte) {
-                curr = node;
-                continue;
-            }
-
-            // find special node, if not then terminate
-            for node in curr.next.special.values_mut() {
-                if let Some(find) = node.lookup_mut(path, data, capt) {
-                    return Some(find);
-                }
-            }
-
-            return None;
-        }
+        // let mut curr = self;
+        // 
+        // loop {
+        //     // prefix must be part of the current node
+        //     let (share, order) = curr.rule.longest(path);
+        //     if share.len() != path.len() && order != Ordering::Equal {
+        //         return None;
+        //     }
+        // 
+        //     if let Some(capt) = capt {
+        //         let ident = curr.rule.identity();
+        //         if !ident.is_empty() && !share.is_empty() {
+        //             capt.push((ident, share));
+        //         }
+        //     }
+        // 
+        //     // trim the shared and continue lookup
+        //     path = &path[share.len()..];
+        // 
+        //     let byte = match path.as_bytes().first() {
+        //         Some(&val) => val as usize,
+        //         None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
+        //         None => return Some(curr),
+        //     };
+        // 
+        //     // find regular node by vector map
+        //     if let Some(node) = curr.next.regular.get_mut(byte) {
+        //         curr = node;
+        //         continue;
+        //     }
+        // 
+        //     // find special node, if not then terminate
+        //     for node in curr.next.special.values_mut() {
+        //         if let Some(find) = node.lookup_mut(path, data, capt) {
+        //             return Some(find);
+        //         }
+        //     }
+        // 
+        //     return None;
+        // }
+        todo!()
     }
 
     /// Divide the node into two parts
@@ -432,9 +435,9 @@ impl<'k, V> RadixNode<'k, V> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k, V> From<RadixRule<'k>> for RadixNode<'k, V> {
+impl<'k, V> From<RadixRule> for RadixNode<'k, V> {
     #[inline]
-    fn from(rule: RadixRule<'k>) -> Self {
+    fn from(rule: RadixRule) -> Self {
         Self { path: "", data: None, rule, next: Default::default() }
     }
 }
@@ -456,7 +459,8 @@ impl<'k, V> TryFrom<(&'k str, V)> for RadixNode<'k, V> {
 
     #[inline]
     fn try_from((path, data): (&'k str, V)) -> RadixResult<Self> {
-        Ok(Self { path, data: Some(data), rule: RadixRule::try_from(path)?, next: Default::default() })
+        // Ok(Self { path, data: Some(data), rule: RadixRule::try_from(path)?, next: Default::default() })
+        todo!()
     }
 }
 
