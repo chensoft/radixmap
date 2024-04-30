@@ -3,7 +3,7 @@ radixmap
 
 ## ⚠️ Caution: Not Ready for Production! ⚠️
 
-Rust-based Radix Tree for fast prefix lookup, supporting named param, regex and glob
+Rust-based Radix Tree for fast prefix lookup, supporting named param, glob and regex
 
 [![Crates.io][crates-badge]][crates-url]
 [![MIT licensed][license-badge]][license-url]
@@ -30,7 +30,7 @@ Rust-based Radix Tree for fast prefix lookup, supporting named param, regex and 
 - Fast prefix-based lookup
 - RadixMap and RadixSet support
 - Standard collection-compatible interfaces
-- Named param, regex and glob support
+- Named param, glob, regex support
 - Pre-order, post-order, level-order iterations
 - Comprehensive unit tests for correctness
 

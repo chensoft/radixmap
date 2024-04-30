@@ -3,13 +3,13 @@ pub(crate) use std::hash::Hash;
 pub(crate) use std::hash::Hasher;
 pub(crate) use std::fmt::Debug;
 pub(crate) use std::fmt::Formatter;
-pub(crate) use std::borrow::Cow;
 pub(crate) use std::cmp::Ordering;
 pub(crate) use std::iter::Peekable;
 pub(crate) use std::collections::VecDeque;
 
 pub(crate) use regex::Regex;
 pub(crate) use vec_map::VecMap;
+pub(crate) use thiserror::Error;
 pub(crate) use indexmap::IndexMap;
 
 /// Error Codes
@@ -23,16 +23,16 @@ pub enum RadixError {
     PathNotFound,
 
     #[error("{0}")]
-    PathMalformed(Cow<'static, str>),
+    PathMalformed(&'static str),
 
     #[error("rule can't be split")]
     RuleIndivisible,
 
     #[error("{0}")]
-    RegexInvalid(#[from] regex::Error),
+    GlobInvalid(#[from] glob::PatternError),
 
     #[error("{0}")]
-    GlobInvalid(#[from] glob::PatternError),
+    RegexInvalid(#[from] regex::Error),
 }
 
 /// Custom Result

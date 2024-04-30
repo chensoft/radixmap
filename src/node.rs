@@ -11,7 +11,7 @@ pub struct RadixNode<'k, V> {
     /// The value of the radix map, valid in data-node only
     pub data: Option<V>,
 
-    /// The pattern used for matching, supports plain text, named param, regex and glob
+    /// The pattern used for matching, supports plain text, named param, glob and regex
     pub rule: RadixRule<'k>,
 
     /// Node's children
@@ -482,8 +482,8 @@ impl<'k, V> Default for RadixNode<'k, V> {
 /// fn main() -> RadixResult<()> {
 ///     assert_eq!(format!("{:?}", RadixNode::try_from((r"/api", ()))?).as_str(), r"Plain(/api)");
 ///     assert_eq!(format!("{:?}", RadixNode::try_from((r":id", ()))?).as_str(), r"Param(:id)");
-///     assert_eq!(format!("{:?}", RadixNode::try_from((r"{id:\d+}", ()))?).as_str(), r"Regex({id:\d+})");
 ///     assert_eq!(format!("{:?}", RadixNode::try_from((r"*", ()))?).as_str(), r"Glob(*)");
+///     assert_eq!(format!("{:?}", RadixNode::try_from((r"{id:\d+}", ()))?).as_str(), r"Regex({id:\d+})");
 ///
 ///     Ok(())
 /// }

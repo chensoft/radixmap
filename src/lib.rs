@@ -10,7 +10,7 @@
 //! - Fast prefix-based lookup
 //! - RadixMap and RadixSet support
 //! - Standard collection-compatible interfaces
-//! - Named param, regex and glob support
+//! - Named param, glob, regex support
 //! - Pre-order, post-order, level-order iterations
 //! - Comprehensive unit tests for correctness
 //!
@@ -46,8 +46,6 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 #![deny(clippy::let_underscore_future)]
-
-#[macro_use] extern crate thiserror;
 
 pub mod map;
 pub mod set;
