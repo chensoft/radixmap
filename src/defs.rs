@@ -44,6 +44,8 @@ pub enum RadixError {
 pub type RadixResult<T> = Result<T, RadixError>;
 
 /// Macros to create RadixMap or RadixSet
+/// 
+/// # Examples
 ///
 /// ```
 /// #[macro_use] extern crate radixmap;

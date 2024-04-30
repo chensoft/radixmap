@@ -71,6 +71,8 @@ pub enum RadixRule {
 
 impl RadixRule {
     /// Create a plain text rule
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{rule::RadixRule};
@@ -84,6 +86,8 @@ impl RadixRule {
     }
 
     /// Create a named param rule
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{rule::RadixRule};
@@ -104,6 +108,8 @@ impl RadixRule {
     }
 
     /// Create a unix glob style rule
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{rule::RadixRule};
@@ -124,6 +130,8 @@ impl RadixRule {
     }
 
     /// Create a regular expression rule
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{rule::RadixRule};
@@ -162,6 +170,8 @@ impl RadixRule {
     }
 
     /// Match the path to find the longest shared segment
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use std::cmp::Ordering;
@@ -233,6 +243,8 @@ impl RadixRule {
     }
 
     /// Divide the rule into two parts
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{rule::RadixRule, RadixResult};
@@ -263,6 +275,8 @@ impl RadixRule {
     }
 
     /// Origin fragment of the rule
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{rule::RadixRule, RadixResult};
@@ -287,6 +301,8 @@ impl RadixRule {
     }
 
     /// The name of the named param and regex
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{rule::RadixRule, RadixResult};
@@ -297,7 +313,7 @@ impl RadixRule {
     ///
     ///     assert_eq!(RadixRule::from_plain(r"/api".into())?.identity(), r"");
     ///     assert_eq!(RadixRule::from_param(r":".into())?.identity(), r"");
-    ///     assert_eq!(RadixRule::from_glob(r"*".into())?.identity(), r"");
+    ///     assert_eq!(RadixRule::from_glob(r"*".into())?.identity(), r"*");
     ///     assert_eq!(RadixRule::from_regex(r"{\d+}".into())?.identity(), r"");
     ///
     ///     Ok(())
@@ -306,14 +322,17 @@ impl RadixRule {
     #[inline]
     pub fn identity(&self) -> &str {
         match self {
+            RadixRule::Plain { .. } => "",
             RadixRule::Param { name, .. } => name,
+            RadixRule::Glob { .. } => "*",
             RadixRule::Regex { name, .. } => name,
-            _ => "",
         }
     }
 }
 
 /// Analyze a path as long as possible and construct a rule
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{rule::RadixRule, RadixResult};
@@ -377,6 +396,8 @@ impl TryFrom<&'static str> for RadixRule {
 }
 
 /// Default trait
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{rule::RadixRule};
@@ -391,6 +412,8 @@ impl Default for RadixRule {
 }
 
 /// Debug trait
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{rule::RadixRule, RadixResult};
@@ -418,6 +441,8 @@ impl Debug for RadixRule {
 }
 
 /// Hash trait
+/// 
+/// # Examples
 ///
 /// ```
 /// use std::collections::HashMap;
@@ -466,6 +491,8 @@ impl Hash for RadixRule {
 impl Eq for RadixRule {}
 
 /// == & !=
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{rule::RadixRule, RadixResult};
@@ -501,6 +528,8 @@ impl PartialEq for RadixRule {
 }
 
 /// == & !=
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{rule::RadixRule, RadixResult};

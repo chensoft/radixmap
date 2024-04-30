@@ -38,6 +38,8 @@ impl<V> RadixNode<V> {
     }
 
     /// An iterator for node
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -65,6 +67,8 @@ impl<V> RadixNode<V> {
     }
 
     /// A mutable iterator for node
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -96,6 +100,8 @@ impl<V> RadixNode<V> {
     }
 
     /// Iterator adapter for path
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -123,6 +129,8 @@ impl<V> RadixNode<V> {
     }
 
     /// Iterator adapter for data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};
@@ -149,6 +157,8 @@ impl<V> RadixNode<V> {
     }
 
     /// Mutable iterator adapter for data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};
@@ -209,6 +219,8 @@ impl<V> RadixNode<V> {
     ///   the path exactly.
     /// - If `data` is false, the function returns the deepest node that matches the path as far as
     ///   possible, regardless of whether it is a data node or not.
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -288,6 +300,8 @@ impl<V> RadixNode<V> {
     }
 
     /// Same as lookup
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -367,6 +381,8 @@ impl<V> RadixNode<V> {
     }
 
     /// Divide the node into two parts
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};
@@ -399,6 +415,8 @@ impl<V> RadixNode<V> {
     }
 
     /// Clear the nodes but preserve its capacity
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};
@@ -426,6 +444,8 @@ impl<V> RadixNode<V> {
 }
 
 /// Create a node from a rule
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{node::RadixNode, rule::RadixRule, RadixResult};
@@ -445,6 +465,8 @@ impl<V> From<RadixRule> for RadixNode<V> {
 }
 
 /// Create a node from (path, data)
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{node::RadixNode, RadixResult};
@@ -489,6 +511,8 @@ impl<V> Default for RadixNode<V> {
 }
 
 /// Debug trait
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{node::RadixNode, RadixResult};
@@ -577,6 +601,8 @@ pub struct Iter<'n, V> {
 
 impl<'n, V> Iter<'n, V> {
     /// Starting to iterate from the node with a specific prefix
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -629,6 +655,8 @@ impl<'n, V> Iter<'n, V> {
     }
 
     /// Change the iterating order
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -676,6 +704,8 @@ impl<'n, V> Iter<'n, V> {
     }
 
     /// Traverse all nodes, including the internal nodes which do not contain data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};
@@ -812,6 +842,8 @@ pub struct IterMut<'n, V> {
 
 impl<'n, V> IterMut<'n, V> {
     /// Starting to iterate from the node with a specific prefix
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -863,6 +895,8 @@ impl<'n, V> IterMut<'n, V> {
     }
 
     /// Change the iterating order
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -902,6 +936,8 @@ impl<'n, V> IterMut<'n, V> {
     }
 
     /// Traverse all nodes, including the internal nodes which do not contain data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{node::RadixNode, RadixResult};

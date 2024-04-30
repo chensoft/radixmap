@@ -21,6 +21,8 @@ impl<V> RadixPack<V> {
     }
 
     /// Iterate regular and special
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
@@ -44,6 +46,8 @@ impl<V> RadixPack<V> {
     }
 
     /// Iterate regular and special
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
@@ -72,6 +76,8 @@ impl<V> RadixPack<V> {
     }
 
     /// Insert new node
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
@@ -144,6 +150,8 @@ impl<V> RadixPack<V> {
     }
 
     /// Clear the nodes and preserve its capacity
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};

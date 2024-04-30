@@ -19,6 +19,8 @@ impl<V> RadixMap<V> {
     }
 
     /// The data nodes' count, note that RadixMap ignores empty nodes
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -39,6 +41,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Check if the tree has no data nodes
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -62,6 +66,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -84,6 +90,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding mutable data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -114,6 +122,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding data and collect named captures
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -126,15 +136,17 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
     ///     map.insert("/api/v5/user/*345", "user5")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
+    ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture("/api/v1/user/12345"), (Some(&"user1"), vec![]));
     ///     assert_eq!(map.capture("/api/v2/user/12345"), (Some(&"user2"), vec![("id".to_string(), "12345")]));
     ///     assert_eq!(map.capture("/api/v3/user/12345"), (Some(&"user3"), vec![("id".to_string(), "12345")]));
     ///     assert_eq!(map.capture("/api/v4/user/12345"), (None, vec![]));
-    ///     assert_eq!(map.capture("/api/v5/user/12345"), (Some(&"user5"), vec![]));
+    ///     assert_eq!(map.capture("/api/v5/user/12345"), (Some(&"user5"), vec![("*".to_string(), "12345")]));
     ///     assert_eq!(map.capture("/api/v6"), (None, vec![]));
     ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
     ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
+    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&"blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft"), ("date".to_string(), "2024-05-01")]));
     ///
     ///     Ok(())
     /// }
@@ -146,6 +158,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding mutable data and collect named captures
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -158,15 +172,17 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
     ///     map.insert("/api/v5/user/*345", "user5")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
+    ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture_mut("/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
     ///     assert_eq!(map.capture_mut("/api/v2/user/12345"), (Some(&mut "user2"), vec![("id".to_string(), "12345")]));
     ///     assert_eq!(map.capture_mut("/api/v3/user/12345"), (Some(&mut "user3"), vec![("id".to_string(), "12345")]));
     ///     assert_eq!(map.capture_mut("/api/v4/user/12345"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut("/api/v5/user/12345"), (Some(&mut "user5"), vec![]));
+    ///     assert_eq!(map.capture_mut("/api/v5/user/12345"), (Some(&mut "user5"), vec![("*".to_string(), "12345")]));
     ///     assert_eq!(map.capture_mut("/api/v6"), (None, vec![]));
     ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
     ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.html"), (Some(&mut "blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
+    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&mut "blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft"), ("date".to_string(), "2024-05-01")]));
     ///
     ///     Ok(())
     /// }
@@ -178,6 +194,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Check if the tree contains specific path
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -202,6 +220,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Check if the tree contains specific data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -225,6 +245,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to retrieve nodes' path and data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -256,6 +278,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to retrieve nodes' path and mutable data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -287,6 +311,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to get nodes' path only
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -318,6 +344,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to get nodes' data only
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -348,6 +376,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to get nodes' mutable data
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use std::iter::Peekable;
@@ -378,6 +408,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Insert into a pair of new data and return old if exist
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -406,6 +438,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Remove the nodes along the path, affecting data nodes only
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use bytes::Bytes;
@@ -438,6 +472,8 @@ impl<V> RadixMap<V> {
     }
 
     /// Clear the radix map but preserve its capacity
+    /// 
+    /// # Examples
     ///
     /// ```
     /// use radixmap::{RadixMap, RadixResult};
@@ -467,6 +503,8 @@ impl<V> RadixMap<V> {
 // -----------------------------------------------------------------------------
 
 /// Construct from an array of tuples
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{RadixMap, RadixResult};
@@ -516,6 +554,8 @@ impl<V> Default for RadixMap<V> {
 }
 
 /// Clone trait
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{RadixMap, RadixResult};
@@ -537,6 +577,8 @@ impl<V: Clone> Clone for RadixMap<V> {
 }
 
 /// Debug trait
+/// 
+/// # Examples
 ///
 /// ```
 /// use radixmap::{RadixMap, RadixResult};

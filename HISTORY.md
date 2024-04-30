@@ -1,8 +1,12 @@
 ## [0.2.0] - 2024-05-0x
 
+### Added
+
+- Return glob result
+
 ### Changed
 
-- Use Bytes internally
+- Use Bytes to store path
 
 ## [0.1.0] - 2024-04-10
 
