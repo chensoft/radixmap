@@ -1,6 +1,6 @@
 [package]
 name = "radixmap"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jian Chen <admin@chensoft.com>"]
 edition = "2021"
 description = "Rust-based Radix Tree for fast prefix lookup, supporting named param, glob, regex"

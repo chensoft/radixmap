@@ -5,15 +5,15 @@ use super::node::RadixNode;
 
 /// A group of regular and special nodes
 #[derive(Clone)]
-pub struct RadixPack<'k, V> {
+pub struct RadixPack<V> {
     /// The most common nodes, utilizing vector map to accelerate queries
-    pub regular: VecMap<RadixNode<'k, V>>,
+    pub regular: VecMap<RadixNode<V>>,
 
     /// Nodes which need to be checked one by one to determine if they match
-    pub special: IndexMap<&'k str, RadixNode<'k, V>>,
+    pub special: IndexMap<Bytes, RadixNode<V>>,
 }
 
-impl<'k, V> RadixPack<'k, V> {
+impl<V> RadixPack<V> {
     /// Check if the group is empty
     #[inline]
     pub fn is_empty(&self) -> bool {
@@ -26,20 +26,20 @@ impl<'k, V> RadixPack<'k, V> {
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut pack = RadixPack::<'_, ()>::default();
+    ///     let mut pack = RadixPack::<()>::default();
     ///     pack.insert(RadixRule::try_from("/api")?)?;
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
     ///     let mut iter = pack.iter();
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api")?));
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api".into())?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}".into())?));
     ///     assert_eq!(iter.next().map(|node| &node.rule), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn iter(&self) -> Iter<'_, V> {
+    pub fn iter(&self) -> Iter<V> {
         Iter::from(self)
     }
 
@@ -49,7 +49,7 @@ impl<'k, V> RadixPack<'k, V> {
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut pack = RadixPack::<'_, ()>::default();
+    ///     let mut pack = RadixPack::<()>::default();
     ///     pack.insert(RadixRule::try_from("/api")?)?;
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
@@ -59,15 +59,15 @@ impl<'k, V> RadixPack<'k, V> {
     ///
     ///     // test the iteration method
     ///     let mut iter = pack.iter_mut();
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api")?));
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api".into())?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}".into())?));
     ///     assert_eq!(iter.next().map(|node| &node.rule), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn iter_mut(&mut self) -> IterMut<'_, 'k, V> {
+    pub fn iter_mut(&mut self) -> IterMut<V> {
         IterMut::from(self)
     }
 
@@ -77,20 +77,20 @@ impl<'k, V> RadixPack<'k, V> {
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut pack = RadixPack::<'_, ()>::default();
+    ///     let mut pack = RadixPack::<()>::default();
     ///
     ///     // inserting different nodes into the pack
-    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api")?)?.rule, "/api");
-    ///     assert_eq!(pack.insert(RadixRule::from_param(":id")?)?.rule, ":id");
-    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}")?)?.rule, "{[0-9]+}");
+    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api".into())?)?.rule, "/api");
+    ///     assert_eq!(pack.insert(RadixRule::from_param(":id".into())?)?.rule, ":id");
+    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}".into())?)?.rule, "{[0-9]+}");
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
     ///
     ///     // inserting duplicate nodes has no effect
-    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api")?)?.rule, "/api");
-    ///     assert_eq!(pack.insert(RadixRule::from_param(":id")?)?.rule, ":id");
-    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}")?)?.rule, "{[0-9]+}");
+    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api".into())?)?.rule, "/api");
+    ///     assert_eq!(pack.insert(RadixRule::from_param(":id".into())?)?.rule, ":id");
+    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}".into())?)?.rule, "{[0-9]+}");
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
@@ -98,50 +98,49 @@ impl<'k, V> RadixPack<'k, V> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(&mut self, rule: RadixRule) -> RadixResult<&mut RadixNode<'k, V>> {
-        // // special nodes inserted directly into map
-        // let frag = rule.origin();
-        // if !matches!(rule, RadixRule::Plain { .. }) {
-        //     return match self.special.contains_key(frag) {
-        //         true => Ok(&mut self.special[frag]),
-        //         false => Ok(self.special.entry(frag).or_insert(RadixNode::from(rule)))
-        //     };
-        // }
-        // 
-        // // Use vector map to find regular node. Since tree nodes
-        // // share prefixes, indexing only the first byte is sufficient
-        // let first = *frag.as_bytes().first().ok_or(RadixError::PathEmpty)? as usize;
-        // 
-        // // insert regular node if no shared prefix
-        // if !self.regular.contains_key(first) {
-        //     self.regular.insert(first, RadixNode::from(rule));
-        //     return match self.regular.get_mut(first) {
-        //         Some(node) => Ok(node),
-        //         _ => unreachable!()
-        //     };
-        // }
-        // 
-        // // compare the path with the existing node
-        // let found = match self.regular.get_mut(first) {
-        //     Some(node) => node,
-        //     _ => unreachable!()
-        // };
-        // let (share, order) = found.rule.longest(frag);
-        // 
-        // // divide the node into two parts
-        // if order == Ordering::Greater {
-        //     let node = found.divide(share.len())?;
-        //     let byte = node.rule.origin().as_bytes()[0] as usize;
-        //     found.next.regular.insert(byte, node);
-        // }
-        // 
-        // // insert the remaining path if found
-        // match frag.len().cmp(&share.len()) {
-        //     Ordering::Greater => found.next.insert(RadixRule::try_from(&frag[share.len()..])?),
-        //     Ordering::Equal => Ok(found),
-        //     Ordering::Less => unreachable!(),
-        // }
-        todo!()
+    pub fn insert(&mut self, rule: RadixRule) -> RadixResult<&mut RadixNode<V>> {
+        // special nodes inserted directly into map
+        let frag = rule.origin();
+        if !matches!(rule, RadixRule::Plain { .. }) {
+            return match self.special.contains_key(frag) {
+                true => Ok(&mut self.special[frag]),
+                false => Ok(self.special.entry(frag.clone()).or_insert(RadixNode::from(rule)))
+            };
+        }
+
+        // Use vector map to find regular node. Since tree nodes
+        // share prefixes, indexing only the first byte is sufficient
+        let first = *frag.first().ok_or(RadixError::PathEmpty)? as usize;
+
+        // insert regular node if no shared prefix
+        if !self.regular.contains_key(first) {
+            self.regular.insert(first, RadixNode::from(rule));
+            return match self.regular.get_mut(first) {
+                Some(node) => Ok(node),
+                _ => unreachable!()
+            };
+        }
+
+        // compare the path with the existing node
+        let found = match self.regular.get_mut(first) {
+            Some(node) => node,
+            _ => unreachable!()
+        };
+        let (share, order) = found.rule.longest(unsafe { std::str::from_utf8_unchecked(frag.as_ref()) });
+
+        // divide the node into two parts
+        if order == Ordering::Greater {
+            let node = found.divide(share.len())?;
+            let byte = node.rule.origin()[0] as usize;
+            found.next.regular.insert(byte, node);
+        }
+
+        // insert the remaining path if found
+        match frag.len().cmp(&share.len()) {
+            Ordering::Greater => found.next.insert(RadixRule::try_from(frag.slice(share.len()..))?),
+            Ordering::Equal => Ok(found),
+            Ordering::Less => unreachable!(),
+        }
     }
 
     /// Clear the nodes and preserve its capacity
@@ -150,10 +149,10 @@ impl<'k, V> RadixPack<'k, V> {
     /// use radixmap::{pack::RadixPack, rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     let mut pack = RadixPack::<'_, ()>::default();
-    ///     pack.insert(RadixRule::from_plain("/api")?)?;
-    ///     pack.insert(RadixRule::from_param(":id")?)?;
-    ///     pack.insert(RadixRule::from_regex("{}")?)?;
+    ///     let mut pack = RadixPack::<()>::default();
+    ///     pack.insert(RadixRule::from_plain("/api".into())?)?;
+    ///     pack.insert(RadixRule::from_param(":id".into())?)?;
+    ///     pack.insert(RadixRule::from_regex("{}".into())?)?;
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
@@ -173,7 +172,7 @@ impl<'k, V> RadixPack<'k, V> {
 }
 
 /// Default Trait
-impl<'k, V> Default for RadixPack<'k, V> {
+impl<V> Default for RadixPack<V> {
     #[inline]
     fn default() -> Self {
         Self { regular: VecMap::new(), special: IndexMap::new() }
@@ -184,28 +183,28 @@ impl<'k, V> Default for RadixPack<'k, V> {
 
 /// Iterate regular and special
 #[derive(Default, Clone)]
-pub struct Iter<'k, V> {
-    onetime: Option<&'k RadixNode<'k, V>>,
-    regular: Option<vec_map::Values<'k, RadixNode<'k, V>>>,
-    special: indexmap::map::Values<'k, &'k str, RadixNode<'k, V>>,
+pub struct Iter<'n, V> {
+    onetime: Option<&'n RadixNode<V>>,
+    regular: Option<vec_map::Values<'n, RadixNode<V>>>,
+    special: indexmap::map::Values<'n, Bytes, RadixNode<V>>,
 }
 
-impl<'k, V> From<&'k RadixNode<'k, V>> for Iter<'k, V> {
+impl<'n, V> From<&'n RadixNode<V>> for Iter<'n, V> {
     #[inline]
-    fn from(value: &'k RadixNode<'k, V>) -> Self {
+    fn from(value: &'n RadixNode<V>) -> Self {
         Self { onetime: Some(value), regular: None, special: Default::default() }
     }
 }
 
-impl<'k, V> From<&'k RadixPack<'k, V>> for Iter<'k, V> {
+impl<'n, V> From<&'n RadixPack<V>> for Iter<'n, V> {
     #[inline]
-    fn from(value: &'k RadixPack<'k, V>) -> Self {
+    fn from(value: &'n RadixPack<V>) -> Self {
         Self { onetime: None, regular: Some(value.regular.values()), special: value.special.values() }
     }
 }
 
-impl<'k, V> Iterator for Iter<'k, V> {
-    type Item = &'k RadixNode<'k, V>;
+impl<'n, V> Iterator for Iter<'n, V> {
+    type Item = &'n RadixNode<V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -227,28 +226,28 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// Iterate regular and special
 #[derive(Default)]
-pub struct IterMut<'n, 'k, V> {
-    onetime: Option<&'n mut RadixNode<'k, V>>,
-    regular: Option<vec_map::ValuesMut<'n, RadixNode<'k, V>>>,
-    special: indexmap::map::ValuesMut<'n, &'k str, RadixNode<'k, V>>,
+pub struct IterMut<'n, V> {
+    onetime: Option<&'n mut RadixNode<V>>,
+    regular: Option<vec_map::ValuesMut<'n, RadixNode<V>>>,
+    special: indexmap::map::ValuesMut<'n, Bytes, RadixNode<V>>,
 }
 
-impl<'n, 'k, V> From<&'n mut RadixNode<'k, V>> for IterMut<'n, 'k, V> {
+impl<'n, V> From<&'n mut RadixNode<V>> for IterMut<'n, V> {
     #[inline]
-    fn from(value: &'n mut RadixNode<'k, V>) -> Self {
+    fn from(value: &'n mut RadixNode<V>) -> Self {
         Self { onetime: Some(value), regular: None, special: Default::default() }
     }
 }
 
-impl<'n, 'k, V> From<&'n mut RadixPack<'k, V>> for IterMut<'n, 'k, V> {
+impl<'n, V> From<&'n mut RadixPack<V>> for IterMut<'n, V> {
     #[inline]
-    fn from(value: &'n mut RadixPack<'k, V>) -> Self {
+    fn from(value: &'n mut RadixPack<V>) -> Self {
         Self { onetime: None, regular: Some(value.regular.values_mut()), special: value.special.values_mut() }
     }
 }
 
-impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
-    type Item = &'n mut RadixNode<'k, V>;
+impl<'n, V> Iterator for IterMut<'n, V> {
+    type Item = &'n mut RadixNode<V>;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {

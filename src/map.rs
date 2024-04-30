@@ -2,16 +2,16 @@
 use super::defs::*;
 use super::node::{self, RadixNode};
 
-/// The radix map where the key is &'k str and the value is arbitrary data
-pub struct RadixMap<'k, V> {
+/// The radix map where the key is Bytes and the value is arbitrary data
+pub struct RadixMap<V> {
     /// The root node, always empty
-    root: RadixNode<'k, V>,
+    root: RadixNode<V>,
 
     /// The number of data nodes
     size: usize,
 }
 
-impl<'k, V> RadixMap<'k, V> {
+impl<V> RadixMap<V> {
     /// For consistency with the standard library, we provide this fn to create an empty map
     #[inline]
     pub fn new() -> Self {
@@ -128,19 +128,19 @@ impl<'k, V> RadixMap<'k, V> {
     ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture("/api/v1/user/12345"), (Some(&"user1"), vec![]));
-    ///     assert_eq!(map.capture("/api/v2/user/12345"), (Some(&"user2"), vec![("id", "12345")]));
-    ///     assert_eq!(map.capture("/api/v3/user/12345"), (Some(&"user3"), vec![("id", "12345")]));
+    ///     assert_eq!(map.capture("/api/v2/user/12345"), (Some(&"user2"), vec![("id".to_string(), "12345")]));
+    ///     assert_eq!(map.capture("/api/v3/user/12345"), (Some(&"user3"), vec![("id".to_string(), "12345")]));
     ///     assert_eq!(map.capture("/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture("/api/v5/user/12345"), (Some(&"user5"), vec![]));
     ///     assert_eq!(map.capture("/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date", "2024-04-10"), ("author", "chensoft")]));
-    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![("date", "2024-04-10"), ("author", "chensoft")]));
+    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
+    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn capture<'u>(&self, path: &'u str) -> (Option<&V>, Vec<(&'k str, &'u str)>) {
+    pub fn capture<'u>(&self, path: &'u str) -> (Option<&V>, Vec<(String, &'u str)>) {
         let mut capt = vec![];
         (self.root.lookup(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_ref()), capt)
     }
@@ -160,19 +160,19 @@ impl<'k, V> RadixMap<'k, V> {
     ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture_mut("/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
-    ///     assert_eq!(map.capture_mut("/api/v2/user/12345"), (Some(&mut "user2"), vec![("id", "12345")]));
-    ///     assert_eq!(map.capture_mut("/api/v3/user/12345"), (Some(&mut "user3"), vec![("id", "12345")]));
+    ///     assert_eq!(map.capture_mut("/api/v2/user/12345"), (Some(&mut "user2"), vec![("id".to_string(), "12345")]));
+    ///     assert_eq!(map.capture_mut("/api/v3/user/12345"), (Some(&mut "user3"), vec![("id".to_string(), "12345")]));
     ///     assert_eq!(map.capture_mut("/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture_mut("/api/v5/user/12345"), (Some(&mut "user5"), vec![]));
     ///     assert_eq!(map.capture_mut("/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date", "2024-04-10"), ("author", "chensoft")]));
-    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.html"), (Some(&mut "blog"), vec![("date", "2024-04-10"), ("author", "chensoft")]));
+    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
+    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.html"), (Some(&mut "blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn capture_mut<'u>(&mut self, path: &'u str) -> (Option<&mut V>, Vec<(&'k str, &'u str)>) {
+    pub fn capture_mut<'u>(&mut self, path: &'u str) -> (Option<&mut V>, Vec<(String, &'u str)>) {
         let mut capt = vec![];
         (self.root.lookup_mut(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_mut()), capt)
     }
@@ -227,6 +227,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// Iterate over the tree to retrieve nodes' path and data
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
@@ -239,24 +240,25 @@ impl<'k, V> RadixMap<'k, V> {
     ///
     ///     let mut iter = map.iter();
     ///
-    ///     assert_eq!(iter.next(), Some(("/api", &"api")));
-    ///     assert_eq!(iter.next(), Some(("/api/v1", &"v1")));
-    ///     assert_eq!(iter.next(), Some(("/api/v1/user", &"user1")));
-    ///     assert_eq!(iter.next(), Some(("/api/v2", &"v2")));
-    ///     assert_eq!(iter.next(), Some(("/api/v2/user", &"user2")));
+    ///     assert_eq!(iter.next(), Some((&Bytes::from("/api"), &"api")));
+    ///     assert_eq!(iter.next(), Some((&Bytes::from("/api/v1"), &"v1")));
+    ///     assert_eq!(iter.next(), Some((&Bytes::from("/api/v1/user"), &"user1")));
+    ///     assert_eq!(iter.next(), Some((&Bytes::from("/api/v2"), &"v2")));
+    ///     assert_eq!(iter.next(), Some((&Bytes::from("/api/v2/user"), &"user2")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn iter(&self) -> Iter<'_, V> {
+    pub fn iter(&self) -> Iter<V> {
         Iter::from(self)
     }
 
     /// Iterate over the tree to retrieve nodes' path and mutable data
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use std::iter::Peekable;
     /// use radixmap::{RadixMap, RadixResult};
     ///
@@ -266,27 +268,28 @@ impl<'k, V> RadixMap<'k, V> {
     ///
     ///     let mut iter = map.iter_mut().peekable();
     ///
-    ///     assert_eq!(iter.peek(), Some(&("/api", &mut 0)));
+    ///     assert_eq!(iter.peek(), Some(&(&Bytes::from("/api"), &mut 0)));
     ///
     ///     match iter.peek_mut() {
     ///         Some(node) => *node.1 = 1,
     ///         None => unreachable!()
     ///     }
     ///
-    ///     assert_eq!(iter.next(), Some(("/api", &mut 1)));
+    ///     assert_eq!(iter.next(), Some((&Bytes::from("/api"), &mut 1)));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn iter_mut(&mut self) -> IterMut<'_, 'k, V> {
+    pub fn iter_mut(&mut self) -> IterMut<V> {
         IterMut::from(self)
     }
 
     /// Iterate over the tree to get nodes' path only
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
@@ -299,18 +302,18 @@ impl<'k, V> RadixMap<'k, V> {
     ///
     ///     let mut iter = map.keys();
     ///
-    ///     assert_eq!(iter.next(), Some("/api"));
-    ///     assert_eq!(iter.next(), Some("/api/v1"));
-    ///     assert_eq!(iter.next(), Some("/api/v1/user"));
-    ///     assert_eq!(iter.next(), Some("/api/v2"));
-    ///     assert_eq!(iter.next(), Some("/api/v2/user"));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v1")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v1/user")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v2")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v2/user")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn keys(&self) -> Keys<'_, V> {
+    pub fn keys(&self) -> Keys<V> {
         Keys::from(self)
     }
 
@@ -340,7 +343,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// }
     /// ```
     #[inline]
-    pub fn values(&self) -> Values<'_, V> {
+    pub fn values(&self) -> Values<V> {
         Values::from(self)
     }
 
@@ -370,7 +373,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// }
     /// ```
     #[inline]
-    pub fn values_mut(&mut self) -> ValuesMut<'_, 'k, V> {
+    pub fn values_mut(&mut self) -> ValuesMut<V> {
         ValuesMut::from(self)
     }
 
@@ -394,8 +397,8 @@ impl<'k, V> RadixMap<'k, V> {
     /// }
     /// ```
     #[inline]
-    pub fn insert(&mut self, path: &'k str, data: V) -> RadixResult<Option<V>> {
-        let ret = self.root.insert(path, data);
+    pub fn insert(&mut self, path: impl Into<Bytes>, data: V) -> RadixResult<Option<V>> {
+        let ret = self.root.insert(path.into(), data);
         if let Ok(None) = &ret {
             self.size += 1;
         }
@@ -405,6 +408,7 @@ impl<'k, V> RadixMap<'k, V> {
     /// Remove the nodes along the path, affecting data nodes only
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
@@ -415,15 +419,15 @@ impl<'k, V> RadixMap<'k, V> {
     ///
     ///     assert_eq!(map.len(), 3);
     ///     assert_eq!(map.remove("/"), None);                          // non-data node
-    ///     assert_eq!(map.remove("/api"), Some(("/api", "api")));      // len - 1
-    ///     assert_eq!(map.remove("/api/v2"), Some(("/api/v2", "v2"))); // len - 1
+    ///     assert_eq!(map.remove("/api"), Some((Bytes::from("/api"), "api")));      // len - 1
+    ///     assert_eq!(map.remove("/api/v2"), Some((Bytes::from("/api/v2"), "v2"))); // len - 1
     ///     assert_eq!(map.len(), 1);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn remove(&mut self, path: &str) -> Option<(&'k str, V)> {
+    pub fn remove(&mut self, path: &str) -> Option<(Bytes, V)> {
         let node = self.root.lookup_mut(path, true, &mut None)?;
         let path = std::mem::take(&mut node.path);
         let data = std::mem::take(&mut node.data);
@@ -478,11 +482,11 @@ impl<'k, V> RadixMap<'k, V> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k, V, const N: usize> TryFrom<[(&'k str, V); N]> for RadixMap<'k, V> {
+impl<V, const N: usize> TryFrom<[(Bytes, V); N]> for RadixMap<V> {
     type Error = RadixError;
 
     #[inline]
-    fn try_from(value: [(&'k str, V); N]) -> Result<Self, Self::Error> {
+    fn try_from(value: [(Bytes, V); N]) -> Result<Self, Self::Error> {
         let mut map = RadixMap::default();
 
         for (path, data) in value {
@@ -493,8 +497,18 @@ impl<'k, V, const N: usize> TryFrom<[(&'k str, V); N]> for RadixMap<'k, V> {
     }
 }
 
+/// Construct from an array of tuples
+impl<V, const N: usize> TryFrom<[(&'static str, V); N]> for RadixMap<V> {
+    type Error = RadixError;
+
+    #[inline]
+    fn try_from(value: [(&'static str, V); N]) -> Result<Self, Self::Error> {
+        value.map(|(k, v)| (Bytes::from(k), v)).try_into()
+    }
+}
+
 /// Default trait
-impl<'k, V> Default for RadixMap<'k, V> {
+impl<V> Default for RadixMap<V> {
     #[inline]
     fn default() -> Self {
         Self { root: RadixNode::default(), size: 0 }
@@ -515,7 +529,7 @@ impl<'k, V> Default for RadixMap<'k, V> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k, V: Clone> Clone for RadixMap<'k, V> {
+impl<V: Clone> Clone for RadixMap<V> {
     #[inline]
     fn clone(&self) -> Self {
         Self { root: self.root.clone(), size: self.size }
@@ -530,12 +544,12 @@ impl<'k, V: Clone> Clone for RadixMap<'k, V> {
 /// fn main() -> RadixResult<()> {
 ///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
 ///
-///     assert_eq!(format!("{:?}", map).as_str(), r#"{"/api/v1": 1, "/api/v2": 2}"#);
+///     assert_eq!(format!("{:?}", map).as_str(), r#"{b"/api/v1": 1, b"/api/v2": 2}"#);
 ///
 ///     Ok(())
 /// }
 /// ```
-impl<'k, V: Debug> Debug for RadixMap<'k, V> {
+impl<V: Debug> Debug for RadixMap<V> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_map().entries(self.iter()).finish()
@@ -543,10 +557,10 @@ impl<'k, V: Debug> Debug for RadixMap<'k, V> {
 }
 
 /// == & !=
-impl<'k, V: Eq> Eq for RadixMap<'k, V> {}
+impl<V: Eq> Eq for RadixMap<V> {}
 
 /// == & !=
-impl<'k, V: PartialEq> PartialEq for RadixMap<'k, V> {
+impl<V: PartialEq> PartialEq for RadixMap<V> {
     fn eq(&self, other: &Self) -> bool {
         if self.len() != other.len() {
             return false;
@@ -577,11 +591,11 @@ pub type Order = node::Order;
 
 /// Iterator for map
 #[derive(Default, Clone)]
-pub struct Iter<'k, V> {
-    iter: node::Iter<'k, V>
+pub struct Iter<'n, V> {
+    iter: node::Iter<'n, V>
 }
 
-impl<'k, V> Iter<'k, V> {
+impl<'n, V> Iter<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
@@ -597,15 +611,15 @@ impl<'k, V> Iter<'k, V> {
     }
 }
 
-impl<'k, V> From<&'k RadixMap<'k, V>> for Iter<'k, V> {
+impl<'n, V> From<&'n RadixMap<V>> for Iter<'n, V> {
     #[inline]
-    fn from(value: &'k RadixMap<'k, V>) -> Self {
+    fn from(value: &'n RadixMap<V>) -> Self {
         Self { iter: node::Iter::from(&value.root) }
     }
 }
 
-impl<'k, V> Iterator for Iter<'k, V> {
-    type Item = (&'k str, &'k V);
+impl<'n, V> Iterator for Iter<'n, V> {
+    type Item = (&'n Bytes, &'n V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -617,11 +631,11 @@ impl<'k, V> Iterator for Iter<'k, V> {
 
 /// Mutable iterator for map
 #[derive(Default)]
-pub struct IterMut<'n, 'k, V> {
-    iter: node::IterMut<'n, 'k, V>
+pub struct IterMut<'n, V> {
+    iter: node::IterMut<'n, V>
 }
 
-impl<'n, 'k, V> IterMut<'n, 'k, V> {
+impl<'n, V> IterMut<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
@@ -637,15 +651,15 @@ impl<'n, 'k, V> IterMut<'n, 'k, V> {
     }
 }
 
-impl<'n, 'k, V> From<&'n mut RadixMap<'k, V>> for IterMut<'n, 'k, V> {
+impl<'n, V> From<&'n mut RadixMap<V>> for IterMut<'n, V> {
     #[inline]
-    fn from(value: &'n mut RadixMap<'k, V>) -> Self {
+    fn from(value: &'n mut RadixMap<V>) -> Self {
         Self { iter: node::IterMut::from(&mut value.root) }
     }
 }
 
-impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
-    type Item = (&'n str, &'n mut V);
+impl<'n, V> Iterator for IterMut<'n, V> {
+    type Item = (&'n Bytes, &'n mut V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -657,11 +671,11 @@ impl<'n, 'k, V> Iterator for IterMut<'n, 'k, V> {
 
 /// Path adapter
 #[derive(Default, Clone)]
-pub struct Keys<'k, V> {
-    iter: Iter<'k, V>
+pub struct Keys<'n, V> {
+    iter: Iter<'n, V>
 }
 
-impl<'k, V> Keys<'k, V> {
+impl<'n, V> Keys<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
@@ -677,15 +691,15 @@ impl<'k, V> Keys<'k, V> {
     }
 }
 
-impl<'k, V> From<&'k RadixMap<'k, V>> for Keys<'k, V> {
+impl<'n, V> From<&'n RadixMap<V>> for Keys<'n, V> {
     #[inline]
-    fn from(value: &'k RadixMap<'k, V>) -> Self {
+    fn from(value: &'n RadixMap<V>) -> Self {
         Self { iter: Iter::from(value) }
     }
 }
 
-impl<'k, V> Iterator for Keys<'k, V> {
-    type Item = &'k str;
+impl<'n, V> Iterator for Keys<'n, V> {
+    type Item = &'n Bytes;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -697,11 +711,11 @@ impl<'k, V> Iterator for Keys<'k, V> {
 
 /// Data adapter
 #[derive(Default, Clone)]
-pub struct Values<'k, V> {
-    iter: Iter<'k, V>
+pub struct Values<'n, V> {
+    iter: Iter<'n, V>
 }
 
-impl<'k, V> Values<'k, V> {
+impl<'n, V> Values<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
@@ -717,15 +731,15 @@ impl<'k, V> Values<'k, V> {
     }
 }
 
-impl<'k, V> From<&'k RadixMap<'k, V>> for Values<'k, V> {
+impl<'n, V> From<&'n RadixMap<V>> for Values<'n, V> {
     #[inline]
-    fn from(value: &'k RadixMap<'k, V>) -> Self {
+    fn from(value: &'n RadixMap<V>) -> Self {
         Self { iter: Iter::from(value) }
     }
 }
 
-impl<'k, V> Iterator for Values<'k, V> {
-    type Item = &'k V;
+impl<'n, V> Iterator for Values<'n, V> {
+    type Item = &'n V;
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -737,11 +751,11 @@ impl<'k, V> Iterator for Values<'k, V> {
 
 /// Mutable data adapter
 #[derive(Default)]
-pub struct ValuesMut<'n, 'k, V> {
-    iter: IterMut<'n, 'k, V>
+pub struct ValuesMut<'n, V> {
+    iter: IterMut<'n, V>
 }
 
-impl<'n, 'k, V> ValuesMut<'n, 'k, V> {
+impl<'n, V> ValuesMut<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
     pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
@@ -757,14 +771,14 @@ impl<'n, 'k, V> ValuesMut<'n, 'k, V> {
     }
 }
 
-impl<'n, 'k, V> From<&'n mut RadixMap<'k, V>> for ValuesMut<'n, 'k, V> {
+impl<'n, V> From<&'n mut RadixMap<V>> for ValuesMut<'n, V> {
     #[inline]
-    fn from(value: &'n mut RadixMap<'k, V>) -> Self {
+    fn from(value: &'n mut RadixMap<V>) -> Self {
         Self { iter: IterMut::from(value) }
     }
 }
 
-impl<'n, 'k, V> Iterator for ValuesMut<'n, 'k, V> {
+impl<'n, V> Iterator for ValuesMut<'n, V> {
     type Item = &'n mut V;
 
     #[inline]

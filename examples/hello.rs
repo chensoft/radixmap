@@ -1,4 +1,5 @@
 use radixmap::*;
+use bytes::Bytes;
 
 fn main() -> RadixResult<()> {
     let mut map = RadixMap::default();
@@ -28,9 +29,9 @@ fn main() -> RadixResult<()> {
     // iterate the tree with a prefix path
     let mut iter = map.iter().with_prefix("/api/v2", true);
 
-    assert_eq!(iter.next(), Some(("/api/v2", &"v2")));
-    assert_eq!(iter.next(), Some(("/api/v2/user", &"user2")));
-    assert_eq!(iter.next(), Some(("/api/v2/user/12345", &"user2-12345")));
+    assert_eq!(iter.next(), Some((&Bytes::from("/api/v2"), &"v2")));
+    assert_eq!(iter.next(), Some((&Bytes::from("/api/v2/user"), &"user2")));
+    assert_eq!(iter.next(), Some((&Bytes::from("/api/v2/user/12345"), &"user2-12345")));
     assert_eq!(iter.next(), None);
 
     Ok(())

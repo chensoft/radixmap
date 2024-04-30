@@ -17,6 +17,7 @@
 //! ## Example
 //!
 //! ```
+//! use bytes::Bytes;
 //! use radixmap::{RadixMap, RadixResult};
 //!
 //! fn main() -> RadixResult<()> {
@@ -32,11 +33,11 @@
 //!
 //!     let mut iter = map.iter(); // pre-order by default
 //!
-//!     assert_eq!(iter.next(), Some(("/api", &"api")));
-//!     assert_eq!(iter.next(), Some(("/api/v1", &"v1")));
-//!     assert_eq!(iter.next(), Some(("/api/v1/user", &"user1")));
-//!     assert_eq!(iter.next(), Some(("/api/v2", &"v2")));
-//!     assert_eq!(iter.next(), Some(("/api/v2/user", &"user2")));
+//!     assert_eq!(iter.next(), Some((&Bytes::from("/api"), &"api")));
+//!     assert_eq!(iter.next(), Some((&Bytes::from("/api/v1"), &"v1")));
+//!     assert_eq!(iter.next(), Some((&Bytes::from("/api/v1/user"), &"user1")));
+//!     assert_eq!(iter.next(), Some((&Bytes::from("/api/v2"), &"v2")));
+//!     assert_eq!(iter.next(), Some((&Bytes::from("/api/v2/user"), &"user2")));
 //!     assert_eq!(iter.next(), None);
 //!
 //!     Ok(())

@@ -3,12 +3,12 @@ use super::defs::*;
 use super::map::{self, RadixMap};
 
 /// Radix set build on top of map
-pub struct RadixSet<'k> {
+pub struct RadixSet {
     /// The internal map
-    base: RadixMap<'k, ()>,
+    base: RadixMap<()>,
 }
 
-impl<'k> RadixSet<'k> {
+impl RadixSet {
     /// For consistency with the standard library, we provide this fn to create an empty set
     #[inline]
     pub fn new() -> Self {
@@ -72,8 +72,8 @@ impl<'k> RadixSet<'k> {
     ///     set.insert("/api/v5/user/*345")?;
     ///
     ///     assert_eq!(set.capture("/api/v1/user/12345"), (true, vec![]));
-    ///     assert_eq!(set.capture("/api/v2/user/12345"), (true, vec![("id", "12345")]));
-    ///     assert_eq!(set.capture("/api/v3/user/12345"), (true, vec![("id", "12345")]));
+    ///     assert_eq!(set.capture("/api/v2/user/12345"), (true, vec![("id".to_string(), "12345")]));
+    ///     assert_eq!(set.capture("/api/v3/user/12345"), (true, vec![("id".to_string(), "12345")]));
     ///     assert_eq!(set.capture("/api/v4/user/12345"), (false, vec![]));
     ///     assert_eq!(set.capture("/api/v5/user/12345"), (true, vec![]));
     ///     assert_eq!(set.capture("/api/v6"), (false, vec![]));
@@ -82,7 +82,7 @@ impl<'k> RadixSet<'k> {
     /// }
     /// ```
     #[inline]
-    pub fn capture<'u>(&self, path: &'u str) -> (bool, Vec<(&'k str, &'u str)>) {
+    pub fn capture<'u>(&self, path: &'u str) -> (bool, Vec<(String, &'u str)>) {
         let (data, capt) = self.base.capture(path);
         (data.is_some(), capt)
     }
@@ -114,6 +114,7 @@ impl<'k> RadixSet<'k> {
     /// Iterate over the set to retrieve nodes' path
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use radixmap::{RadixSet, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
@@ -126,11 +127,11 @@ impl<'k> RadixSet<'k> {
     ///
     ///     let mut iter = set.iter();
     ///
-    ///     assert_eq!(iter.next(), Some("/api"));
-    ///     assert_eq!(iter.next(), Some("/api/v1"));
-    ///     assert_eq!(iter.next(), Some("/api/v1/user"));
-    ///     assert_eq!(iter.next(), Some("/api/v2"));
-    ///     assert_eq!(iter.next(), Some("/api/v2/user"));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v1")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v1/user")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v2")));
+    ///     assert_eq!(iter.next(), Some(&Bytes::from("/api/v2/user")));
     ///     assert_eq!(iter.next(), None);
     ///
     ///     Ok(())
@@ -158,7 +159,7 @@ impl<'k> RadixSet<'k> {
     /// }
     /// ```
     #[inline]
-    pub fn insert(&mut self, path: &'k str) -> RadixResult<bool> {
+    pub fn insert(&mut self, path: impl Into<Bytes>) -> RadixResult<bool> {
         self.base.insert(path, ()).map(|data| data.is_some())
     }
 
@@ -231,11 +232,11 @@ impl<'k> RadixSet<'k> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k, const N: usize> TryFrom<[&'k str; N]> for RadixSet<'k> {
+impl<const N: usize> TryFrom<[Bytes; N]> for RadixSet {
     type Error = RadixError;
 
     #[inline]
-    fn try_from(value: [&'k str; N]) -> Result<Self, Self::Error> {
+    fn try_from(value: [Bytes; N]) -> Result<Self, Self::Error> {
         let mut set = RadixSet::default();
 
         for path in value {
@@ -246,8 +247,17 @@ impl<'k, const N: usize> TryFrom<[&'k str; N]> for RadixSet<'k> {
     }
 }
 
+impl<const N: usize> TryFrom<[&'static str; N]> for RadixSet {
+    type Error = RadixError;
+
+    #[inline]
+    fn try_from(value: [&'static str; N]) -> Result<Self, Self::Error> {
+        value.map(Bytes::from).try_into()
+    }
+}
+
 /// Default trait
-impl<'k> Default for RadixSet<'k> {
+impl Default for RadixSet {
     #[inline]
     fn default() -> Self {
         Self { base: Default::default() }
@@ -268,7 +278,7 @@ impl<'k> Default for RadixSet<'k> {
 ///     Ok(())
 /// }
 /// ```
-impl<'k> Clone for RadixSet<'k> {
+impl Clone for RadixSet {
     #[inline]
     fn clone(&self) -> Self {
         Self { base: self.base.clone() }
@@ -283,12 +293,12 @@ impl<'k> Clone for RadixSet<'k> {
 /// fn main() -> RadixResult<()> {
 ///     let set = RadixSet::try_from(["/api/v1", "/api/v2"])?;
 ///
-///     assert_eq!(format!("{:?}", set).as_str(), r#"{"/api/v1", "/api/v2"}"#);
+///     assert_eq!(format!("{:?}", set).as_str(), r#"{b"/api/v1", b"/api/v2"}"#);
 ///
 ///     Ok(())
 /// }
 /// ```
-impl<'k> Debug for RadixSet<'k> {
+impl Debug for RadixSet {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_set().entries(self.iter()).finish()
@@ -296,10 +306,10 @@ impl<'k> Debug for RadixSet<'k> {
 }
 
 /// == & !=
-impl<'k> Eq for RadixSet<'k> {}
+impl Eq for RadixSet {}
 
 /// == & !=
-impl<'k> PartialEq for RadixSet<'k> {
+impl PartialEq for RadixSet {
     fn eq(&self, other: &Self) -> bool {
         self.base == other.base
     }
@@ -313,4 +323,4 @@ pub type Order = map::Order;
 // -----------------------------------------------------------------------------
 
 /// Re-import Iterator
-pub type Iter<'k> = map::Keys<'k, ()>;
+pub type Iter<'n> = map::Keys<'n, ()>;

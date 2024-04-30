@@ -1,15 +1,8 @@
-## Todo
+## [0.2.0] - 2024-05-0x
 
-- performance
-- owned str version using Rc or Cow
-- plain only mode
-- item sep customizable
-- re-balance on removed node
-- index & indexmut
-- entry support
-- intoiterator
-- capture same key multiple vals
-- invalid utf8 test: &[0xffu8, 0xfe, 0x65];
+### Changed
+
+- Use Bytes internally
 
 ## [0.1.0] - 2024-04-10
 
@@ -19,3 +12,17 @@
 - HashMap-like interfaces
 - Multiple traversal orders
 - Named param, glob and regex
+
+## Todo
+
+- capture * and multiple *
+- capture same key multiple vals
+- index & indexmut
+- intoiterator
+- 
+- performance
+- plain only mode
+- item sep customizable
+- re-balance on removed node
+- invalid utf8 test: &[0xffu8, 0xfe, 0x65];
+- entry support
