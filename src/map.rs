@@ -77,15 +77,15 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v1", 1)?;
     ///     map.insert("/api/v2", 2)?;
     ///
-    ///     assert_eq!(map.get("/api/v1"), Some(&1));
-    ///     assert_eq!(map.get("/api/v2"), Some(&2));
-    ///     assert_eq!(map.get("/api/v3"), None);
+    ///     assert_eq!(map.get(b"/api/v1"), Some(&1));
+    ///     assert_eq!(map.get(b"/api/v2"), Some(&2));
+    ///     assert_eq!(map.get(b"/api/v3"), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn get(&self, path: &str) -> Option<&V> {
+    pub fn get(&self, path: &[u8]) -> Option<&V> {
         self.root.lookup(path, true, &mut None).and_then(|node| node.data.as_ref())
     }
 
@@ -101,23 +101,23 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v1", 1)?;
     ///     map.insert("/api/v2", 2)?;
     ///
-    ///     assert_eq!(map.get_mut("/api/v1"), Some(&mut 1));
-    ///     assert_eq!(map.get_mut("/api/v2"), Some(&mut 2));
-    ///     assert_eq!(map.get_mut("/api/v3"), None);
+    ///     assert_eq!(map.get_mut(b"/api/v1"), Some(&mut 1));
+    ///     assert_eq!(map.get_mut(b"/api/v2"), Some(&mut 2));
+    ///     assert_eq!(map.get_mut(b"/api/v3"), None);
     ///
-    ///     if let Some(data) = map.get_mut("/api/v1") {
+    ///     if let Some(data) = map.get_mut(b"/api/v1") {
     ///         *data = 3;
     ///     }
     ///
-    ///     assert_eq!(map.get_mut("/api/v1"), Some(&mut 3));
-    ///     assert_eq!(map.get_mut("/api/v2"), Some(&mut 2));
-    ///     assert_eq!(map.get_mut("/api/v3"), None);
+    ///     assert_eq!(map.get_mut(b"/api/v1"), Some(&mut 3));
+    ///     assert_eq!(map.get_mut(b"/api/v2"), Some(&mut 2));
+    ///     assert_eq!(map.get_mut(b"/api/v3"), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn get_mut(&mut self, path: &str) -> Option<&mut V> {
+    pub fn get_mut(&mut self, path: &[u8]) -> Option<&mut V> {
         self.root.lookup_mut(path, true, &mut None).and_then(|node| node.data.as_mut())
     }
 
@@ -126,6 +126,7 @@ impl<V> RadixMap<V> {
     /// # Examples
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
@@ -138,21 +139,21 @@ impl<V> RadixMap<V> {
     ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
-    ///     assert_eq!(map.capture("/api/v1/user/12345"), (Some(&"user1"), vec![]));
-    ///     assert_eq!(map.capture("/api/v2/user/12345"), (Some(&"user2"), vec![("id".to_string(), "12345")]));
-    ///     assert_eq!(map.capture("/api/v3/user/12345"), (Some(&"user3"), vec![("id".to_string(), "12345")]));
-    ///     assert_eq!(map.capture("/api/v4/user/12345"), (None, vec![]));
-    ///     assert_eq!(map.capture("/api/v5/user/12345"), (Some(&"user5"), vec![("*".to_string(), "12345")]));
-    ///     assert_eq!(map.capture("/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
-    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
-    ///     assert_eq!(map.capture("/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&"blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft"), ("date".to_string(), "2024-05-01")]));
+    ///     assert_eq!(map.capture(b"/api/v1/user/12345"), (Some(&"user1"), vec![]));
+    ///     assert_eq!(map.capture(b"/api/v2/user/12345"), (Some(&"user2"), vec![(Bytes::from("id"), b"12345")]));
+    ///     assert_eq!(map.capture(b"/api/v3/user/12345"), (Some(&"user3"), vec![(Bytes::from("id"), b"12345")]));
+    ///     assert_eq!(map.capture(b"/api/v4/user/12345"), (None, vec![]));
+    ///     assert_eq!(map.capture(b"/api/v5/user/12345"), (Some(&"user5"), vec![(Bytes::from("*"), b"12345")]));
+    ///     assert_eq!(map.capture(b"/api/v6"), (None, vec![]));
+    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.php"), (None, vec![]));
+    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft")]));
+    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&"blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft"), (Bytes::from("date"), b"2024-05-01")]));
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn capture<'u>(&self, path: &'u str) -> (Option<&V>, Vec<(String, &'u str)>) {
+    pub fn capture<'u>(&self, path: &'u [u8]) -> (Option<&V>, Vec<(Bytes, &'u [u8])>) {
         let mut capt = vec![];
         (self.root.lookup(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_ref()), capt)
     }
@@ -162,6 +163,7 @@ impl<V> RadixMap<V> {
     /// # Examples
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use radixmap::{RadixMap, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
@@ -174,21 +176,21 @@ impl<V> RadixMap<V> {
     ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
-    ///     assert_eq!(map.capture_mut("/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
-    ///     assert_eq!(map.capture_mut("/api/v2/user/12345"), (Some(&mut "user2"), vec![("id".to_string(), "12345")]));
-    ///     assert_eq!(map.capture_mut("/api/v3/user/12345"), (Some(&mut "user3"), vec![("id".to_string(), "12345")]));
-    ///     assert_eq!(map.capture_mut("/api/v4/user/12345"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut("/api/v5/user/12345"), (Some(&mut "user5"), vec![("*".to_string(), "12345")]));
-    ///     assert_eq!(map.capture_mut("/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.php"), (None, vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
-    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/index.html"), (Some(&mut "blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft")]));
-    ///     assert_eq!(map.capture_mut("/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&mut "blog"), vec![("date".to_string(), "2024-04-10"), ("author".to_string(), "chensoft"), ("date".to_string(), "2024-05-01")]));
+    ///     assert_eq!(map.capture_mut(b"/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
+    ///     assert_eq!(map.capture_mut(b"/api/v2/user/12345"), (Some(&mut "user2"), vec![(Bytes::from("id"), b"12345")]));
+    ///     assert_eq!(map.capture_mut(b"/api/v3/user/12345"), (Some(&mut "user3"), vec![(Bytes::from("id"), b"12345")]));
+    ///     assert_eq!(map.capture_mut(b"/api/v4/user/12345"), (None, vec![]));
+    ///     assert_eq!(map.capture_mut(b"/api/v5/user/12345"), (Some(&mut "user5"), vec![(Bytes::from("*"), b"12345")]));
+    ///     assert_eq!(map.capture_mut(b"/api/v6"), (None, vec![]));
+    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.php"), (None, vec![]));
+    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.html"), (Some(&mut "blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft")]));
+    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&mut "blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft"), (Bytes::from("date"), b"2024-05-01")]));
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn capture_mut<'u>(&mut self, path: &'u str) -> (Option<&mut V>, Vec<(String, &'u str)>) {
+    pub fn capture_mut<'u>(&mut self, path: &'u [u8]) -> (Option<&mut V>, Vec<(Bytes, &'u [u8])>) {
         let mut capt = vec![];
         (self.root.lookup_mut(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_mut()), capt)
     }
@@ -205,17 +207,17 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v1", ())?;
     ///     map.insert("/api/v2", ())?;
     ///
-    ///     assert_eq!(map.contains_key("/api/v1"), true);
-    ///     assert_eq!(map.contains_key("/api/v2"), true);
-    ///     assert_eq!(map.contains_key("/api/v3"), false);
-    ///     assert_eq!(map.contains_key("/api/v"), false);
-    ///     assert_eq!(map.contains_key("/api"), false);
+    ///     assert_eq!(map.contains_key(b"/api/v1"), true);
+    ///     assert_eq!(map.contains_key(b"/api/v2"), true);
+    ///     assert_eq!(map.contains_key(b"/api/v3"), false);
+    ///     assert_eq!(map.contains_key(b"/api/v"), false);
+    ///     assert_eq!(map.contains_key(b"/api"), false);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn contains_key(&self, path: &str) -> bool {
+    pub fn contains_key(&self, path: &[u8]) -> bool {
         self.root.lookup(path, true, &mut None).map_or(false, |node| !node.is_empty())
     }
 
@@ -430,7 +432,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn insert(&mut self, path: impl Into<Bytes>, data: V) -> RadixResult<Option<V>> {
-        let ret = self.root.insert(path.into(), data);
+        let ret = self.root.insert(path, data);
         if let Ok(None) = &ret {
             self.size += 1;
         }
@@ -452,16 +454,16 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api", "api")?;
     ///
     ///     assert_eq!(map.len(), 3);
-    ///     assert_eq!(map.remove("/"), None);                          // non-data node
-    ///     assert_eq!(map.remove("/api"), Some((Bytes::from("/api"), "api")));      // len - 1
-    ///     assert_eq!(map.remove("/api/v2"), Some((Bytes::from("/api/v2"), "v2"))); // len - 1
+    ///     assert_eq!(map.remove(b"/"), None);                          // non-data node
+    ///     assert_eq!(map.remove(b"/api"), Some((Bytes::from("/api"), "api")));      // len - 1
+    ///     assert_eq!(map.remove(b"/api/v2"), Some((Bytes::from("/api/v2"), "v2"))); // len - 1
     ///     assert_eq!(map.len(), 1);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn remove(&mut self, path: &str) -> Option<(Bytes, V)> {
+    pub fn remove(&mut self, path: &[u8]) -> Option<(Bytes, V)> {
         let node = self.root.lookup_mut(path, true, &mut None)?;
         let path = std::mem::take(&mut node.path);
         let data = std::mem::take(&mut node.data);
@@ -513,9 +515,9 @@ impl<V> RadixMap<V> {
 ///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
 ///
 ///     assert_eq!(map.len(), 2);
-///     assert_eq!(map.get("/api/v1"), Some(&1));
-///     assert_eq!(map.get("/api/v2"), Some(&2));
-///     assert_eq!(map.get("/api/v3"), None);
+///     assert_eq!(map.get(b"/api/v1"), Some(&1));
+///     assert_eq!(map.get(b"/api/v2"), Some(&2));
+///     assert_eq!(map.get(b"/api/v3"), None);
 ///
 ///     Ok(())
 /// }
@@ -532,6 +534,16 @@ impl<V, const N: usize> TryFrom<[(Bytes, V); N]> for RadixMap<V> {
         }
 
         Ok(map)
+    }
+}
+
+/// Construct from an array of tuples
+impl<V, const N: usize> TryFrom<[(&'static [u8], V); N]> for RadixMap<V> {
+    type Error = RadixError;
+
+    #[inline]
+    fn try_from(value: [(&'static [u8], V); N]) -> Result<Self, Self::Error> {
+        value.map(|(k, v)| (Bytes::from(k), v)).try_into()
     }
 }
 
@@ -640,7 +652,7 @@ pub struct Iter<'n, V> {
 impl<'n, V> Iter<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
@@ -680,7 +692,7 @@ pub struct IterMut<'n, V> {
 impl<'n, V> IterMut<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
@@ -720,7 +732,7 @@ pub struct Keys<'n, V> {
 impl<'n, V> Keys<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
@@ -760,7 +772,7 @@ pub struct Values<'n, V> {
 impl<'n, V> Values<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
@@ -800,7 +812,7 @@ pub struct ValuesMut<'n, V> {
 impl<'n, V> ValuesMut<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }

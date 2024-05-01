@@ -7,6 +7,7 @@
 ### Changed
 
 - Use Bytes to store path
+- Use &[u8] instead of &str
 
 ## [0.1.0] - 2024-04-10
 
@@ -19,12 +20,11 @@
 
 ## Todo
 
-- capture * and multiple *
-- capture same key multiple vals
+- invalid utf8 test with regex matches: &[0xffu8, 0xfe, 0x65];
 - index & indexmut
 - intoiterator
 - 
-- performance
+- benchmark
 - plain only mode
 - item sep customizable
 - re-balance on removed node

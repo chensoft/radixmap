@@ -33,8 +33,8 @@ impl<V> RadixPack<V> {
     ///     pack.insert(RadixRule::try_from("{[0-9]+}")?)?;
     ///
     ///     let mut iter = pack.iter();
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api".into())?));
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}".into())?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}")?));
     ///     assert_eq!(iter.next().map(|node| &node.rule), None);
     ///
     ///     Ok(())
@@ -63,8 +63,8 @@ impl<V> RadixPack<V> {
     ///
     ///     // test the iteration method
     ///     let mut iter = pack.iter_mut();
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api".into())?));
-    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}".into())?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_plain("/api")?));
+    ///     assert_eq!(iter.next().map(|node| &node.rule), Some(&RadixRule::from_regex("{[0-9]+}")?));
     ///     assert_eq!(iter.next().map(|node| &node.rule), None);
     ///
     ///     Ok(())
@@ -86,17 +86,17 @@ impl<V> RadixPack<V> {
     ///     let mut pack = RadixPack::<()>::default();
     ///
     ///     // inserting different nodes into the pack
-    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api".into())?)?.rule, "/api");
-    ///     assert_eq!(pack.insert(RadixRule::from_param(":id".into())?)?.rule, ":id");
-    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}".into())?)?.rule, "{[0-9]+}");
+    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api")?)?.rule, b"/api");
+    ///     assert_eq!(pack.insert(RadixRule::from_param(":id")?)?.rule, b":id");
+    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}")?)?.rule, b"{[0-9]+}");
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
     ///
     ///     // inserting duplicate nodes has no effect
-    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api".into())?)?.rule, "/api");
-    ///     assert_eq!(pack.insert(RadixRule::from_param(":id".into())?)?.rule, ":id");
-    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}".into())?)?.rule, "{[0-9]+}");
+    ///     assert_eq!(pack.insert(RadixRule::from_plain("/api")?)?.rule, b"/api");
+    ///     assert_eq!(pack.insert(RadixRule::from_param(":id")?)?.rule, b":id");
+    ///     assert_eq!(pack.insert(RadixRule::from_regex("{[0-9]+}")?)?.rule, b"{[0-9]+}");
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);
@@ -132,7 +132,7 @@ impl<V> RadixPack<V> {
             Some(node) => node,
             _ => unreachable!()
         };
-        let (share, order) = found.rule.longest(unsafe { std::str::from_utf8_unchecked(frag.as_ref()) });
+        let (share, order) = found.rule.longest(frag.as_ref());
 
         // divide the node into two parts
         if order == Ordering::Greater {
@@ -158,9 +158,9 @@ impl<V> RadixPack<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut pack = RadixPack::<()>::default();
-    ///     pack.insert(RadixRule::from_plain("/api".into())?)?;
-    ///     pack.insert(RadixRule::from_param(":id".into())?)?;
-    ///     pack.insert(RadixRule::from_regex("{}".into())?)?;
+    ///     pack.insert(RadixRule::from_plain("/api")?)?;
+    ///     pack.insert(RadixRule::from_param(":id")?)?;
+    ///     pack.insert(RadixRule::from_regex("{}")?)?;
     ///
     ///     assert_eq!(pack.regular.len(), 1);
     ///     assert_eq!(pack.special.len(), 2);

@@ -48,8 +48,8 @@ fn main() -> RadixResult<()> {
     map.insert("/api/v2", "v2")?;
     map.insert("/api/v2/user", "user2")?;
 
-    assert_eq!(map.get("/api/v1/user"), Some(&"user1"));
-    assert_eq!(map.get("/api/v2/user"), Some(&"user2"));
+    assert_eq!(map.get(b"/api/v1/user"), Some(&"user1"));
+    assert_eq!(map.get(b"/api/v2/user"), Some(&"user2"));
 
     let mut iter = map.iter(); // pre-order by default
 

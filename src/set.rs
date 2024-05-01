@@ -77,18 +77,18 @@ impl RadixSet {
     ///     set.insert("/api/v4/user/{id:[^0-9]+}")?;
     ///     set.insert("/api/v5/user/*345")?;
     ///
-    ///     assert_eq!(set.capture("/api/v1/user/12345"), (true, vec![]));
-    ///     assert_eq!(set.capture("/api/v2/user/12345"), (true, vec![("id".to_string(), "12345")]));
-    ///     assert_eq!(set.capture("/api/v3/user/12345"), (true, vec![("id".to_string(), "12345")]));
-    ///     assert_eq!(set.capture("/api/v4/user/12345"), (false, vec![]));
-    ///     assert_eq!(set.capture("/api/v5/user/12345"), (true, vec![("*".to_string(), "12345")]));
-    ///     assert_eq!(set.capture("/api/v6"), (false, vec![]));
+    ///     assert_eq!(set.capture(b"/api/v1/user/12345"), (true, vec![]));
+    ///     assert_eq!(set.capture(b"/api/v2/user/12345"), (true, vec![("id".to_string(), "12345")]));
+    ///     assert_eq!(set.capture(b"/api/v3/user/12345"), (true, vec![("id".to_string(), "12345")]));
+    ///     assert_eq!(set.capture(b"/api/v4/user/12345"), (false, vec![]));
+    ///     assert_eq!(set.capture(b"/api/v5/user/12345"), (true, vec![("*".to_string(), "12345")]));
+    ///     assert_eq!(set.capture(b"/api/v6"), (false, vec![]));
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn capture<'u>(&self, path: &'u str) -> (bool, Vec<(String, &'u str)>) {
+    pub fn capture<'u>(&self, path: &'u [u8]) -> (bool, Vec<(Bytes, &'u [u8])>) {
         let (data, capt) = self.base.capture(path);
         (data.is_some(), capt)
     }
@@ -105,17 +105,17 @@ impl RadixSet {
     ///     set.insert("/api/v1")?;
     ///     set.insert("/api/v2")?;
     ///
-    ///     assert_eq!(set.contains("/api/v1"), true);
-    ///     assert_eq!(set.contains("/api/v2"), true);
-    ///     assert_eq!(set.contains("/api/v3"), false);
-    ///     assert_eq!(set.contains("/api/v"), false);
-    ///     assert_eq!(set.contains("/api"), false);
+    ///     assert_eq!(set.contains(b"/api/v1"), true);
+    ///     assert_eq!(set.contains(b"/api/v2"), true);
+    ///     assert_eq!(set.contains(b"/api/v3"), false);
+    ///     assert_eq!(set.contains(b"/api/v"), false);
+    ///     assert_eq!(set.contains(b"/api"), false);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn contains(&self, path: &str) -> bool {
+    pub fn contains(&self, path: &[u8]) -> bool {
         self.base.contains_key(path)
     }
 
@@ -189,16 +189,16 @@ impl RadixSet {
     ///     set.insert("/api")?;
     ///
     ///     assert_eq!(set.len(), 3);
-    ///     assert_eq!(set.remove("/"), false);      // non-data node
-    ///     assert_eq!(set.remove("/api"), true);    // len - 1
-    ///     assert_eq!(set.remove("/api/v2"), true); // len - 1
+    ///     assert_eq!(set.remove(b"/"), false);      // non-data node
+    ///     assert_eq!(set.remove(b"/api"), true);    // len - 1
+    ///     assert_eq!(set.remove(b"/api/v2"), true); // len - 1
     ///     assert_eq!(set.len(), 1);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn remove(&mut self, path: &str) -> bool {
+    pub fn remove(&mut self, path: &[u8]) -> bool {
         self.base.remove(path).is_some()
     }
 
@@ -243,9 +243,9 @@ impl RadixSet {
 ///     let set = RadixSet::try_from(["/api/v1", "/api/v2"])?;
 ///
 ///     assert_eq!(set.len(), 2);
-///     assert_eq!(set.contains("/api/v1"), true);
-///     assert_eq!(set.contains("/api/v2"), true);
-///     assert_eq!(set.contains("/api/v3"), false);
+///     assert_eq!(set.contains(b"/api/v1"), true);
+///     assert_eq!(set.contains(b"/api/v2"), true);
+///     assert_eq!(set.contains(b"/api/v3"), false);
 ///
 ///     Ok(())
 /// }
@@ -265,6 +265,17 @@ impl<const N: usize> TryFrom<[Bytes; N]> for RadixSet {
     }
 }
 
+/// Construct from an array of tuples
+impl<const N: usize> TryFrom<[&'static [u8]; N]> for RadixSet {
+    type Error = RadixError;
+
+    #[inline]
+    fn try_from(value: [&'static [u8]; N]) -> Result<Self, Self::Error> {
+        value.map(Bytes::from).try_into()
+    }
+}
+
+/// Construct from an array of tuples
 impl<const N: usize> TryFrom<[&'static str; N]> for RadixSet {
     type Error = RadixError;
 

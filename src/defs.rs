@@ -59,14 +59,14 @@ pub type RadixResult<T> = Result<T, RadixError>;
 ///     "/api/v2/user" => "user2",
 /// };
 ///
-/// assert_eq!(map.get("/"), Some(&"/"));
-/// assert_eq!(map.get("/api"), Some(&"api"));
-/// assert_eq!(map.get("/api/v1"), Some(&"v1"));
-/// assert_eq!(map.get("/api/v1/user"), Some(&"user1"));
-/// assert_eq!(map.get("/api/v2"), Some(&"v2"));
-/// assert_eq!(map.get("/api/v2/user"), Some(&"user2"));
-/// assert_eq!(map.get("/api/v3"), None);
-/// assert_eq!(map.get("/api/v3/user"), None);
+/// assert_eq!(map.get(b"/"), Some(&"/"));
+/// assert_eq!(map.get(b"/api"), Some(&"api"));
+/// assert_eq!(map.get(b"/api/v1"), Some(&"v1"));
+/// assert_eq!(map.get(b"/api/v1/user"), Some(&"user1"));
+/// assert_eq!(map.get(b"/api/v2"), Some(&"v2"));
+/// assert_eq!(map.get(b"/api/v2/user"), Some(&"user2"));
+/// assert_eq!(map.get(b"/api/v3"), None);
+/// assert_eq!(map.get(b"/api/v3/user"), None);
 ///
 /// let set = radix!{
 ///     "/",
@@ -77,14 +77,14 @@ pub type RadixResult<T> = Result<T, RadixError>;
 ///     "/api/v2/user",
 /// };
 ///
-/// assert_eq!(set.contains("/"), true);
-/// assert_eq!(set.contains("/api"), true);
-/// assert_eq!(set.contains("/api/v1"), true);
-/// assert_eq!(set.contains("/api/v1/user"), true);
-/// assert_eq!(set.contains("/api/v2"), true);
-/// assert_eq!(set.contains("/api/v2/user"), true);
-/// assert_eq!(set.contains("/api/v3"), false);
-/// assert_eq!(set.contains("/api/v3/user"), false);
+/// assert_eq!(set.contains(b"/"), true);
+/// assert_eq!(set.contains(b"/api"), true);
+/// assert_eq!(set.contains(b"/api/v1"), true);
+/// assert_eq!(set.contains(b"/api/v1/user"), true);
+/// assert_eq!(set.contains(b"/api/v2"), true);
+/// assert_eq!(set.contains(b"/api/v2/user"), true);
+/// assert_eq!(set.contains(b"/api/v3"), false);
+/// assert_eq!(set.contains(b"/api/v3/user"), false);
 /// ```
 #[macro_export]
 macro_rules! radix {

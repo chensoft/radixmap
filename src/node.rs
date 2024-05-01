@@ -47,9 +47,9 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v2", "v2")?;
     ///
     ///     let mut iter = node.iter();
     ///
@@ -76,9 +76,9 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), 0)?;
-    ///     node.insert("/api/v1".into(), 1)?;
-    ///     node.insert("/api/v2".into(), 2)?;
+    ///     node.insert("/api", 0)?;
+    ///     node.insert("/api/v1", 1)?;
+    ///     node.insert("/api/v2", 2)?;
     ///
     ///     for node in node.iter_mut() {
     ///         node.data = Some(node.data.unwrap_or_default() + 10);
@@ -109,9 +109,9 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), ())?;
-    ///     node.insert("/api/v1".into(), ())?;
-    ///     node.insert("/api/v2".into(), ())?;
+    ///     node.insert("/api", ())?;
+    ///     node.insert("/api/v1", ())?;
+    ///     node.insert("/api/v2", ())?;
     ///
     ///     let mut iter = node.keys();
     ///
@@ -137,9 +137,9 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), 0)?;
-    ///     node.insert("/api/v1".into(), 1)?;
-    ///     node.insert("/api/v2".into(), 2)?;
+    ///     node.insert("/api", 0)?;
+    ///     node.insert("/api/v1", 1)?;
+    ///     node.insert("/api/v2", 2)?;
     ///
     ///     let mut iter = node.values();
     ///
@@ -165,9 +165,9 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), 0)?;
-    ///     node.insert("/api/v1".into(), 1)?;
-    ///     node.insert("/api/v2".into(), 2)?;
+    ///     node.insert("/api", 0)?;
+    ///     node.insert("/api/v1", 1)?;
+    ///     node.insert("/api/v2", 2)?;
     ///
     ///     for node in node.iter_mut() {
     ///         node.data = Some(node.data.unwrap_or_default() + 10);
@@ -191,7 +191,8 @@ impl<V> RadixNode<V> {
     /// Inserts a path and data into this node, which serves as the root node for the insertion.
     /// The method sequentially extracts path fragments and positions each node appropriately,
     /// ensuring that nodes with a common prefix share a single node in the tree.
-    pub fn insert(&mut self, path: Bytes, data: V) -> RadixResult<Option<V>> {
+    pub fn insert(&mut self, path: impl Into<Bytes>, data: V) -> RadixResult<Option<V>> {
+        let path = path.into();
         let mut frag = path.clone();
         let mut slot = self;
 
@@ -228,35 +229,35 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v1/user/:id".into(), "user1")?;
-    ///     node.insert("/api/v2/user/{id:[^0-9]+}".into(), "user2")?;
-    ///     node.insert("/api/v3/user/*cde".into(), "user3")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v1/user/:id", "user1")?;
+    ///     node.insert("/api/v2/user/{id:[^0-9]+}", "user2")?;
+    ///     node.insert("/api/v3/user/*cde", "user3")?;
     ///
-    ///     assert_eq!(node.lookup("/", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
-    ///     assert_eq!(node.lookup("/api", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
-    ///     assert_eq!(node.lookup("/api/v", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/v")));
-    ///     assert_eq!(node.lookup("/api/v1", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
-    ///     assert_eq!(node.lookup("/api/v2", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
-    ///     assert_eq!(node.lookup("/api/v3", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("3/user/")));
+    ///     assert_eq!(node.lookup(b"/", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
+    ///     assert_eq!(node.lookup(b"/api", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
+    ///     assert_eq!(node.lookup(b"/api/v", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/v")));
+    ///     assert_eq!(node.lookup(b"/api/v1", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
+    ///     assert_eq!(node.lookup(b"/api/v2", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
+    ///     assert_eq!(node.lookup(b"/api/v3", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("3/user/")));
     ///
-    ///     assert_eq!(node.lookup("/", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
-    ///     assert_eq!(node.lookup("/api/v", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api/v1", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
-    ///     assert_eq!(node.lookup("/api/v2", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
-    ///     assert_eq!(node.lookup("/api/v1/user/12345", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from(":id")));
-    ///     assert_eq!(node.lookup("/api/v2/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api/v2/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("{id:[^0-9]+}")));
-    ///     assert_eq!(node.lookup("/api/v3/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup("/api/v3/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("*cde")));
+    ///     assert_eq!(node.lookup(b"/", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup(b"/api", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
+    ///     assert_eq!(node.lookup(b"/api/v", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup(b"/api/v1", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
+    ///     assert_eq!(node.lookup(b"/api/v2", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
+    ///     assert_eq!(node.lookup(b"/api/v1/user/12345", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from(":id")));
+    ///     assert_eq!(node.lookup(b"/api/v2/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup(b"/api/v2/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("{id:[^0-9]+}")));
+    ///     assert_eq!(node.lookup(b"/api/v3/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup(b"/api/v3/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("*cde")));
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn lookup<'u>(&self, mut path: &'u str, data: bool, capt: &mut Option<&mut Vec<(String, &'u str)>>) -> Option<&RadixNode<V>> {
+    pub fn lookup<'u>(&self, mut path: &'u [u8], data: bool, capt: &mut Option<&mut Vec<(Bytes, &'u [u8])>>) -> Option<&RadixNode<V>> {
         let mut curr = self;
 
         loop {
@@ -269,14 +270,14 @@ impl<V> RadixNode<V> {
             if let Some(capt) = capt {
                 let ident = curr.rule.identity();
                 if !ident.is_empty() && !share.is_empty() {
-                    capt.push((ident.to_string(), share));
+                    capt.push((ident.clone(), share));
                 }
             }
 
             // trim the shared and continue lookup
             path = &path[share.len()..];
 
-            let byte = match path.as_bytes().first() {
+            let byte = match path.first() {
                 Some(&val) => val as usize,
                 None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
                 None => return Some(curr),
@@ -309,35 +310,35 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v1/user/:id".into(), "user1")?;
-    ///     node.insert("/api/v2/user/{id:[^0-9]+}".into(), "user2")?;
-    ///     node.insert("/api/v3/user/*cde".into(), "user3")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v1/user/:id", "user1")?;
+    ///     node.insert("/api/v2/user/{id:[^0-9]+}", "user2")?;
+    ///     node.insert("/api/v3/user/*cde", "user3")?;
     ///
-    ///     assert_eq!(node.lookup_mut("/", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
-    ///     assert_eq!(node.lookup_mut("/api", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
-    ///     assert_eq!(node.lookup_mut("/api/v", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/v")));
-    ///     assert_eq!(node.lookup_mut("/api/v1", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
-    ///     assert_eq!(node.lookup_mut("/api/v2", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
-    ///     assert_eq!(node.lookup_mut("/api/v3", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("3/user/")));
+    ///     assert_eq!(node.lookup_mut(b"/", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
+    ///     assert_eq!(node.lookup_mut(b"/api", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/v")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v1", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v2", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v3", false, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("3/user/")));
     ///
-    ///     assert_eq!(node.lookup_mut("/", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
-    ///     assert_eq!(node.lookup_mut("/api/v", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api/v1", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
-    ///     assert_eq!(node.lookup_mut("/api/v2", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
-    ///     assert_eq!(node.lookup_mut("/api/v1/user/12345", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from(":id")));
-    ///     assert_eq!(node.lookup_mut("/api/v2/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api/v2/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("{id:[^0-9]+}")));
-    ///     assert_eq!(node.lookup_mut("/api/v3/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
-    ///     assert_eq!(node.lookup_mut("/api/v3/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("*cde")));
+    ///     assert_eq!(node.lookup_mut(b"/", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut(b"/api", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("/api")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut(b"/api/v1", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v2", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v1/user/12345", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from(":id")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v2/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut(b"/api/v2/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("{id:[^0-9]+}")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v3/user/12345", true, &mut None).map(|node| node.rule.origin()), None);
+    ///     assert_eq!(node.lookup_mut(b"/api/v3/user/abcde", true, &mut None).map(|node| node.rule.origin()), Some(&Bytes::from("*cde")));
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn lookup_mut<'u>(&mut self, mut path: &'u str, data: bool, capt: &mut Option<&mut Vec<(String, &'u str)>>) -> Option<&mut RadixNode<V>> {
+    pub fn lookup_mut<'u>(&mut self, mut path: &'u [u8], data: bool, capt: &mut Option<&mut Vec<(Bytes, &'u [u8])>>) -> Option<&mut RadixNode<V>> {
         let mut curr = self;
 
         loop {
@@ -350,14 +351,14 @@ impl<V> RadixNode<V> {
             if let Some(capt) = capt {
                 let ident = curr.rule.identity();
                 if !ident.is_empty() && !share.is_empty() {
-                    capt.push((ident.to_string(), share));
+                    capt.push((ident.clone(), share));
                 }
             }
 
             // trim the shared and continue lookup
             path = &path[share.len()..];
 
-            let byte = match path.as_bytes().first() {
+            let byte = match path.first() {
                 Some(&val) => val as usize,
                 None if data && (order == Ordering::Greater || curr.is_empty()) => return None, // data node must be an exact match
                 None => return Some(curr),
@@ -390,14 +391,14 @@ impl<V> RadixNode<V> {
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::try_from(("/api", 12345))?;
     ///
-    ///     assert_eq!(node.rule, "/api");
+    ///     assert_eq!(node.rule, b"/api");
     ///     assert_eq!(node.data, Some(12345));
     ///
     ///     let frag = node.divide(1)?;
     ///
-    ///     assert_eq!(node.rule, "/");
+    ///     assert_eq!(node.rule, b"/");
     ///     assert_eq!(node.data, None);
-    ///     assert_eq!(frag.rule, "api");
+    ///     assert_eq!(frag.rule, b"api");
     ///     assert_eq!(frag.data, Some(12345));
     ///
     ///     Ok(())
@@ -423,7 +424,7 @@ impl<V> RadixNode<V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::try_from(("/api", ()))?;
-    ///     node.insert("/api/v1".into(), ())?;
+    ///     node.insert("/api/v1", ())?;
     ///
     ///     assert_eq!(node.is_empty(), false);
     ///
@@ -451,8 +452,8 @@ impl<V> RadixNode<V> {
 /// use radixmap::{node::RadixNode, rule::RadixRule, RadixResult};
 ///
 /// fn main() -> RadixResult<()> {
-///     assert_eq!(RadixNode::<()>::from(RadixRule::try_from("/api")?).rule, "/api");
-///     assert_eq!(RadixNode::<()>::from(RadixRule::try_from(":id")?).rule, ":id");
+///     assert_eq!(RadixNode::<()>::from(RadixRule::try_from("/api")?).rule, b"/api");
+///     assert_eq!(RadixNode::<()>::from(RadixRule::try_from(":id")?).rule, b":id");
 ///
 ///     Ok(())
 /// }
@@ -472,8 +473,8 @@ impl<V> From<RadixRule> for RadixNode<V> {
 /// use radixmap::{node::RadixNode, RadixResult};
 ///
 /// fn main() -> RadixResult<()> {
-///     assert_eq!(RadixNode::try_from(("/api", ()))?.rule, "/api");
-///     assert_eq!(RadixNode::try_from((":id", ()))?.rule, ":id");
+///     assert_eq!(RadixNode::try_from(("/api", ()))?.rule, b"/api");
+///     assert_eq!(RadixNode::try_from((":id", ()))?.rule, b":id");
 ///
 ///     Ok(())
 /// }
@@ -487,6 +488,17 @@ impl<V> TryFrom<(Bytes, V)> for RadixNode<V> {
     }
 }
 
+/// Create a node from (path, data)
+impl<V> TryFrom<(&'static [u8], V)> for RadixNode<V> {
+    type Error = RadixError;
+
+    #[inline]
+    fn try_from((path, data): (&'static [u8], V)) -> RadixResult<Self> {
+        (Bytes::from(path), data).try_into()
+    }
+}
+
+/// Create a node from (path, data)
 impl<V> TryFrom<(&'static str, V)> for RadixNode<V> {
     type Error = RadixError;
 
@@ -501,7 +513,7 @@ impl<V> TryFrom<(&'static str, V)> for RadixNode<V> {
 /// use radixmap::{node::RadixNode};
 ///
 /// let mut node = RadixNode::default();
-/// assert!(node.insert("/api".into(), ()).is_ok());
+/// assert!(node.insert("/api", ()).is_ok());
 /// ```
 impl<V> Default for RadixNode<V> {
     #[inline]
@@ -597,6 +609,7 @@ pub struct Iter<'n, V> {
     visit: Vec<Peekable<pack::Iter<'n, V>>>, // used in post-order only
     order: Order,
     empty: bool,
+    // todo capture: Option<Vec<(Bytes, &'u [u8])>>,
 }
 
 impl<'n, V> Iter<'n, V> {
@@ -610,31 +623,31 @@ impl<'n, V> Iter<'n, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v1/user".into(), "user1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v2/user".into(), "user2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = node.iter().with_prefix("/api/v1", false);
+    ///     let mut iter = node.iter().with_prefix(b"/api/v1", false);
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1"), &"v1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1/user"), &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter().with_prefix("/api/", false); // exclude /api
+    ///     let mut iter = node.iter().with_prefix(b"/api/", false); // exclude /api
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1"), &"v1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1/user"), &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v2"), &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v2/user"), &"user2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter().with_prefix("/api/v3", false); // not exist
+    ///     let mut iter = node.iter().with_prefix(b"/api/v3", false); // not exist
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         let cursor = self.queue.pop_front();
 
         self.queue.clear();
@@ -664,11 +677,11 @@ impl<'n, V> Iter<'n, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v1/user".into(), "user1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v2/user".into(), "user2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter(); // same as with_order(Order::Pre);
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api"), &"api")));
@@ -723,20 +736,20 @@ impl<'n, V> Iter<'n, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v1/user".into(), "user1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v2/user".into(), "user2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter().with_empty();
-    ///     verify!(iter, "", None);                        // the root node
-    ///     verify!(iter, "/api", Some("api"));
-    ///     verify!(iter, "/v", None);                      // an internal node
-    ///     verify!(iter, "1", Some("v1"));
-    ///     verify!(iter, "/user", Some("user1"));
-    ///     verify!(iter, "2", Some("v2"));
-    ///     verify!(iter, "/user", Some("user2"));
+    ///     verify!(iter, b"", None);                        // the root node
+    ///     verify!(iter, b"/api", Some("api"));
+    ///     verify!(iter, b"/v", None);                      // an internal node
+    ///     verify!(iter, b"1", Some("v1"));
+    ///     verify!(iter, b"/user", Some("user1"));
+    ///     verify!(iter, b"2", Some("v2"));
+    ///     verify!(iter, b"/user", Some("user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -851,31 +864,31 @@ impl<'n, V> IterMut<'n, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v1/user".into(), "user1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v2/user".into(), "user2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
-    ///     let mut iter = node.iter_mut().with_prefix("/api/v1", false);
+    ///     let mut iter = node.iter_mut().with_prefix(b"/api/v1", false);
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1"), &"v1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1/user"), &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter_mut().with_prefix("/api/", false); // exclude /api
+    ///     let mut iter = node.iter_mut().with_prefix(b"/api/", false); // exclude /api
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1"), &"v1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v1/user"), &"user1")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v2"), &"v2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api/v2/user"), &"user2")));
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
-    ///     let mut iter = node.iter_mut().with_prefix("/api/v3", false); // not exist
+    ///     let mut iter = node.iter_mut().with_prefix(b"/api/v3", false); // not exist
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), None);
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         let cursor = self.queue.pop_front();
 
         self.queue.clear();
@@ -904,11 +917,11 @@ impl<'n, V> IterMut<'n, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v1/user".into(), "user1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v2/user".into(), "user2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter_mut(); // same as with_order(Order::Pre);
     ///     assert_eq!(iter.next().and_then(|node| node.item_ref()), Some((&Bytes::from("/api"), &"api")));
@@ -955,20 +968,20 @@ impl<'n, V> IterMut<'n, V> {
     ///
     /// fn main() -> RadixResult<()> {
     ///     let mut node = RadixNode::default();
-    ///     node.insert("/api".into(), "api")?;
-    ///     node.insert("/api/v1".into(), "v1")?;
-    ///     node.insert("/api/v1/user".into(), "user1")?;
-    ///     node.insert("/api/v2".into(), "v2")?;
-    ///     node.insert("/api/v2/user".into(), "user2")?;
+    ///     node.insert("/api", "api")?;
+    ///     node.insert("/api/v1", "v1")?;
+    ///     node.insert("/api/v1/user", "user1")?;
+    ///     node.insert("/api/v2", "v2")?;
+    ///     node.insert("/api/v2/user", "user2")?;
     ///
     ///     let mut iter = node.iter_mut().with_empty();
-    ///     verify!(iter, "", None);                        // the root node
-    ///     verify!(iter, "/api", Some("api"));
-    ///     verify!(iter, "/v", None);                      // an internal node
-    ///     verify!(iter, "1", Some("v1"));
-    ///     verify!(iter, "/user", Some("user1"));
-    ///     verify!(iter, "2", Some("v2"));
-    ///     verify!(iter, "/user", Some("user2"));
+    ///     verify!(iter, b"", None);                        // the root node
+    ///     verify!(iter, b"/api", Some("api"));
+    ///     verify!(iter, b"/v", None);                      // an internal node
+    ///     verify!(iter, b"1", Some("v1"));
+    ///     verify!(iter, b"/user", Some("user1"));
+    ///     verify!(iter, b"2", Some("v2"));
+    ///     verify!(iter, b"/user", Some("user2"));
     ///     assert!(iter.next().is_none());
     ///
     ///     Ok(())
@@ -1057,7 +1070,7 @@ pub struct Keys<'n, V> {
 impl<'n, V> Keys<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
@@ -1097,7 +1110,7 @@ pub struct Values<'n, V> {
 impl<'n, V> Values<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
@@ -1137,7 +1150,7 @@ pub struct ValuesMut<'n, V> {
 impl<'n, V> ValuesMut<'n, V> {
     /// Starting to iterate from the node with a specific prefix
     #[inline]
-    pub fn with_prefix(mut self, path: &str, data: bool) -> Self {
+    pub fn with_prefix(mut self, path: &[u8], data: bool) -> Self {
         self.iter = self.iter.with_prefix(path, data);
         self
     }
