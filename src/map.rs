@@ -86,7 +86,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn get(&self, path: &[u8]) -> Option<&V> {
-        self.root.lookup(path, true, &mut None).and_then(|node| node.data.as_ref())
+        self.root.lookup(path, true, false).0.and_then(|node| node.data.as_ref())
     }
 
     /// Retrieve the corresponding mutable data
@@ -118,7 +118,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn get_mut(&mut self, path: &[u8]) -> Option<&mut V> {
-        self.root.lookup_mut(path, true, &mut None).and_then(|node| node.data.as_mut())
+        self.root.lookup_mut(path, true, false).0.and_then(|node| node.data.as_mut())
     }
 
     /// Retrieve the corresponding data and collect named captures
@@ -145,7 +145,7 @@ impl<V> RadixMap<V> {
     ///     assert_eq!(map.capture(b"/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture(b"/api/v5/user/12345"), (Some(&"user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture(b"/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "index.asp".as_bytes())]));
+    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![]));
     ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.php"), (Some(&"blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("*"), "index.php".as_bytes())]));
     ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&"blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "2024-05-01".as_bytes()), (Bytes::from("*"), "index.html".as_bytes())]));
     ///
@@ -154,8 +154,8 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn capture<'u>(&self, path: &'u [u8]) -> (Option<&V>, Vec<(Bytes, &'u [u8])>) {
-        let mut capt = vec![];
-        (self.root.lookup(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_ref()), capt)
+        let (node, capt) = self.root.lookup(path, true, true);
+        (node.and_then(|n| n.data.as_ref()), capt)
     }
 
     /// Retrieve the corresponding mutable data and collect named captures
@@ -182,7 +182,7 @@ impl<V> RadixMap<V> {
     ///     assert_eq!(map.capture_mut(b"/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture_mut(b"/api/v5/user/12345"), (Some(&mut "user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture_mut(b"/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "index.asp".as_bytes())]));
+    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![]));
     ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.php"), (Some(&mut "blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("*"), "index.php".as_bytes())]));
     ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&mut "blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "2024-05-01".as_bytes()), (Bytes::from("*"), "index.html".as_bytes())]));
     ///
@@ -191,8 +191,8 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn capture_mut<'u>(&mut self, path: &'u [u8]) -> (Option<&mut V>, Vec<(Bytes, &'u [u8])>) {
-        let mut capt = vec![];
-        (self.root.lookup_mut(path, true, &mut Some(&mut capt)).and_then(|node| node.data.as_mut()), capt)
+        let (node, capt) = self.root.lookup_mut(path, true, true);
+        (node.and_then(|n| n.data.as_mut()), capt)
     }
 
     /// Check if the tree contains specific path
@@ -218,7 +218,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn contains_key(&self, path: &[u8]) -> bool {
-        self.root.lookup(path, true, &mut None).map_or(false, |node| !node.is_empty())
+        self.root.lookup(path, true, false).0.map_or(false, |node| !node.is_empty())
     }
 
     /// Check if the tree contains specific data
@@ -464,7 +464,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn remove(&mut self, path: &[u8]) -> Option<(Bytes, V)> {
-        let node = self.root.lookup_mut(path, true, &mut None)?;
+        let node = self.root.lookup_mut(path, true, false).0?;
         let path = std::mem::take(&mut node.path);
         let data = std::mem::take(&mut node.data);
 

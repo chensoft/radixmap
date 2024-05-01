@@ -1,4 +1,11 @@
-## [0.2.0] - 2024-05-0x
+## [0.2.1] - 2024-05-0x
+
+### Changed
+
+- Remove recursion calls on node's lookup
+- Do not return captured data if node not found
+
+## [0.2.0] - 2024-05-01
 
 ### Added
 
