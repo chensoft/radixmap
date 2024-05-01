@@ -16,7 +16,7 @@ impl RadixSet {
     }
 
     /// The size of the set
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -38,7 +38,7 @@ impl RadixSet {
     }
 
     /// Check if the set has no data nodes
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -63,10 +63,11 @@ impl RadixSet {
     }
 
     /// Retrieve the corresponding data and collect named captures
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
+    /// use bytes::Bytes;
     /// use radixmap::{RadixSet, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
@@ -78,10 +79,10 @@ impl RadixSet {
     ///     set.insert("/api/v5/user/*345")?;
     ///
     ///     assert_eq!(set.capture(b"/api/v1/user/12345"), (true, vec![]));
-    ///     assert_eq!(set.capture(b"/api/v2/user/12345"), (true, vec![("id".to_string(), "12345")]));
-    ///     assert_eq!(set.capture(b"/api/v3/user/12345"), (true, vec![("id".to_string(), "12345")]));
+    ///     assert_eq!(set.capture(b"/api/v2/user/12345"), (true, vec![(Bytes::from("id"), "12345".as_bytes())]));
+    ///     assert_eq!(set.capture(b"/api/v3/user/12345"), (true, vec![(Bytes::from("id"), "12345".as_bytes())]));
     ///     assert_eq!(set.capture(b"/api/v4/user/12345"), (false, vec![]));
-    ///     assert_eq!(set.capture(b"/api/v5/user/12345"), (true, vec![("*".to_string(), "12345")]));
+    ///     assert_eq!(set.capture(b"/api/v5/user/12345"), (true, vec![(Bytes::from("*"), "12345".as_bytes())]));
     ///     assert_eq!(set.capture(b"/api/v6"), (false, vec![]));
     ///
     ///     Ok(())
@@ -94,7 +95,7 @@ impl RadixSet {
     }
 
     /// Check if the tree contains specific path
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -120,7 +121,7 @@ impl RadixSet {
     }
 
     /// Iterate over the set to retrieve nodes' path
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -153,7 +154,7 @@ impl RadixSet {
     }
 
     /// Insert into new data and return true if exist
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -176,7 +177,7 @@ impl RadixSet {
     }
 
     /// Remove the nodes along the path, affecting data nodes only
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -203,7 +204,7 @@ impl RadixSet {
     }
 
     /// Clear the radix set but preserve its capacity
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -233,7 +234,7 @@ impl RadixSet {
 // -----------------------------------------------------------------------------
 
 /// Construct from an array of tuples
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -294,7 +295,7 @@ impl Default for RadixSet {
 }
 
 /// Clone trait
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -317,7 +318,7 @@ impl Clone for RadixSet {
 }
 
 /// Debug trait
-/// 
+///
 /// # Examples
 ///
 /// ```

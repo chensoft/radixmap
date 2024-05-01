@@ -21,7 +21,7 @@ impl<V> RadixPack<V> {
     }
 
     /// Iterate regular and special
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -46,7 +46,7 @@ impl<V> RadixPack<V> {
     }
 
     /// Iterate regular and special
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -76,7 +76,7 @@ impl<V> RadixPack<V> {
     }
 
     /// Insert new node
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -150,7 +150,7 @@ impl<V> RadixPack<V> {
     }
 
     /// Clear the nodes and preserve its capacity
-    /// 
+    ///
     /// # Examples
     ///
     /// ```

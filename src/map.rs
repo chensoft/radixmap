@@ -19,7 +19,7 @@ impl<V> RadixMap<V> {
     }
 
     /// The data nodes' count, note that RadixMap ignores empty nodes
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -41,7 +41,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Check if the tree has no data nodes
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -66,7 +66,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -90,7 +90,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding mutable data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -122,7 +122,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding data and collect named captures
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -136,18 +136,18 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
     ///     map.insert("/api/v5/user/*345", "user5")?;
-    ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
+    ///     map.insert("/blog/:date/{author:[^/]+}/*.php", "blog")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture(b"/api/v1/user/12345"), (Some(&"user1"), vec![]));
-    ///     assert_eq!(map.capture(b"/api/v2/user/12345"), (Some(&"user2"), vec![(Bytes::from("id"), b"12345")]));
-    ///     assert_eq!(map.capture(b"/api/v3/user/12345"), (Some(&"user3"), vec![(Bytes::from("id"), b"12345")]));
+    ///     assert_eq!(map.capture(b"/api/v2/user/12345"), (Some(&"user2"), vec![(Bytes::from("id"), "12345".as_bytes())]));
+    ///     assert_eq!(map.capture(b"/api/v3/user/12345"), (Some(&"user3"), vec![(Bytes::from("id"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture(b"/api/v4/user/12345"), (None, vec![]));
-    ///     assert_eq!(map.capture(b"/api/v5/user/12345"), (Some(&"user5"), vec![(Bytes::from("*"), b"12345")]));
+    ///     assert_eq!(map.capture(b"/api/v5/user/12345"), (Some(&"user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture(b"/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.php"), (None, vec![]));
-    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.html"), (Some(&"blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft")]));
-    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&"blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft"), (Bytes::from("date"), b"2024-05-01")]));
+    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "index.asp".as_bytes())]));
+    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.php"), (Some(&"blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("*"), "index.php".as_bytes())]));
+    ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&"blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "2024-05-01".as_bytes()), (Bytes::from("*"), "index.html".as_bytes())]));
     ///
     ///     Ok(())
     /// }
@@ -159,7 +159,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Retrieve the corresponding mutable data and collect named captures
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -173,18 +173,18 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
     ///     map.insert("/api/v5/user/*345", "user5")?;
-    ///     map.insert("/blog/:date/{author:[^/]+}/*.html", "blog")?;
+    ///     map.insert("/blog/:date/{author:[^/]+}/*.php", "blog")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
     ///     assert_eq!(map.capture_mut(b"/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
-    ///     assert_eq!(map.capture_mut(b"/api/v2/user/12345"), (Some(&mut "user2"), vec![(Bytes::from("id"), b"12345")]));
-    ///     assert_eq!(map.capture_mut(b"/api/v3/user/12345"), (Some(&mut "user3"), vec![(Bytes::from("id"), b"12345")]));
+    ///     assert_eq!(map.capture_mut(b"/api/v2/user/12345"), (Some(&mut "user2"), vec![(Bytes::from("id"), "12345".as_bytes())]));
+    ///     assert_eq!(map.capture_mut(b"/api/v3/user/12345"), (Some(&mut "user3"), vec![(Bytes::from("id"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture_mut(b"/api/v4/user/12345"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut(b"/api/v5/user/12345"), (Some(&mut "user5"), vec![(Bytes::from("*"), b"12345")]));
+    ///     assert_eq!(map.capture_mut(b"/api/v5/user/12345"), (Some(&mut "user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture_mut(b"/api/v6"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.php"), (None, vec![]));
-    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.html"), (Some(&mut "blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft")]));
-    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&mut "blog"), vec![(Bytes::from("date"), b"2024-04-10"), (Bytes::from("author"), b"chensoft"), (Bytes::from("date"), b"2024-05-01")]));
+    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "index.asp".as_bytes())]));
+    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.php"), (Some(&mut "blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("*"), "index.php".as_bytes())]));
+    ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/2024-05-01/index.html"), (Some(&mut "blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("date"), "2024-05-01".as_bytes()), (Bytes::from("*"), "index.html".as_bytes())]));
     ///
     ///     Ok(())
     /// }
@@ -196,7 +196,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Check if the tree contains specific path
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -222,7 +222,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Check if the tree contains specific data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -247,7 +247,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to retrieve nodes' path and data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -280,7 +280,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to retrieve nodes' path and mutable data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -313,7 +313,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to get nodes' path only
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -346,7 +346,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to get nodes' data only
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -378,7 +378,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Iterate over the tree to get nodes' mutable data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -410,7 +410,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Insert into a pair of new data and return old if exist
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -440,7 +440,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Remove the nodes along the path, affecting data nodes only
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -474,7 +474,7 @@ impl<V> RadixMap<V> {
     }
 
     /// Clear the radix map but preserve its capacity
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -505,7 +505,7 @@ impl<V> RadixMap<V> {
 // -----------------------------------------------------------------------------
 
 /// Construct from an array of tuples
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -566,7 +566,7 @@ impl<V> Default for RadixMap<V> {
 }
 
 /// Clone trait
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -589,7 +589,7 @@ impl<V: Clone> Clone for RadixMap<V> {
 }
 
 /// Debug trait
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -633,6 +633,62 @@ impl<V: PartialEq> PartialEq for RadixMap<V> {
         }
 
         true
+    }
+}
+
+/// Get data from map
+///
+/// # Examples
+///
+/// ```
+/// use std::panic::catch_unwind;
+/// use radixmap::{RadixMap, RadixResult};
+///
+/// fn main() -> RadixResult<()> {
+///     let map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
+///
+///     assert_eq!(map.len(), 2);
+///     assert_eq!(map[b"/api/v1"], 1);
+///     assert_eq!(map[b"/api/v2"], 2);
+///     assert_eq!(catch_unwind(|| map[b"/api/v3"]).is_err(), true);
+///
+///     Ok(())
+/// }
+/// ```
+impl<V> Index<&[u8]> for RadixMap<V> {
+    type Output = V;
+
+    fn index(&self, path: &[u8]) -> &Self::Output {
+        self.get(path).unwrap_or_else(|| panic!("path not found"))
+    }
+}
+
+/// Get/Set data from map
+///
+/// # Examples
+///
+/// ```
+/// use radixmap::{RadixMap, RadixResult};
+/// use std::panic::{catch_unwind, AssertUnwindSafe};
+///
+/// fn main() -> RadixResult<()> {
+///     let mut map = RadixMap::try_from([("/api/v1", 1), ("/api/v2", 2)])?;
+///     map[b"/api/v1"] = 11;
+///     map[b"/api/v2"] = 22;
+///
+///     assert_eq!(map.len(), 2);
+///     assert_eq!(map[b"/api/v1"], 11);
+///     assert_eq!(map[b"/api/v2"], 22);
+///
+///     assert_eq!(catch_unwind(AssertUnwindSafe(|| map[b"/api/v3"] = 33)).is_err(), true);
+///     assert_eq!(catch_unwind(|| map[b"/api/v3"]).is_err(), true);
+///
+///     Ok(())
+/// }
+/// ```
+impl<V> IndexMut<&[u8]> for RadixMap<V> {
+    fn index_mut(&mut self, path: &[u8]) -> &mut Self::Output {
+        self.get_mut(path).unwrap_or_else(|| panic!("path not found"))
     }
 }
 

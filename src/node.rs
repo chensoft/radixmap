@@ -38,7 +38,7 @@ impl<V> RadixNode<V> {
     }
 
     /// An iterator for node
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -67,7 +67,7 @@ impl<V> RadixNode<V> {
     }
 
     /// A mutable iterator for node
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -100,7 +100,7 @@ impl<V> RadixNode<V> {
     }
 
     /// Iterator adapter for path
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -129,7 +129,7 @@ impl<V> RadixNode<V> {
     }
 
     /// Iterator adapter for data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -157,7 +157,7 @@ impl<V> RadixNode<V> {
     }
 
     /// Mutable iterator adapter for data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -220,7 +220,7 @@ impl<V> RadixNode<V> {
     ///   the path exactly.
     /// - If `data` is false, the function returns the deepest node that matches the path as far as
     ///   possible, regardless of whether it is a data node or not.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -301,7 +301,7 @@ impl<V> RadixNode<V> {
     }
 
     /// Same as lookup
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -382,7 +382,7 @@ impl<V> RadixNode<V> {
     }
 
     /// Divide the node into two parts
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -416,7 +416,7 @@ impl<V> RadixNode<V> {
     }
 
     /// Clear the nodes but preserve its capacity
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -445,7 +445,7 @@ impl<V> RadixNode<V> {
 }
 
 /// Create a node from a rule
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -466,7 +466,7 @@ impl<V> From<RadixRule> for RadixNode<V> {
 }
 
 /// Create a node from (path, data)
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -523,7 +523,7 @@ impl<V> Default for RadixNode<V> {
 }
 
 /// Debug trait
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -609,12 +609,11 @@ pub struct Iter<'n, V> {
     visit: Vec<Peekable<pack::Iter<'n, V>>>, // used in post-order only
     order: Order,
     empty: bool,
-    // todo capture: Option<Vec<(Bytes, &'u [u8])>>,
 }
 
 impl<'n, V> Iter<'n, V> {
     /// Starting to iterate from the node with a specific prefix
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -668,7 +667,7 @@ impl<'n, V> Iter<'n, V> {
     }
 
     /// Change the iterating order
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -717,7 +716,7 @@ impl<'n, V> Iter<'n, V> {
     }
 
     /// Traverse all nodes, including the internal nodes which do not contain data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -855,7 +854,7 @@ pub struct IterMut<'n, V> {
 
 impl<'n, V> IterMut<'n, V> {
     /// Starting to iterate from the node with a specific prefix
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -908,7 +907,7 @@ impl<'n, V> IterMut<'n, V> {
     }
 
     /// Change the iterating order
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -949,7 +948,7 @@ impl<'n, V> IterMut<'n, V> {
     }
 
     /// Traverse all nodes, including the internal nodes which do not contain data
-    /// 
+    ///
     /// # Examples
     ///
     /// ```

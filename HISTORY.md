@@ -3,6 +3,7 @@
 ### Added
 
 - Return glob result
+- Impl Index & IndexMut for map
 
 ### Changed
 
@@ -21,7 +22,6 @@
 ## Todo
 
 - invalid utf8 test with regex matches: &[0xffu8, 0xfe, 0x65];
-- index & indexmut
 - intoiterator
 - 
 - benchmark
