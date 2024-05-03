@@ -269,8 +269,9 @@ impl<V> RadixNode<V> {
             };
 
             // prefix must be part of the current node
-            let (share, order) = current.rule.longest(path);
-            if share.len() != path.len() && order != Ordering::Equal {
+            let share = current.rule.longest(path);
+            let equal = current.rule.is_special() || current.rule.origin().len() == share.len();
+            if share.len() != path.len() && !equal {
                 continue
             }
 
@@ -286,7 +287,7 @@ impl<V> RadixNode<V> {
 
             let byte = match path.first() {
                 Some(&val) => val as usize,
-                None if data && (order == Ordering::Greater || current.is_empty()) => continue, // data node must be an exact match
+                None if data && (!equal || current.is_empty()) => continue, // data node must be an exact match
                 None => return (Some(current), capture),
             };
 
@@ -353,8 +354,9 @@ impl<V> RadixNode<V> {
             };
 
             // prefix must be part of the current node
-            let (share, order) = current.rule.longest(path);
-            if share.len() != path.len() && order != Ordering::Equal {
+            let share = current.rule.longest(path);
+            let equal = current.rule.is_special() || current.rule.origin().len() == share.len();
+            if share.len() != path.len() && !equal {
                 continue
             }
 
@@ -370,7 +372,7 @@ impl<V> RadixNode<V> {
 
             let byte = match path.first() {
                 Some(&val) => val as usize,
-                None if data && (order == Ordering::Greater || current.is_empty()) => continue, // data node must be an exact match
+                None if data && (!equal || current.is_empty()) => continue, // data node must be an exact match
                 None => return (Some(current), capture),
             };
 
