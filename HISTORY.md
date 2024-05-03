@@ -3,7 +3,7 @@
 ### Changed
 
 - Remove recursion calls on node's lookup
-- Do not return captured data if node not found
+- Do not return tuple on lookup
 
 ## [0.2.0] - 2024-05-01
 

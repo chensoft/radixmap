@@ -70,6 +70,14 @@ impl RadixSet {
     /// use bytes::Bytes;
     /// use radixmap::{RadixSet, RadixResult};
     ///
+    /// macro_rules! verify {
+    ///     ($set:expr, $path:expr, $data:expr, $capt:expr) => {{
+    ///         let mut vec = vec![];
+    ///         assert_eq!($set.capture($path, &mut vec), $data);
+    ///         assert_eq!(vec, $capt);
+    ///     }};
+    /// }
+    ///
     /// fn main() -> RadixResult<()> {
     ///     let mut set = RadixSet::new();
     ///     set.insert("/api/v1/user/12345")?;
@@ -78,20 +86,20 @@ impl RadixSet {
     ///     set.insert("/api/v4/user/{id:[^0-9]+}")?;
     ///     set.insert("/api/v5/user/*345")?;
     ///
-    ///     assert_eq!(set.capture(b"/api/v1/user/12345"), (true, vec![]));
-    ///     assert_eq!(set.capture(b"/api/v2/user/12345"), (true, vec![(Bytes::from("id"), "12345".as_bytes())]));
-    ///     assert_eq!(set.capture(b"/api/v3/user/12345"), (true, vec![(Bytes::from("id"), "12345".as_bytes())]));
-    ///     assert_eq!(set.capture(b"/api/v4/user/12345"), (false, vec![]));
-    ///     assert_eq!(set.capture(b"/api/v5/user/12345"), (true, vec![(Bytes::from("*"), "12345".as_bytes())]));
-    ///     assert_eq!(set.capture(b"/api/v6"), (false, vec![]));
+    ///     verify!(set, b"/api/v1/user/12345", true, vec![]);
+    ///     verify!(set, b"/api/v2/user/12345", true, vec![(Bytes::from("id"), "12345".as_bytes())]);
+    ///     verify!(set, b"/api/v3/user/12345", true, vec![(Bytes::from("id"), "12345".as_bytes())]);
+    ///     verify!(set, b"/api/v4/user/12345", false, vec![]);
+    ///     verify!(set, b"/api/v5/user/12345", true, vec![(Bytes::from("*"), "12345".as_bytes())]);
+    ///     verify!(set, b"/api/v6", false, vec![]);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn capture<'u>(&self, path: &'u [u8]) -> (bool, Vec<(Bytes, &'u [u8])>) {
-        let (data, capt) = self.base.capture(path);
-        (data.is_some(), capt)
+    pub fn capture<'u>(&self, path: &'u [u8], capt: &mut Vec<(Bytes, &'u [u8])>) -> bool {
+        let data = self.base.capture(path, capt);
+        data.is_some()
     }
 
     /// Check if the tree contains specific path
