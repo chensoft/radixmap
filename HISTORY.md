@@ -1,4 +1,4 @@
-## [0.2.1] - 2024-05-0x
+## [0.2.1] - 2024-05-04
 
 ### Changed
 
@@ -29,12 +29,9 @@
 
 ## Todo
 
-- invalid utf8 test with regex matches: &[0xffu8, 0xfe, 0x65];
-- intoiterator
-- 
 - benchmark
 - plain only mode
 - item sep customizable
 - re-balance on removed node
-- invalid utf8 test: &[0xffu8, 0xfe, 0x65];
+- intoiterator post order
 - entry support

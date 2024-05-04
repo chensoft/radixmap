@@ -151,6 +151,10 @@ impl RadixRule {
     /// assert!(RadixRule::from_regex(r"{[0-9}").is_err());  // missing ]
     /// assert!(RadixRule::from_regex(r"{:(0}").is_err());   // missing )
     /// assert!(RadixRule::from_regex(r"{id:(0}").is_err()); // missing )
+    ///
+    /// #[allow(invalid_from_utf8_unchecked)]
+    /// let invalid = format!("{{{}}}", unsafe { std::str::from_utf8_unchecked(&[0xffu8, 0xfe, 0x65]) });
+    /// assert!(RadixRule::from_regex(invalid).is_err());
     /// ```
     #[inline]
     pub fn from_regex(frag: impl Into<Bytes>) -> RadixResult<Self> {
