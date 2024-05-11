@@ -23,9 +23,9 @@ thiserror = "1.0"
 criterion = "0.5"
 
 [[bench]]
-name = "insert"
+name = "lookup"
 harness = false
 
 [[bench]]
-name = "lookup"
+name = "insert"
 harness = false

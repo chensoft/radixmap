@@ -1,18 +1,16 @@
-include!("data/plain_1.rs");
 include!("data/plain_16.rs");
-include!("data/plain_256.rs");
+include!("data/plain_64.rs");
 include!("data/plain_512.rs");
+include!("data/plain_1024.rs");
 
 use criterion::*;
 use radixmap::RadixMap;
-use indexmap::IndexMap;
-use std::collections::HashMap;
 
 macro_rules! insert {
-    ($test:expr, $kind:tt, $size:literal, $urls:expr) => {{
-        let mut map = $kind::new();
+    ($test:expr, $size:literal, $urls:expr) => {{
+        let mut map = RadixMap::new();
 
-        $test.bench_function(concat!("insert-plain-", stringify!($size), "-", stringify!($kind)), |b| {
+        $test.bench_function(concat!("insert-plain-", stringify!($size)), |b| {
             map.clear();
 
             b.iter(|| {
@@ -27,25 +25,10 @@ macro_rules! insert {
 }
 
 fn benchmark(c: &mut Criterion) {
-    // 1
-    insert!(c, RadixMap, 1, URLS_1);
-    insert!(c, IndexMap, 1, URLS_1);
-    insert!(c, HashMap, 1, URLS_1);
-
-    // 16
-    insert!(c, RadixMap, 16, URLS_16);
-    insert!(c, IndexMap, 16, URLS_16);
-    insert!(c, HashMap, 16, URLS_16);
-
-    // 256
-    insert!(c, RadixMap, 256, URLS_256);
-    insert!(c, IndexMap, 256, URLS_256);
-    insert!(c, HashMap, 256, URLS_256);
-
-    // 512
-    insert!(c, RadixMap, 512, URLS_512);
-    insert!(c, IndexMap, 512, URLS_512);
-    insert!(c, HashMap, 512, URLS_512);
+    insert!(c, 16, PLAIN_URLS_16);
+    insert!(c, 64, PLAIN_URLS_64);
+    insert!(c, 512, PLAIN_URLS_512);
+    insert!(c, 1024, PLAIN_URLS_1024);
 }
 
 criterion_group!(

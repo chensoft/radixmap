@@ -1,8 +1,6 @@
 radixmap
 ==========================
 
-## ⚠️ Caution: Not Ready for Production! ⚠️
-
 Rust-based Radix Tree for fast prefix lookup, supporting named param, glob and regex
 
 [![Crates.io][crates-badge]][crates-url]
@@ -66,15 +64,31 @@ fn main() -> RadixResult<()> {
 
 ## Benchmark
 
-- MacBook Air, Apple M2 24G, Sonoma 14.4, Rust 1.77.1
+- MacBook Air, Apple M2 24G, Sonoma 14.4, Rust 1.78.0
 
 | Name              |              Time               |
 |:------------------|:-------------------------------:|
+| lookup-plain-16   | [29.149 ns 29.179 ns 29.215 ns] |
+| lookup-plain-64   | [34.797 ns 34.898 ns 35.017 ns] |
+| lookup-plain-512  | [51.162 ns 51.479 ns 51.917 ns] |
+| lookup-plain-1024 | [57.123 ns 57.782 ns 58.615 ns] |
+| insert-plain-16   | [1.3337 µs 1.3370 µs 1.3405 µs] |
+| insert-plain-64   | [7.8995 µs 7.9275 µs 7.9570 µs] |
+| insert-plain-512  | [103.13 µs 103.30 µs 103.52 µs] |
+| insert-plain-1024 | [255.19 µs 255.69 µs 256.26 µs] |
 
-- AWS c5.2xlarge, 8C 16G, Ubuntu 22.04, Rust 1.77.1
+- AWS c5.2xlarge, 8C 16G, Ubuntu 22.04, Rust 1.78.0
 
 | Name              |              Time               |
 |:------------------|:-------------------------------:|
+| lookup-plain-16   | [42.448 ns 42.469 ns 42.489 ns] |
+| lookup-plain-64   | [47.602 ns 47.614 ns 47.625 ns] |
+| lookup-plain-512  | [62.200 ns 62.213 ns 62.226 ns] |
+| lookup-plain-1024 | [67.797 ns 67.805 ns 67.814 ns] |
+| insert-plain-16   | [2.3793 µs 2.3807 µs 2.3826 µs] |
+| insert-plain-64   | [13.704 µs 13.709 µs 13.714 µs] |
+| insert-plain-512  | [204.39 µs 204.97 µs 205.73 µs] |
+| insert-plain-1024 | [482.81 µs 484.23 µs 486.10 µs] |
 
 ## Documentation
 

@@ -29,9 +29,11 @@
 
 ## Todo
 
-- benchmark
+- entry support
+- intoiterator post order
+- remove Pack, add regular special to Node?
+- special use Vec instead of IndexMap
+- named params benchmark
 - plain only mode
 - item sep customizable
 - re-balance on removed node
-- intoiterator post order
-- entry support

@@ -1,5 +1,5 @@
 // Test data comes from https://github.com/github/rest-api-description
-const URLS_16: &[&[u8]] = &[
+const PLAIN_URLS_16: &[&[u8]] = &[
     b"/repos/octocat-repo/hello-world",
     b"/feeds",
     b"/repos/octokit/octokit.rb/issues/123",
@@ -19,4 +19,4 @@ const URLS_16: &[&[u8]] = &[
 ];
 
 #[allow(dead_code)]
-const PATH_16: &[u8] = URLS_16[URLS_16.len() - 1];
+const PLAIN_PATH_16: &[u8] = PLAIN_URLS_16[PLAIN_URLS_16.len() - 1];
