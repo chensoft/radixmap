@@ -262,7 +262,10 @@ impl<V> RadixNode<V> {
 
         loop {
             // prefix must be part of the current node
-            let share = current.rule.longest(path);
+            let share = match current.rule.longest(path) {
+                Some(val) => val,
+                None => return None,
+            };
             let equal = current.rule.is_special() || current.rule.origin().len() == share.len();
             if share.len() != path.len() && !equal {
                 return None
@@ -270,7 +273,7 @@ impl<V> RadixNode<V> {
 
             if enable {
                 let ident = current.rule.identity();
-                if !ident.is_empty() && !share.is_empty() {
+                if !ident.is_empty() {
                     capture.push((ident.clone(), share));
                 }
             }
@@ -280,7 +283,7 @@ impl<V> RadixNode<V> {
 
             let byte = match path.first() {
                 Some(&val) => val as usize,
-                None if data && (!equal || current.is_empty()) => return None, // data node must be an exact match
+                None if data && (!equal || current.is_empty()) => 0, // data node must be an exact match
                 None => return Some(current),
             };
 
@@ -344,7 +347,10 @@ impl<V> RadixNode<V> {
 
         loop {
             // prefix must be part of the current node
-            let share = current.rule.longest(path);
+            let share = match current.rule.longest(path) {
+                Some(val) => val,
+                None => return None,
+            };
             let equal = current.rule.is_special() || current.rule.origin().len() == share.len();
             if share.len() != path.len() && !equal {
                 return None
@@ -352,7 +358,7 @@ impl<V> RadixNode<V> {
 
             if enable {
                 let ident = current.rule.identity();
-                if !ident.is_empty() && !share.is_empty() {
+                if !ident.is_empty() {
                     capture.push((ident.clone(), share));
                 }
             }
@@ -362,7 +368,7 @@ impl<V> RadixNode<V> {
 
             let byte = match path.first() {
                 Some(&val) => val as usize,
-                None if data && (!equal || current.is_empty()) => return None, // data node must be an exact match
+                None if data && (!equal || current.is_empty()) => 0, // data node must be an exact match
                 None => return Some(current),
             };
 

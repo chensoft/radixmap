@@ -1,3 +1,13 @@
+## [0.2.2] - 2024-05-19
+
+### Changed
+
+- Return empty captured content
+
+### Fixed
+
+- The pattern '/*' should match the path '/'
+
 ## [0.2.1] - 2024-05-04
 
 ### Changed

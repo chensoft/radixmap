@@ -135,7 +135,7 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v2/user/:id", "user2")?;
     ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
-    ///     map.insert("/api/v5/user/*345", "user5")?;
+    ///     map.insert("/api/v5/user/*", "user5")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/*.php", "blog")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
@@ -144,6 +144,7 @@ impl<V> RadixMap<V> {
     ///     assert_eq!(map.capture(b"/api/v3/user/12345"), (Some(&"user3"), vec![(Bytes::from("id"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture(b"/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture(b"/api/v5/user/12345"), (Some(&"user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
+    ///     assert_eq!(map.capture(b"/api/v5/user/"), (Some(&"user5"), vec![(Bytes::from("*"), "".as_bytes())]));
     ///     assert_eq!(map.capture(b"/api/v6"), (None, vec![]));
     ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![]));
     ///     assert_eq!(map.capture(b"/blog/2024-04-10/chensoft/index.php"), (Some(&"blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("*"), "index.php".as_bytes())]));
@@ -177,7 +178,7 @@ impl<V> RadixMap<V> {
     ///     map.insert("/api/v2/user/:id", "user2")?;
     ///     map.insert("/api/v3/user/{id:[0-9]+}", "user3")?;
     ///     map.insert("/api/v4/user/{id:[^0-9]+}", "user4")?;
-    ///     map.insert("/api/v5/user/*345", "user5")?;
+    ///     map.insert("/api/v5/user/*", "user5")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/*.php", "blog")?;
     ///     map.insert("/blog/:date/{author:[^/]+}/:date/*.html", "blog")?;
     ///
@@ -186,6 +187,7 @@ impl<V> RadixMap<V> {
     ///     assert_eq!(map.capture_mut(b"/api/v3/user/12345"), (Some(&mut "user3"), vec![(Bytes::from("id"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture_mut(b"/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture_mut(b"/api/v5/user/12345"), (Some(&mut "user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
+    ///     assert_eq!(map.capture_mut(b"/api/v5/user/"), (Some(&mut "user5"), vec![(Bytes::from("*"), "".as_bytes())]));
     ///     assert_eq!(map.capture_mut(b"/api/v6"), (None, vec![]));
     ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.asp"), (None, vec![]));
     ///     assert_eq!(map.capture_mut(b"/blog/2024-04-10/chensoft/index.php"), (Some(&mut "blog"), vec![(Bytes::from("date"), "2024-04-10".as_bytes()), (Bytes::from("author"), "chensoft".as_bytes()), (Bytes::from("*"), "index.php".as_bytes())]));

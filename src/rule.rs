@@ -229,30 +229,31 @@ impl RadixRule {
     /// use radixmap::{rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     assert_eq!(RadixRule::from_plain("")?.longest(b""), "".as_bytes());
-    ///     assert_eq!(RadixRule::from_plain("")?.longest(b"api"), "".as_bytes());
-    ///     assert_eq!(RadixRule::from_plain("api")?.longest(b"api"), "api".as_bytes());
-    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api"), "api".as_bytes());
-    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api/v2"), "api/v".as_bytes());
-    ///     assert_eq!(RadixRule::from_plain("roadmap/issues/events/6430295168")?.longest(b"roadmap/issues/events/6635165802"), "roadmap/issues/events/6".as_bytes());
+    ///     assert_eq!(RadixRule::from_plain("")?.longest(b""), Some("".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("")?.longest(b"api"), Some("".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("api")?.longest(b"api"), Some("api".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api"), Some("api".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api/v2"), Some("api/v".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("roadmap/issues/events/6430295168")?.longest(b"roadmap/issues/events/6635165802"), Some("roadmap/issues/events/6".as_bytes()));
     ///
-    ///     assert_eq!(RadixRule::from_param(":")?.longest(b"12345/rest"), "12345".as_bytes());
-    ///     assert_eq!(RadixRule::from_param(":id")?.longest(b"12345/rest"), "12345".as_bytes());
+    ///     assert_eq!(RadixRule::from_param(":")?.longest(b"12345/rest"), Some("12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_param(":id")?.longest(b"12345/rest"), Some("12345".as_bytes()));
     ///
-    ///     assert_eq!(RadixRule::from_glob("*")?.longest(b"12345/rest"), "12345/rest".as_bytes());
-    ///     assert_eq!(RadixRule::from_glob("*id")?.longest(b"12345/rest"), "".as_bytes());
+    ///     assert_eq!(RadixRule::from_glob("*")?.longest(b"12345/rest"), Some("12345/rest".as_bytes()));
+    ///     assert_eq!(RadixRule::from_glob("*id")?.longest(b"12345/rest"), None);
     ///
-    ///     assert_eq!(RadixRule::from_regex(r"{}")?.longest(b"12345/rest"), r"".as_bytes());
-    ///     assert_eq!(RadixRule::from_regex(r"{:}")?.longest(b"12345/rest"), r"".as_bytes());
-    ///     assert_eq!(RadixRule::from_regex(r"{\d+}")?.longest(b"12345/rest"), r"12345".as_bytes());
-    ///     assert_eq!(RadixRule::from_regex(r"{:\d+}")?.longest(b"12345/rest"), r"12345".as_bytes());
-    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"12345/update"), r"12345".as_bytes());
+    ///     assert_eq!(RadixRule::from_regex(r"{}")?.longest(b"12345/rest"), Some(r"".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{:}")?.longest(b"12345/rest"), Some(r"".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{\d+}")?.longest(b"12345/rest"), Some(r"12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{:\d+}")?.longest(b"12345/rest"), Some(r"12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"12345/update"), Some(r"12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"abcde"), None);
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn longest<'u>(&self, path: &'u [u8]) -> &'u [u8] {
+    pub fn longest<'u>(&self, path: &'u [u8]) -> Option<&'u [u8]> {
         match self {
             RadixRule::Plain { frag } => {
                 // accelerating string comparison using numbers
@@ -276,32 +277,32 @@ impl RadixRule {
                     len += 1;
                 }
 
-                &path[..len]
+                Some(&path[..len])
             }
             RadixRule::Param { .. } => match memchr::memchr(b'/', path) {
-                Some(p) => &path[..p],
-                None => path
+                Some(p) => Some(&path[..p]),
+                None => Some(path)
             }
             RadixRule::Glob { glob, .. } => {
                 let utf8 = match from_utf8(path) {
                     Ok(p) => p,
-                    Err(_) => return b"",
+                    Err(_) => return None,
                 };
 
                 match glob.matches(utf8) {
-                    true => path,
-                    false => b""
+                    true => Some(path),
+                    false => None
                 }
             }
             RadixRule::Regex { expr, .. } => {
                 let utf8 = match from_utf8(path) {
                     Ok(p) => p,
-                    Err(_) => return b"",
+                    Err(_) => return None,
                 };
 
                 match expr.find(utf8) {
-                    Some(m) => &path[..m.len()],
-                    None => b""
+                    Some(m) => Some(&path[..m.len()]),
+                    None => None
                 }
             }
         }
