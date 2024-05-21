@@ -2,7 +2,7 @@
 
 ### Added
 
-- Return raw node and do not match
+- Access data using raw path
 
 ## [0.2.2] - 2024-05-19
 
