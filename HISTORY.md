@@ -1,3 +1,9 @@
+## [0.2.3] - 2024-05-21
+
+### Added
+
+- Return raw node and do not match
+
 ## [0.2.2] - 2024-05-19
 
 ### Changed
@@ -39,7 +45,7 @@
 
 ## Todo
 
-- entry support
+- entry support, use raw node
 - intoiterator post order
 - remove Pack, add regular special to Node?
 - special use Vec instead of IndexMap

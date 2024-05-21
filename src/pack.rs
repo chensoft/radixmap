@@ -132,7 +132,7 @@ impl<V> RadixPack<V> {
             Some(node) => node,
             _ => unreachable!()
         };
-        let share = found.rule.longest(frag.as_ref()).unwrap_or(b"");
+        let share = found.rule.longest(frag.as_ref(), false).unwrap_or(b"");
         let equal = found.rule.is_special() || found.rule.origin().len() == share.len();
 
         // divide the node into two parts

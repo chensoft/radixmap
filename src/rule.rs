@@ -229,56 +229,71 @@ impl RadixRule {
     /// use radixmap::{rule::RadixRule, RadixResult};
     ///
     /// fn main() -> RadixResult<()> {
-    ///     assert_eq!(RadixRule::from_plain("")?.longest(b""), Some("".as_bytes()));
-    ///     assert_eq!(RadixRule::from_plain("")?.longest(b"api"), Some("".as_bytes()));
-    ///     assert_eq!(RadixRule::from_plain("api")?.longest(b"api"), Some("api".as_bytes()));
-    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api"), Some("api".as_bytes()));
-    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api/v2"), Some("api/v".as_bytes()));
-    ///     assert_eq!(RadixRule::from_plain("roadmap/issues/events/6430295168")?.longest(b"roadmap/issues/events/6635165802"), Some("roadmap/issues/events/6".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("")?.longest(b"", false), Some("".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("")?.longest(b"api", false), Some("".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("api")?.longest(b"api", false), Some("api".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api", false), Some("api".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("api/v1")?.longest(b"api/v2", false), Some("api/v".as_bytes()));
+    ///     assert_eq!(RadixRule::from_plain("roadmap/issues/events/6430295168")?.longest(b"roadmap/issues/events/6635165802", false), Some("roadmap/issues/events/6".as_bytes()));
     ///
-    ///     assert_eq!(RadixRule::from_param(":")?.longest(b"12345/rest"), Some("12345".as_bytes()));
-    ///     assert_eq!(RadixRule::from_param(":id")?.longest(b"12345/rest"), Some("12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_param(":")?.longest(b"12345/rest", false), Some("12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_param(":id")?.longest(b"12345/rest", false), Some("12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_param(":id")?.longest(b"12345/rest", true), Some("".as_bytes()));
+    ///     assert_eq!(RadixRule::from_param(":id")?.longest(b":id", true), Some(":id".as_bytes()));
     ///
-    ///     assert_eq!(RadixRule::from_glob("*")?.longest(b"12345/rest"), Some("12345/rest".as_bytes()));
-    ///     assert_eq!(RadixRule::from_glob("*id")?.longest(b"12345/rest"), None);
+    ///     assert_eq!(RadixRule::from_glob("*")?.longest(b"12345/rest", false), Some("12345/rest".as_bytes()));
+    ///     assert_eq!(RadixRule::from_glob("*id")?.longest(b"12345/rest", false), None);
+    ///     assert_eq!(RadixRule::from_glob("*id")?.longest(b"12345/rest", true), Some("".as_bytes()));
+    ///     assert_eq!(RadixRule::from_glob("*id")?.longest(b"*id", true), Some("*id".as_bytes()));
     ///
-    ///     assert_eq!(RadixRule::from_regex(r"{}")?.longest(b"12345/rest"), Some(r"".as_bytes()));
-    ///     assert_eq!(RadixRule::from_regex(r"{:}")?.longest(b"12345/rest"), Some(r"".as_bytes()));
-    ///     assert_eq!(RadixRule::from_regex(r"{\d+}")?.longest(b"12345/rest"), Some(r"12345".as_bytes()));
-    ///     assert_eq!(RadixRule::from_regex(r"{:\d+}")?.longest(b"12345/rest"), Some(r"12345".as_bytes()));
-    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"12345/update"), Some(r"12345".as_bytes()));
-    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"abcde"), None);
+    ///     assert_eq!(RadixRule::from_regex(r"{}")?.longest(b"12345/rest", false), Some(r"".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{:}")?.longest(b"12345/rest", false), Some(r"".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{\d+}")?.longest(b"12345/rest", false), Some(r"12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{:\d+}")?.longest(b"12345/rest", false), Some(r"12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"12345/update", false), Some(r"12345".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"abcde", false), None);
+    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(b"abcde", true), Some(r"".as_bytes()));
+    ///     assert_eq!(RadixRule::from_regex(r"{id:\d+}")?.longest(br"{id:\d+}", true), Some(r"{id:\d+}".as_bytes()));
     ///
     ///     Ok(())
     /// }
     /// ```
     #[inline]
-    pub fn longest<'u>(&self, path: &'u [u8]) -> Option<&'u [u8]> {
-        match self {
-            RadixRule::Plain { frag } => {
-                // accelerating string comparison using numbers
-                let min = std::cmp::min(frag.len(), path.len());
-                let mut len = 0;
+    pub fn longest<'u>(&self, path: &'u [u8], raw: bool) -> Option<&'u [u8]> {
+        if matches!(self, RadixRule::Plain { .. }) || raw {
+            let frag = match self {
+                RadixRule::Plain { frag, .. } => frag,
+                RadixRule::Param { frag, .. } => frag,
+                RadixRule::Glob { frag, .. } => frag,
+                RadixRule::Regex { frag, .. } => frag,
+            };
 
-                const BLK: usize = std::mem::size_of::<usize>();
+            // accelerating string comparison using numbers
+            let min = std::cmp::min(frag.len(), path.len());
+            let mut len = 0;
 
-                while len + BLK <= min {
-                    let frag_chunk: &usize = unsafe { &*(frag.as_ptr().add(len) as *const usize) };
-                    let path_chunk: &usize = unsafe { &*(path.as_ptr().add(len) as *const usize) };
+            const BLK: usize = std::mem::size_of::<usize>();
 
-                    match frag_chunk == path_chunk {
-                        true => len += BLK,
-                        false => break,
-                    }
+            while len + BLK <= min {
+                let frag_chunk: &usize = unsafe { &*(frag.as_ptr().add(len) as *const usize) };
+                let path_chunk: &usize = unsafe { &*(path.as_ptr().add(len) as *const usize) };
+
+                match frag_chunk == path_chunk {
+                    true => len += BLK,
+                    false => break,
                 }
-
-                // process the leftover unmatched substring
-                while len < min && frag[len] == path[len] {
-                    len += 1;
-                }
-
-                Some(&path[..len])
             }
+
+            // process the leftover unmatched substring
+            while len < min && frag[len] == path[len] {
+                len += 1;
+            }
+
+            return Some(&path[..len]);
+        }
+
+        match self {
+            RadixRule::Plain { .. } => unreachable!(),
             RadixRule::Param { .. } => match memchr::memchr(b'/', path) {
                 Some(p) => Some(&path[..p]),
                 None => Some(path)

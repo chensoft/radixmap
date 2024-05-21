@@ -86,7 +86,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn get(&self, path: &[u8]) -> Option<&V> {
-        self.root.lookup(path, true, &mut vec![], false).and_then(|node| node.data.as_ref())
+        self.root.lookup(path, true, false, &mut vec![], false).and_then(|node| node.data.as_ref())
     }
 
     /// Retrieve the corresponding mutable data
@@ -118,7 +118,82 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn get_mut(&mut self, path: &[u8]) -> Option<&mut V> {
-        self.root.lookup_mut(path, true, &mut vec![], false).and_then(|node| node.data.as_mut())
+        self.root.lookup_mut(path, true, false, &mut vec![], false).and_then(|node| node.data.as_mut())
+    }
+
+    /// Retrieve the corresponding data via raw path
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/plain/1", 1)?;
+    ///     map.insert("/param/:id", 2)?;
+    ///     map.insert("/glob/*", 3)?;
+    ///     map.insert(r"/regex/{id:\d+}", 4)?;
+    ///
+    ///     assert_eq!(map.raw(b"/plain/1"), Some(&1));
+    ///     assert_eq!(map.raw(b"/param/:id"), Some(&2));
+    ///     assert_eq!(map.raw(b"/glob/*"), Some(&3));
+    ///     assert_eq!(map.raw(br"/regex/{id:\d+}"), Some(&4));
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    #[inline]
+    pub fn raw(&self, path: &[u8]) -> Option<&V> {
+        self.root.lookup(path, true, true, &mut vec![], false).and_then(|node| node.data.as_ref())
+    }
+
+    /// Retrieve the corresponding mutable data via raw path
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use radixmap::{RadixMap, RadixResult};
+    ///
+    /// fn main() -> RadixResult<()> {
+    ///     let mut map = RadixMap::new();
+    ///     map.insert("/plain/1", 1)?;
+    ///     map.insert("/param/:id", 2)?;
+    ///     map.insert("/glob/*", 3)?;
+    ///     map.insert(r"/regex/{id:\d+}", 4)?;
+    ///
+    ///     assert_eq!(map.raw_mut(b"/plain/1"), Some(&mut 1));
+    ///     assert_eq!(map.raw_mut(b"/param/:id"), Some(&mut 2));
+    ///     assert_eq!(map.raw_mut(b"/glob/*"), Some(&mut 3));
+    ///     assert_eq!(map.raw_mut(br"/regex/{id:\d+}"), Some(&mut 4));
+    ///
+    ///     if let Some(data) = map.raw_mut(b"/plain/1") {
+    ///         *data += 10;
+    ///     }
+    ///
+    ///     if let Some(data) = map.raw_mut(b"/param/:id") {
+    ///         *data += 10;
+    ///     }
+    ///
+    ///     if let Some(data) = map.raw_mut(b"/glob/*") {
+    ///         *data += 10;
+    ///     }
+    ///
+    ///     if let Some(data) = map.raw_mut(br"/regex/{id:\d+}") {
+    ///         *data += 10;
+    ///     }
+    ///
+    ///     assert_eq!(map.raw_mut(b"/plain/1"), Some(&mut 11));
+    ///     assert_eq!(map.raw_mut(b"/param/:id"), Some(&mut 12));
+    ///     assert_eq!(map.raw_mut(b"/glob/*"), Some(&mut 13));
+    ///     assert_eq!(map.raw_mut(br"/regex/{id:\d+}"), Some(&mut 14));
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    #[inline]
+    pub fn raw_mut(&mut self, path: &[u8]) -> Option<&mut V> {
+        self.root.lookup_mut(path, true, true, &mut vec![], false).and_then(|node| node.data.as_mut())
     }
 
     /// Retrieve the corresponding data and collect named captures
@@ -156,7 +231,7 @@ impl<V> RadixMap<V> {
     #[inline]
     pub fn capture<'u>(&self, path: &'u [u8]) -> (Option<&V>, Vec<(Bytes, &'u [u8])>) {
         let mut capt = vec![];
-        let node = self.root.lookup(path, true, &mut capt, true);
+        let node = self.root.lookup(path, true, false, &mut capt, true);
         if node.is_none() {
             capt.clear();
         }
@@ -199,7 +274,7 @@ impl<V> RadixMap<V> {
     #[inline]
     pub fn capture_mut<'u>(&mut self, path: &'u [u8]) -> (Option<&mut V>, Vec<(Bytes, &'u [u8])>) {
         let mut capt = vec![];
-        let node = self.root.lookup_mut(path, true, &mut capt, true);
+        let node = self.root.lookup_mut(path, true, false, &mut capt, true);
         if node.is_none() {
             capt.clear();
         }
@@ -230,7 +305,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn contains_key(&self, path: &[u8]) -> bool {
-        self.root.lookup(path, true, &mut vec![], false).map_or(false, |node| !node.is_empty())
+        self.root.lookup(path, true, false, &mut vec![], false).map_or(false, |node| !node.is_empty())
     }
 
     /// Check if the tree contains specific data
@@ -476,7 +551,7 @@ impl<V> RadixMap<V> {
     /// ```
     #[inline]
     pub fn remove(&mut self, path: &[u8]) -> Option<(Bytes, V)> {
-        let node = self.root.lookup_mut(path, true, &mut vec![], false)?;
+        let node = self.root.lookup_mut(path, true, false, &mut vec![], false)?;
         let path = std::mem::take(&mut node.path);
         let data = std::mem::take(&mut node.data);
 
