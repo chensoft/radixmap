@@ -1,7 +1,10 @@
 radixmap
 ==========================
 
-Rust-based Radix Tree for fast prefix lookup, supporting named param, glob and regex
+This crate is a rust-based radix tree implementation. Radix tree, also known as Trie, is a
+space-optimized tree data structure for efficient information retrieval. Its key advantages
+are space optimization, fast prefix-based searches, and efficient memory usage. Radix trees
+are widely used, especially in HTTP routers.
 
 [![Crates.io][crates-badge]][crates-url]
 [![MIT licensed][license-badge]][license-url]
@@ -89,11 +92,3 @@ fn main() -> RadixResult<()> {
 | insert-plain-64   | [13.704 µs 13.709 µs 13.714 µs] |
 | insert-plain-512  | [204.39 µs 204.97 µs 205.73 µs] |
 | insert-plain-1024 | [482.81 µs 484.23 µs 486.10 µs] |
-
-## Documentation
-
-The documentation is [available here](https://docs.rs/radixmap).
-
-## License
-
-This software is released under the [MIT License](https://github.com/chensoft/radixmap?tab=MIT-1-ov-file).
