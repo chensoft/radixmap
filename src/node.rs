@@ -248,6 +248,7 @@ impl<V> RadixNode<V> {
     ///     assert_eq!(node.lookup(b"/api/v", true, false, &mut vec![], false).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup(b"/api/v1", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
     ///     assert_eq!(node.lookup(b"/api/v2", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
+    ///     assert_eq!(node.lookup(b"/api/v1/user/", true, false, &mut vec![], false).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup(b"/api/v1/user/12345", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from(":id")));
     ///     assert_eq!(node.lookup(b"/api/v2/user/12345", true, false, &mut vec![], false).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup(b"/api/v2/user/abcde", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from("{id:[^0-9]+}")));
@@ -333,6 +334,7 @@ impl<V> RadixNode<V> {
     ///     assert_eq!(node.lookup_mut(b"/api/v", true, false, &mut vec![], false).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup_mut(b"/api/v1", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from("1")));
     ///     assert_eq!(node.lookup_mut(b"/api/v2", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from("2")));
+    ///     assert_eq!(node.lookup_mut(b"/api/v1/user/", true, false, &mut vec![], false).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup_mut(b"/api/v1/user/12345", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from(":id")));
     ///     assert_eq!(node.lookup_mut(b"/api/v2/user/12345", true, false, &mut vec![], false).map(|node| node.rule.origin()), None);
     ///     assert_eq!(node.lookup_mut(b"/api/v2/user/abcde", true, false, &mut vec![], false).map(|node| node.rule.origin()), Some(&Bytes::from("{id:[^0-9]+}")));

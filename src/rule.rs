@@ -293,10 +293,10 @@ impl RadixRule {
         }
 
         match self {
-            RadixRule::Plain { .. } => unreachable!(),
             RadixRule::Param { .. } => match memchr::memchr(b'/', path) {
                 Some(p) => Some(&path[..p]),
-                None => Some(path)
+                None if !path.is_empty() => Some(path),
+                None => None
             }
             RadixRule::Glob { glob, .. } => {
                 let utf8 = match from_utf8(path) {
@@ -320,6 +320,7 @@ impl RadixRule {
                     None => None
                 }
             }
+            RadixRule::Plain { .. } => unreachable!(),
         }
     }
 

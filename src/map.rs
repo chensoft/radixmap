@@ -216,6 +216,7 @@ impl<V> RadixMap<V> {
     ///
     ///     assert_eq!(map.capture(b"/api/v1/user/12345"), (Some(&"user1"), vec![]));
     ///     assert_eq!(map.capture(b"/api/v2/user/12345"), (Some(&"user2"), vec![(Bytes::from("id"), "12345".as_bytes())]));
+    ///     assert_eq!(map.capture(b"/api/v2/user/"), (None, vec![]));
     ///     assert_eq!(map.capture(b"/api/v3/user/12345"), (Some(&"user3"), vec![(Bytes::from("id"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture(b"/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture(b"/api/v5/user/12345"), (Some(&"user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
@@ -259,6 +260,7 @@ impl<V> RadixMap<V> {
     ///
     ///     assert_eq!(map.capture_mut(b"/api/v1/user/12345"), (Some(&mut "user1"), vec![]));
     ///     assert_eq!(map.capture_mut(b"/api/v2/user/12345"), (Some(&mut "user2"), vec![(Bytes::from("id"), "12345".as_bytes())]));
+    ///     assert_eq!(map.capture_mut(b"/api/v2/user/"), (None, vec![]));
     ///     assert_eq!(map.capture_mut(b"/api/v3/user/12345"), (Some(&mut "user3"), vec![(Bytes::from("id"), "12345".as_bytes())]));
     ///     assert_eq!(map.capture_mut(b"/api/v4/user/12345"), (None, vec![]));
     ///     assert_eq!(map.capture_mut(b"/api/v5/user/12345"), (Some(&mut "user5"), vec![(Bytes::from("*"), "12345".as_bytes())]));
@@ -293,10 +295,20 @@ impl<V> RadixMap<V> {
     ///     let mut map = RadixMap::new();
     ///     map.insert("/api/v1", ())?;
     ///     map.insert("/api/v2", ())?;
+    ///     map.insert("/api/v3/:id", ())?;
+    ///     map.insert("/api/v4/*", ())?;
+    ///     map.insert("/api/v5/{.+}", ())?;
     ///
+    ///     assert_eq!(map.contains_key(b"/api/v0"), false);
     ///     assert_eq!(map.contains_key(b"/api/v1"), true);
     ///     assert_eq!(map.contains_key(b"/api/v2"), true);
     ///     assert_eq!(map.contains_key(b"/api/v3"), false);
+    ///     assert_eq!(map.contains_key(b"/api/v3/12345"), true);
+    ///     assert_eq!(map.contains_key(b"/api/v4"), true);
+    ///     assert_eq!(map.contains_key(b"/api/v4/12345"), true);
+    ///     assert_eq!(map.contains_key(b"/api/v5"), false);
+    ///     assert_eq!(map.contains_key(b"/api/v5/12345"), true);
+    ///     assert_eq!(map.contains_key(b"/api/v5/12345/profile"), true);
     ///     assert_eq!(map.contains_key(b"/api/v"), false);
     ///     assert_eq!(map.contains_key(b"/api"), false);
     ///
