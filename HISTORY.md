@@ -53,3 +53,7 @@
 - plain only mode
 - item sep customizable
 - re-balance on removed node
+- /auth & /{:as\d+}, cant match the second one
+- r"/{ip:[0-9.]+}/{fields:[a-zA-Z+]*}" cant match /1.1.1.1, only /1.1.1.1/
+- regex support multiple named captures
+- regex support syntax like {1,5}
